@@ -169,8 +169,8 @@ export default function HomePage() {
           ))}
         </div>
         <p className="development-note">
-          We’re building this journey step by step. Trip saving, AI planning,
-          and payments are not connected yet.
+          Trip intents and drafts can now be saved. AI planning and payments are
+          still to come.
         </p>
       </section>
       <section className="showcase-section">

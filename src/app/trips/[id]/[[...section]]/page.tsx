@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { requireUser } from "@/server/session";
+import { getApp } from "@/server/runtime";
+import { RequestError } from "@/server/trips";
+import { destinationPhoto } from "@/lib/trip-intent";
+import { DestinationImage } from "@/components/destination-image";
 import {
   BookOpen,
   CalendarDays,
@@ -10,7 +15,7 @@ import {
 } from "lucide-react";
 import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
 
-export const metadata: Metadata = { title: "Trip workspace preview" };
+export const metadata: Metadata = { title: "Trip workspace" };
 
 const tabs = [
   { path: "", label: "Overview" },
@@ -19,16 +24,6 @@ const tabs = [
   { path: "/bookings", label: "Bookings" },
   { path: "/explore", label: "Explore" },
 ];
-
-// Only the explicitly labeled preview exists in this foundation milestone.
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return tabs.map((tab) => ({
-    id: "preview",
-    section: tab.path ? [tab.path.slice(1)] : [],
-  }));
-}
 
 const content = {
   "": {
@@ -70,32 +65,51 @@ export default async function TripWorkspacePage({
 }) {
   const { id, section } = await params;
   const active = section?.[0] ?? "";
-  if (
-    id !== "preview" ||
-    (section?.length ?? 0) > 1 ||
-    !Object.hasOwn(content, active)
-  )
-    notFound();
+  if ((section?.length ?? 0) > 1 || !Object.hasOwn(content, active)) notFound();
+  const user = await requireUser(`/trips/${id}${active ? `/${active}` : ""}`);
+  const saved = await (async () => {
+    if (id === "preview") return null;
+    try {
+      return await (await getApp()).trips.read(user.id, id);
+    } catch (error) {
+      if (error instanceof RequestError && error.status === 404) notFound();
+      throw error;
+    }
+  })();
+  const photo = destinationPhoto(
+    saved?.data.mode === "known" ? saved.data.destination : "",
+  );
   const selected = content[active as keyof typeof content];
   return (
     <div className="container page-content">
       <PageHeading
-        eyebrow="TRIP WORKSPACE · LAYOUT PREVIEW"
-        title="A home for your next adventure."
+        eyebrow={
+          saved ? "SAVED TRIP INTENT" : "TRIP WORKSPACE · LAYOUT PREVIEW"
+        }
+        title={
+          saved
+            ? saved.data.mode === "known"
+              ? saved.data.destination
+              : "Your escape, taking shape."
+            : "A home for your next adventure."
+        }
         description="One calm space for the details, the decisions, and everything in between."
       />
       <div className="notice">
-        <strong>No saved trip is open.</strong>
+        <strong>
+          {saved ? "Your trip intent is saved." : "No saved trip is open."}
+        </strong>
         <p>
-          This public shell demonstrates navigation only. Authentication, trip
-          storage, AI, and financial services are not connected.
+          {saved
+            ? "Your dates, budget, and preferences are stored in your account. AI generation, bookings and financial services aren’t connected."
+            : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
         </p>
       </div>
       <nav className="trip-tabs" aria-label="Trip sections">
         {tabs.map((tab) => (
           <Link
             key={tab.label}
-            href={`/trips/preview${tab.path}`}
+            href={`/trips/${id}${tab.path}`}
             aria-current={active === tab.path.slice(1) ? "page" : undefined}
           >
             {tab.label}
@@ -104,23 +118,83 @@ export default async function TripWorkspacePage({
       </nav>
       <div className="workspace-layout">
         <section className="panel workspace-main">
-          {active === "" && (
-            <div className="workspace-metrics">
-              {["Total budget", "Projected costs", "Unallocated budget"].map(
-                (label) => (
-                  <div key={label}>
-                    <span>{label}</span>
-                    <strong>—</strong>
-                    <small>No trip data</small>
-                  </div>
-                ),
-              )}
-            </div>
+          {saved && active === "" && (
+            <>
+              <div className="saved-trip-hero">
+                <DestinationImage
+                  src={photo?.image ?? "/images/cinque-terre.jpg"}
+                  alt={
+                    photo?.alt ??
+                    "Cinque Terre — default destination inspiration"
+                  }
+                  priority
+                  sizes="100vw"
+                />
+                <span>Destination inspiration · Itinerary not generated</span>
+              </div>
+              <div className="saved-intent-details">
+                <h2>Your trip, at a glance</h2>
+                <dl className="review-list">
+                  {[
+                    [
+                      "Destination",
+                      saved.data.mode === "known"
+                        ? saved.data.destination
+                        : saved.data.vibe,
+                    ],
+                    ["Leaving from", saved.data.departure],
+                    [
+                      "Dates",
+                      saved.data.flexible
+                        ? `${saved.data.month} · ${saved.data.duration} days`
+                        : `${saved.data.start} → ${saved.data.end}`,
+                    ],
+                    [
+                      "Travelers & pace",
+                      `${saved.data.travelers} · ${saved.data.pace}`,
+                    ],
+                    [
+                      "Total budget",
+                      `${new Intl.NumberFormat("en-CA", { style: "currency", currency: saved.data.currency }).format(Number(saved.data.budget))} ${saved.data.currency} · ${saved.data.scope === "entire" ? "Entire vacation" : "Spending only"}`,
+                    ],
+                    ["Spending style", saved.data.style],
+                    [
+                      "Interests",
+                      saved.data.selected.join(", ") || "Open to discovery",
+                    ],
+                    ["Must-see", saved.data.mustSee || "None specified"],
+                    ["Avoids", saved.data.avoids || "None specified"],
+                    [
+                      "Dietary preferences",
+                      saved.data.dietary || "None specified",
+                    ],
+                    [
+                      "Accessibility preferences",
+                      saved.data.accessibility || "None specified",
+                    ],
+                  ].map(([label, value]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="inline-note">
+                  Destination input is saved as intent. A country, region or
+                  vibe will still need a confirmed base city before future
+                  generation. No availability or costs have been verified.
+                </p>
+              </div>
+            </>
           )}
           <EmptyState
             icon={<selected.icon size={30} aria-hidden="true" />}
             title={selected.title}
-            description={selected.description}
+            description={
+              saved && active === ""
+                ? "Your planning intent is stored. AI itinerary generation is reserved for the next milestone and is not available yet."
+                : selected.description
+            }
             action={
               <ButtonLink
                 href={active === "explore" ? "/explore" : "/trips/new"}

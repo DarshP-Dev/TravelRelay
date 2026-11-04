@@ -1,26 +1,38 @@
 import type { Metadata } from "next";
-import { UserRound } from "lucide-react";
-import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
-
+import { PageHeading } from "@/components/ui";
+import { requireUser } from "@/server/session";
+import { SignOut } from "@/components/sign-out";
 export const metadata: Metadata = { title: "Profile" };
-
-export default function ProfilePage() {
+export default async function ProfilePage() {
+  const user = await requireUser("/profile");
   return (
     <div className="container page-content">
       <PageHeading
-        eyebrow="A TRIP THAT FEELS LIKE YOU"
-        title="Your corner of TravelRelay."
-        description="Your preferences and account will live here."
+        eyebrow="YOUR CORNER OF TRAVELRELAY"
+        title={`Welcome, ${user.name}.`}
+        description="Your trips and drafts are private to your account."
       />
-      <div className="panel">
-        <EmptyState
-          icon={<UserRound size={30} aria-hidden="true" />}
-          title="Sign-in isn’t connected yet."
-          description="This is a public foundation preview. No account has been created, and personal data is not being saved. Secure authentication will be added before private trip storage."
-          action={
-            <ButtonLink href="/explore">Explore destination ideas</ButtonLink>
-          }
-        />
+      <div className="panel profile-panel">
+        <h2>Account details</h2>
+        <dl className="review-list">
+          <div>
+            <dt>Name</dt>
+            <dd>{user.name}</dd>
+          </div>
+          <div>
+            <dt>Email</dt>
+            <dd>{user.email}</dd>
+          </div>
+          <div>
+            <dt>Email verification</dt>
+            <dd>
+              {user.emailVerified
+                ? "Verified"
+                : "Not verified — email delivery isn’t connected yet"}
+            </dd>
+          </div>
+        </dl>
+        <SignOut userId={user.id} />
       </div>
     </div>
   );

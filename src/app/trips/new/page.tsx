@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { TripWizard } from "@/components/trip-wizard";
 import { PageHeading } from "@/components/ui";
 import { getTemplate } from "@/lib/curated-trips";
+import { requireUser } from "@/server/session";
 
 export const metadata: Metadata = { title: "Create Trip" };
 
@@ -12,6 +13,9 @@ export default async function CreateTripPage({
 }) {
   const { template: templateId } = await searchParams;
   const template = getTemplate(templateId);
+  const user = await requireUser(
+    `/trips/new${template ? `?template=${template.id}` : ""}`,
+  );
   return (
     <div className="container page-content wizard-page">
       <PageHeading
@@ -19,7 +23,11 @@ export default async function CreateTripPage({
         title="What does your next adventure look like?"
         description="A few thoughtful details. A trip that feels like you."
       />
-      <TripWizard key={template?.id ?? "new"} template={template} />
+      <TripWizard
+        key={`${user.id}:${template?.id ?? "new"}`}
+        template={template}
+        userId={user.id}
+      />
     </div>
   );
 }

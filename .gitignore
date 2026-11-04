@@ -163,3 +163,7 @@ playwright-report/
 # Local Python helper cache
 __pycache__/
 *.pyc
+
+# Local persistent accounts, sessions, trip data and isolated test databases
+.data/
+.test-data/

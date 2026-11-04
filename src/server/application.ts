@@ -1,0 +1,127 @@
+import { z } from "zod";
+import { createAuth } from "./auth";
+import { createTripStore, RequestError } from "./trips";
+import type { Database } from "./db/connection";
+
+export function checkOrigin(request: Request, origin: string) {
+  if (
+    !["GET", "HEAD", "OPTIONS"].includes(request.method) &&
+    request.headers.get("origin") !== new URL(origin).origin
+  )
+    throw new RequestError(403, "This request must come from TravelRelay.");
+}
+async function readJson(request: Request) {
+  if (!request.headers.get("content-type")?.startsWith("application/json"))
+    throw new RequestError(415, "Send JSON data.");
+  const reader = request.body?.getReader();
+  if (!reader) throw new RequestError(400, "A request body is required.");
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.length;
+    if (size > 20000) {
+      await reader.cancel();
+      throw new RequestError(413, "This request is too large.");
+    }
+    chunks.push(value);
+  }
+  try {
+    return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+  } catch {
+    throw new RequestError(400, "Enter valid JSON data.");
+  }
+}
+export function failure(error: unknown) {
+  const status =
+    error instanceof RequestError
+      ? error.status
+      : error instanceof z.ZodError
+        ? 400
+        : 503;
+  const message =
+    error instanceof RequestError
+      ? error.message
+      : error instanceof z.ZodError
+        ? error.issues
+            .map((issue) => `${issue.path.join(".")}: ${issue.message}`)
+            .join(" ")
+        : "Storage is temporarily unavailable. Please try again.";
+  return Response.json(
+    { error: message },
+    { status, headers: { "Cache-Control": "no-store" } },
+  );
+}
+export function createApplication(
+  db: Database,
+  config: { secret: string; origin: string },
+) {
+  const auth = createAuth(db, config);
+  const trips = createTripStore(db);
+  return {
+    auth,
+    trips,
+    async authHandler(request: Request) {
+      try {
+        checkOrigin(request, config.origin);
+        if (request.method === "POST" && request.body) {
+          const body = await readJson(request);
+          const headers = new Headers(request.headers);
+          headers.delete("content-length");
+          request = new Request(request.url, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(body),
+          });
+        }
+        return await auth.handler(request);
+      } catch (error) {
+        return failure(error);
+      }
+    },
+    async handle(
+      request: Request,
+      resource: "trips" | "drafts",
+      id?: string,
+      complete = false,
+    ) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Please sign in to access your trips.");
+        checkOrigin(request, config.origin);
+        const userId = session.user.id;
+        let data: unknown;
+        if (resource === "trips" && request.method === "GET")
+          data = id ? await trips.read(userId, id) : await trips.list(userId);
+        else if (resource === "drafts" && request.method === "GET")
+          data = id
+            ? await trips.readDraft(userId, id)
+            : await trips.listDrafts(userId);
+        else if (resource === "drafts" && request.method === "POST" && !id)
+          data = await trips.openDraft(userId, await readJson(request));
+        else if (
+          resource === "drafts" &&
+          id &&
+          request.method === "PUT" &&
+          !complete
+        )
+          data = await trips.saveDraft(userId, id, await readJson(request));
+        else if (
+          resource === "drafts" &&
+          id &&
+          request.method === "POST" &&
+          complete
+        )
+          data = await trips.complete(userId, id, await readJson(request));
+        else throw new RequestError(405, "Method not allowed.");
+        return Response.json(data, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
+  };
+}

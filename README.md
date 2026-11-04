@@ -1,138 +1,158 @@
 # TravelRelay
 
-A considered home for your next adventure, built for the PayPal AI Hackathon.
+An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current delivery: Milestone 0 + the foundation portion of Milestone 1 only**,
-as scoped by `TRAVELRELAY_CODEX_KICKOFF.md`. The approved product design is
-provided in `TRAVELRELAY_DESIGN_FIXED.md` (the requested name
-`TRAVELRELAY_DESIGN.md` does not exist in this checkout).
+**Current scope: Milestone 1B — authentication, private persistent trip intents,
+and four-step wizard drafts.** AI generation, PayPal, bookings and Trip Recovery
+are not implemented. No Milestone 2 work or deployment is included.
 
-## Local development
+## Local setup
 
-Use Node.js 20.9+ (validated with Node 24) and npm.
+Use Node.js 24 (the validated version) and npm. From this repository:
 
 ```powershell
 npm ci
+npm run setup:local
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). No credentials, database, or
-environment file are required for this foundation preview. Destination images
-and fonts are bundled locally; production builds do not fetch Google Fonts.
+Open [localhost:3000](http://localhost:3000). `setup:local` generates a random
+server-only signing secret in ignored `.env.local` without printing it, explicitly
+selects local PGlite, and applies the committed database migrations. It preserves
+an existing `.env.local`; if one exists, configure the current names from
+`.env.example` before running `npm run db:migrate`. Do not paste secrets into chat.
+
+Create your own account at `/signup`. No shared/demo credentials are shipped.
+Email/password signup signs you in; `/login` and Profile → Sign out work with
+server-backed sessions. Public landing, Explore and credits remain accessible.
+Dashboard, My Trips, Profile, the wizard and trip workspaces require sign-in.
+
+PGlite is a real PostgreSQL-compatible database persisted under ignored
+`.data/travelrelay`. It is intended for **one local application process**. Stop
+the dev server before migrations or opening that same data directory from another
+process. Tests use separate isolated directories and do not touch development data.
+Never commit `.data`, `.env.local`, database dumps, or session records.
+
+## Validation and database commands
 
 ```powershell
 npm run lint
 npm run typecheck
+npm test
+npm run format:check
 npm run build
-npm start
+npm run db:generate
+npm run db:migrate
 ```
 
-Lint uses ESLint directly; typecheck generates Next route types and runs strict
-TypeScript. There is no automated unit-test suite in this UI foundation. Manual
-route, browser interaction, keyboard and responsive checks are recorded in
-`docs/validation.md`. `npm run build` produces the deployable Next.js app;
-`npm start` serves that build. No deployment is included in this milestone.
+Tests exercise Better Auth and real disk-backed PGlite, including revocation,
+unauthorized access, user isolation, validation, stale draft conflicts, idempotent
+trip creation, and closing/reopening the database. No auth or database mocks are
+used. `db:generate` is for schema changes only; review and commit generated SQL.
+`db:migrate` applies committed migrations, preferring `DIRECT_URL` when supplied.
+Do not point tests at a production database.
 
-## What works now
+`npm start` serves the production build. Hosted production requires PostgreSQL
+and HTTPS. For **local QA only**, `ALLOW_LOCAL_DATABASE=true` allows a single
+production-preview process to use PGlite. The dev and production preview must
+not concurrently open the same directory. See `docs/validation.md` for results.
 
-- Permanent editorial landing page with local destination photography, process,
-  product workspace preview, inspirations, and future AI/PayPal explanation.
-- Reusable tokens, components, accessible native controls, skip link, focus
-  styles, reduced-motion support, desktop top navigation and mobile menu.
-- Dashboard, My Trips and Profile honest empty shells.
-- Explore with six hand-authored seed inspirations, clearly non-live per-person
-  USD spending estimates, day-theme previews, and customization links.
-- Four-step wizard form: destination/vibe choice, details and flexible dates,
-  traveler count/pace, budget/currency/scope/style, optional preferences, review,
-  and back navigation. Template links prefill editable single-base-city intent.
-- Empty `/trips/preview` workspace and deep-linked Itinerary, TripWallet,
-  Bookings, Explore tabs. Optional assistant panel communicates its unavailable
-  state. Unknown trip IDs return 404 rather than invented trip records.
-- Error/not-found/loading states, photo failure fallback, and public credits.
+## What works
 
-## Limitations — intentionally not connected
+- The existing warm palette, typography, photography and editorial structure,
+  with wider desktop containers, more readable small text and selective spacing
+  refinements. Navigation reflects pending, signed-out and signed-in states.
+- Signup/login/logout through Better Auth, scrypt password hashing, database
+  sessions, HttpOnly/SameSite cookies and HTTPS Secure cookies, auth rate limiting,
+  same-origin mutation checks, safe return paths and protected page/data access.
+- A four-step wizard that autosaves incomplete inputs and step/review state after
+  a short debounce, restores them after refresh or sign-in, and shows actual
+  saving/error/session-expired/conflict states. Editing waits for draft restoration.
+- One active general draft and one per curated inspiration, per user. Existing
+  template drafts are resumed; template defaults never silently overwrite them.
+- A 1220px split-screen desktop wizard with live destination photography and
+  trip summary. Six supported destination matches; an explicitly labeled default
+  for other input. Mobile stacks the form and compact, collapsible photo summary.
+- Review → Save trip intent atomically stores the user's dates, budget denomination
+  and scope, preferences and departure/destination intent. Retrying this action
+  cannot create duplicate trips for the same draft. No generation is simulated.
+- Saved trip overview, private trip cards and resumable drafts on the dashboard.
+  The existing dashboard empty composition is retained until actual trips exist.
+- User IDs always come from verified sessions. Reads/writes constrain both owner
+  and resource ID. API responses are not cached. Cross-user IDs return 404.
+- Optimistic draft versions prevent stale tabs overwriting newer edits. A
+  user-specific tab buffer protects unsent edits across refresh/reauthentication;
+  conflicts require an explicit reload, not a silent overwrite. Explicit logout
+  clears that user's local buffers. The database remains authoritative.
 
-This is a public development preview, **not a complete Milestone 1 release**.
-There is no authentication, database, draft persistence, trip saving, itinerary
-generation, job system, live availability, booking, checkout, refund, FX feed,
-or AI response. Wizard state lasts only while the form stays mounted; refresh
-or navigating away clears it. It never claims a save or generation succeeded.
-Use sample details, not sensitive traveler data.
+## Configuration
 
-Curated content is editorial seed data, not AI output. Costs exclude flights and
-accommodation, are illustrative spending budgets for one person, and are not
-live quotes. Workspace screenshots/layouts are clearly labeled previews.
+All assignments in `.env.example` are blank. Set values locally or through your
+hosting provider's secret configuration. No auth/database value uses `NEXT_PUBLIC_`.
 
-## Configuration for later milestones
+| Names                                    | Use                                                                         |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| `APP_URL`                                | Exact trusted origin, e.g. the local URL above or the deployed HTTPS origin |
+| `AUTH_SECRET`                            | At least 32 random characters; `setup:local` generates it locally           |
+| `DATABASE_URL`                           | Hosted PostgreSQL runtime connection; Neon pooled URL is suitable           |
+| `DIRECT_URL`                             | Optional direct PostgreSQL connection for migrations                        |
+| `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH` | Explicit local PGlite selection and persistent directory                    |
+| `ALLOW_LOCAL_DATABASE`                   | Local production-preview override only, not a serverless deployment option  |
 
-Copy `.env.example` to `.env.local` only when implementing the relevant service.
-Every assignment in the example is blank. Configure values locally or in the
-deployment provider's secrets dashboard; never paste credentials into chat.
+OAuth, PayPal Sandbox, FX, model-provider and demo merchant names remain reserved
+for future milestones. They are not working integrations. Only the future PayPal
+public client identifier may use `NEXT_PUBLIC_`; secrets must remain server-only.
 
-| Variables                                                                             | Planned purpose                                                                                                    |
-| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `APP_URL`, `AUTH_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`          | App origin and proposed Auth.js Google OAuth setup; no provider is connected yet                                   |
-| `DATABASE_URL`, `DIRECT_URL`                                                          | Pooled runtime and direct migration PostgreSQL/Neon connections                                                    |
-| `PAYPAL_ENVIRONMENT`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_WEBHOOK_ID` | Server-only Sandbox configuration and webhook verification; implementation must reject mismatched host/credentials |
-| `NEXT_PUBLIC_PAYPAL_CLIENT_ID`                                                        | Only the public Sandbox client ID, if needed by future checkout; never a client secret                             |
-| `FX_API_BASE_URL`, `FX_CACHE_TTL_SECONDS`                                             | Future FX adapter source/cache; expected Frankfurter estimates, source and date required                           |
-| `MODEL_PROVIDER`, `MODEL_NAME`, `MODEL_API_KEY`                                       | Future server-only model adapter; provider choice deferred                                                         |
-| `ENABLE_DEMO_MERCHANT`                                                                | Future server-only explicit demo control flag                                                                      |
+## Architecture
 
-All variables are reserved configuration names, not working integrations.
-Keep `.env.local` untracked. `.gitignore` excludes `.env*` except `.env.example`,
-private key files, dependencies and build artifacts. Only explicitly public
-identifiers may ever use the `NEXT_PUBLIC_` prefix.
-
-## Structure and implementation notes
+Next.js App Router + React + strict TypeScript + Tailwind/CSS tokens. Better Auth
+handles authentication; Drizzle owns PostgreSQL tables and committed migrations.
+PGlite supplies local PostgreSQL storage; `pg` supplies the hosted PostgreSQL path.
+Zod validates incomplete drafts and complete trip intents separately.
 
 ```text
-src/app/                  App Router pages, root layout, theme and error states
-src/components/           Shared UI, navigation, cards, image fallback, wizard
-src/lib/curated-trips.ts   Explicitly editorial inspiration data
-public/images/            Licensed destination photos, served locally
-public/fonts/             Locally served open-licensed fonts and license texts
-docs/                     Architecture, attribution and validation notes
-scripts/                  Optional asset download helper, not used by builds
+src/app/                 Public/protected pages and thin route handlers
+src/components/          Shared UI, auth forms, persistent wizard and preview
+src/lib/                 Shared intent validation/types, static inspirations, auth client
+src/server/              Server-only runtime/session entry points, auth, resource services
+src/server/db/           PostgreSQL schema and connection factory
+drizzle/                 Committed SQL migrations and metadata
+scripts/                 Local setup, migrations, optional asset download helper
+public/                  Local photos and open-licensed fonts
+tests/                   Auth/storage integration tests with isolated databases
+docs/                    Architecture, validation, attribution and screenshots
 ```
 
-See `docs/architecture.md` for the scope interpretation and decisions. Semantic
-HTML plus small reusable components avoid a large UI kit. PostgreSQL/ORM and
-auth dependencies will be selected with the real persistence slice.
+See `docs/architecture.md` for boundaries and security decisions. The approved
+specification is provided as `TRAVELRELAY_DESIGN_FIXED.md`; the source documents
+and APIMatic skills supplied before development remain untouched.
 
-## Roadmap and next task
+## Limits and next milestone
 
-1. **Milestone 0 / Milestone 1 foundation:** this delivery.
-2. **Remaining Milestone 1:** secure sign-in, ownership-scoped PostgreSQL trip
-   schema, durable wizard drafts, save/reopen trip intent, and real dashboard
-   records. This is the exact next development task; AI generation stays off.
-3. **Milestone 2 (requires approval):** validated AI itinerary generation, durable
-   real job states and explicit proposed itinerary edits.
-4. **Milestone 3:** FX-aware planning ledger and verified PayPal Sandbox checkout
-   for controlled demo merchant experiences.
-5. **Milestone 4:** cancellation recovery, verified refunds and separately
-   approved replacement purchases.
-6. **Milestone 5:** cross-device polish, integration tests, deployment and demo.
+- Email verification, password reset, OAuth and MFA are not connected. Email
+  ownership is not verified; Profile says so. Configure delivery and recovery
+  before a public launch that depends on verified identity/account recovery.
+- Hosted PostgreSQL support exists but was not tested against a provisioned Neon
+  account in this run. Deployment, backups and provider configuration remain setup
+  work. The local database is not a serverless/shared production database.
+- Draft conflicts preserve the current tab's data and block writes until the user
+  explicitly reloads the saved version. There is no automatic merge or history UI.
+- Saved trips are planning intents, not itineraries, reservations or supplier
+  confirmations. Trip editing/deletion, generation, FX, ledger calculations,
+  availability, checkout, refunds and recovery are future work.
+- Curated content is hand-authored editorial seed data. Its non-live per-person
+  USD estimates exclude flights/accommodation and are not bookable offers.
 
-### Sponsor setup
+**Milestone 2 requires approval.** Its next task is validated AI itinerary
+creation with durable job states and a confirmed base city; it has not started.
 
-All nine APIMatic PayPal TypeScript skills were verified present/readable under
-`.agents/skills`: integrate-paypal, getting-started, authentication,
-calling-endpoints, client-initialization, configuration-resilience,
-error-handling, models, testing (all names prefixed `typescript-`).
+## Sponsors and licenses
 
-Setup alone is not a functional integration or sponsor-award claim. At the
-PayPal milestone use `typescript-integrate-paypal` first, complete its installed
-SDK map and `paypal-plan.md` contract gate, then apply its companion skills to
-orders, server-side capture verification, refunds, error handling and tests.
-No PayPal SDK calls exist yet. Bryntum and AG Grid are not installed.
+Nine APIMatic PayPal TypeScript skills are available under `.agents/skills`.
+Installation is not an integration or sponsor-award claim. Before PayPal work,
+load `typescript-integrate-paypal`, follow its SDK map/contract-sheet gates and
+companion skills. No PayPal/model SDK, Bryntum, or AG Grid is installed.
 
-## Asset credits and license
-
-Photography from [Unsplash](https://unsplash.com/license); photographer-specific
-credits and source URLs are in `docs/image-credits.md` and `/credits`. Fonts use
-the SIL Open Font License; license texts are bundled in `public/fonts`. Lucide
-icons use the ISC License. The existing project MIT license is preserved.
-
-The optional `python scripts/download-assets.py` helper can refresh the selected
-assets with network access; ordinary installation/build does not need it.
+Existing project MIT license preserved. Unsplash photography sources are in
+`docs/image-credits.md` and `/credits`; fonts include SIL Open Font License texts;
+Lucide icons use the ISC License. Builds serve images/fonts locally.

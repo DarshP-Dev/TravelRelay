@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ArrowUpRight, Menu, Plus, UserRound, X } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard" },
@@ -24,6 +25,11 @@ export function Brand() {
 }
 
 export function SiteHeader() {
+  const {
+    data: session,
+    isPending,
+    error: sessionError,
+  } = authClient.useSession();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -93,7 +99,13 @@ export function SiteHeader() {
           }}
         >
           <div className="nav-links">
-            {navigation.map(({ href, label }) => (
+            {(session
+              ? navigation
+              : [
+                  { href: "/explore", label: "Explore" },
+                  { href: "/#how-it-works", label: "How it works" },
+                ]
+            ).map(({ href, label }) => (
               <Link
                 key={href}
                 href={href}
@@ -105,6 +117,15 @@ export function SiteHeader() {
             ))}
           </div>
           <div className="nav-actions">
+            {!session && (
+              <Link href="/login" className="nav-link">
+                {isPending
+                  ? "Account…"
+                  : sessionError
+                    ? "Account unavailable"
+                    : "Sign in"}
+              </Link>
+            )}
             <Link
               href="/trips/new"
               className="button button-primary nav-create"
@@ -113,15 +134,17 @@ export function SiteHeader() {
               <Plus size={16} aria-hidden="true" />
               Create Trip
             </Link>
-            <Link
-              href="/profile"
-              className="profile-link"
-              aria-label="Profile"
-              aria-current={pathname === "/profile" ? "page" : undefined}
-            >
-              <UserRound size={20} aria-hidden="true" />
-              <span>Profile</span>
-            </Link>
+            {session && (
+              <Link
+                href="/profile"
+                className="profile-link"
+                aria-label="Profile"
+                aria-current={pathname === "/profile" ? "page" : undefined}
+              >
+                <UserRound size={20} aria-hidden="true" />
+                <span>Profile</span>
+              </Link>
+            )}
           </div>
         </nav>
       </div>

@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import { requireUser } from "@/server/session";
+import { getApp } from "@/server/runtime";
+import { SavedTripCard } from "@/components/saved-trip-card";
 import { Plus } from "lucide-react";
 import {
   ButtonLink,
@@ -9,7 +12,9 @@ import {
 
 export const metadata: Metadata = { title: "My Trips" };
 
-export default function TripsPage() {
+export default async function TripsPage() {
+  const user = await requireUser("/trips");
+  const trips = await (await getApp()).trips.list(user.id);
   return (
     <div className="container page-content">
       <PageHeading
@@ -22,20 +27,28 @@ export default function TripsPage() {
           Create Trip
         </ButtonLink>
       </PageHeading>
-      <div className="panel">
-        <EmptyState
-          title="Make room for your next adventure."
-          description="Trip saving and sign-in are coming in the remaining Milestone 1 work. For now, explore the planning form or find a little inspiration."
-          action={
-            <div className="empty-actions">
-              <ButtonLink href="/trips/new">
-                Explore the trip planner
-              </ButtonLink>
-              <SectionLink href="/explore">Browse inspirations</SectionLink>
-            </div>
-          }
-        />
-      </div>
+      {trips.length ? (
+        <div className="trip-grid">
+          {trips.map((trip) => (
+            <SavedTripCard key={trip.id} trip={trip} />
+          ))}
+        </div>
+      ) : (
+        <div className="panel">
+          <EmptyState
+            title="Make room for your next adventure."
+            description="You haven’t saved a trip yet. Start a plan or find a little inspiration. Your drafts are available from the dashboard."
+            action={
+              <div className="empty-actions">
+                <ButtonLink href="/trips/new">
+                  Explore the trip planner
+                </ButtonLink>
+                <SectionLink href="/explore">Browse inspirations</SectionLink>
+              </div>
+            }
+          />
+        </div>
+      )}
     </div>
   );
 }

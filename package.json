@@ -2,30 +2,46 @@
   "name": "travelrelay",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
+    "setup:local": "node scripts/setup-local.mjs && tsx scripts/migrate.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "next typegen && tsc --noEmit",
-    "format": "prettier --write src docs package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs README.md",
-    "format:check": "prettier --check src docs package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs README.md"
+    "format": "prettier --write src docs tests scripts/*.ts scripts/*.mjs drizzle.config.ts package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs README.md",
+    "format:check": "prettier --check src docs tests scripts/*.ts scripts/*.mjs drizzle.config.ts package.json tsconfig.json next.config.ts eslint.config.mjs postcss.config.mjs README.md"
   },
   "dependencies": {
+    "@better-auth/drizzle-adapter": "^1.7.16",
+    "@electric-sql/pglite": "^0.5.15",
+    "@next/env": "^16.4.5",
+    "better-auth": "^1.7.16",
+    "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.468.0",
     "next": "16.4.5",
+    "pg": "^8.23.1",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "4.3.4",
     "@types/node": "^24.0.0",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-next": "16.4.5",
     "prettier": "^3.9.10",
     "tailwindcss": "4.3.4",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.0"
   },
   "engines": {

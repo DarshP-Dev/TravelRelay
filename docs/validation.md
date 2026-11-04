@@ -1,3 +1,104 @@
+# Milestone 1B validation
+
+Validated November 4, 2026, on Windows with Node 24.22.1 and npm 11.19.1.
+The foundation report below is historical; this section describes current behavior.
+
+## Final checks
+
+| Check                                   | Result                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------- |
+| Dependency installation and local setup | Passed; generated ignored secret, applied committed PostgreSQL migrations |
+| `npm run lint`                          | Passed with zero warnings                                                 |
+| `npm run typecheck`                     | Passed                                                                    |
+| `npm test`                              | 9 integration tests passed; real auth and persistent database, no mocks   |
+| `npm run build`                         | Passed; public pages static, protected/account/API pages dynamic          |
+| `npm run format:check`                  | Passed                                                                    |
+| Production HTTP smoke checks            | 13 passed: 5 public pages, 5 protected pages, 3 private API requests      |
+
+Production HTTP checks verify public pages return 200; unauthenticated private
+API requests return 401. Protected server pages redirect to login without
+private data. Next.js streamed page redirects can carry HTTP 200 plus the
+redirect instruction; HTTP status alone is not the page authorization test.
+
+Successful native builds and localhost HTTP checks required elevated tool
+permissions because the Windows sandbox blocks native compilation/networking.
+The local production preview used the explicit ALLOW_LOCAL_DATABASE QA flag;
+this is not a deployment or hosted PostgreSQL verification.
+
+## Integration coverage
+
+`tests/application.test.ts` exercises the actual Better Auth handler, application
+resource handler, committed SQL migrations and a temporary disk-backed PGlite
+instance. It uses generated in-memory secrets/passwords and reserved test email
+addresses. Test directories are isolated from `.data/travelrelay` and removed
+after closing the database.
+
+- Signup creates a user, scrypt hash and server session; passwords are not stored
+  as plaintext. Cookies carry HttpOnly and SameSite=Lax attributes locally.
+- Anonymous, forged and database-expired sessions are denied.
+- Incorrect credentials fail; logout revokes a session so its old cookie fails.
+- Cross-origin auth and resource writes are rejected.
+- Draft creation/resumption, autosave data and exact version persistence work.
+- Alice cannot read or update Bob's resources, and their lists stay separate.
+- Two concurrent writes with one expected version produce one success and one 409.
+- Invalid dates, unsupported currencies, owner injection, invalid traveler counts,
+  incomplete trip saves and oversized bodies are rejected.
+- Saving a complete intent is atomic and idempotent under duplicate requests;
+  a delayed write cannot mutate its archived draft. Trips remain owner-scoped.
+- Users, sessions, drafts and trip intents survive database close/reopen.
+- Auth rate limits return 429; return paths reject off-site destinations.
+
+## Browser verification
+
+- Public planning CTA redirects to login, preserves its return path, and signup
+  returns to the intended wizard. Signed-out and signed-in navigation differ.
+- Entered Kyoto/Toronto, fixed dates, two travelers, JPY 270000 spending budget
+  and a food preference using the actual four-step form. Live summary updates.
+- Draft destination and step state restore after refresh. Logout and login restore
+  the review step and exact budget/date/preferences from the database.
+- Save trip intent creates an actual private record, opens its overview, and adds
+  the real trip card/count to the dashboard. No itinerary is fabricated.
+- Reopened the same development database in the production server after stopping
+  dev: the browser session, Kyoto draft and saved trip still existed. Production
+  logout succeeded and restored public navigation.
+- Opened two wizard tabs. A newer save caused the stale tab to show a conflict,
+  disable writes and offer explicit reload/discard. That action restored the
+  newer server version. Fixed an extra unload guard on that explicit discard.
+- Supported Tokyo/Kyoto/Paris input changes the photo; unsupported input uses a
+  labeled default inspiration image, without pretending to infer a destination.
+- Wizard layout checked at 360, 390, 768, 1440 and 1920 CSS pixels with no
+  horizontal overflow. At 390px the form stacks, photo is compact and its summary
+  can be collapsed/expanded with native accessible controls. Overrides reset.
+- Kept the original palette, typefaces, photos, sections and four-step controls;
+  increased small text/secondary contrast, widened applicable containers and
+  selectively tightened landing section spacing.
+
+Screenshots: `screenshots/milestone-1b-wizard-desktop.jpg` and
+`screenshots/milestone-1b-wizard-mobile.jpg`. They show real saved drafts for a
+local test account, not AI output or a booking. Test account credentials were
+randomly generated, never committed, and the browser was signed out afterward.
+
+## Configuration and remaining limits
+
+- `.env.example` has blank configuration names. `.env.local`, local data and test
+  data directories are ignored; no credentials or database records are staged.
+- PGlite is local, single-process persistent PostgreSQL-compatible storage.
+  Hosted pg/Neon connection code exists but no external database was provisioned
+  or exercised. Configure hosted PostgreSQL, migrations and HTTPS before hosting.
+- Email ownership verification, password recovery, OAuth and MFA are not connected.
+  Profile and auth pages communicate this limitation. No verification flag is faked.
+- No itinerary generation/jobs, FX, ledger, supplier availability, PayPal purchase,
+  refund, Trip Recovery, Bryntum, or AG Grid implementation was added.
+- Full dependency audit reports 20 moderate findings in lint/migration tooling
+  chains. `npm audit --omit=dev` includes 4 from Drizzle Kit's legacy esbuild
+  dependency chain because npm also classifies it through Better Auth's optional
+  CLI peer. No forced incompatible downgrade/override was used. Track compatible
+  tooling updates; this run does not claim a clean audit.
+- No hosted deployment, Git push, or Milestone 2 work. The supplied untracked
+  design/kickoff/sponsor notes, APIMatic skills and skills lockfile are untouched.
+
+## Historical foundation report
+
 # Milestone 1 foundation validation
 
 Validated November 4, 2026, on Windows with Node 24.22.1 and npm 11.19.1.
