@@ -16,6 +16,7 @@ export function SiteFooter() {
         </div>
         <div className="footer-links">
           <Link href="/explore">Explore destinations</Link>
+          <Link href="/example-trip">View example trip</Link>
           <Link href="/#how-it-works">How it works</Link>
           <Link href="/trips/new">
             Start planning <ArrowUpRight size={14} aria-hidden="true" />

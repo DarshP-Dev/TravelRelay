@@ -2,6 +2,9 @@ import { z } from "zod";
 import { createAuth } from "./auth";
 import { createTripStore, RequestError } from "./trips";
 import type { Database } from "./db/connection";
+import { createGenerationStore } from "./generation";
+import { createTripModel, type TripModel } from "./model";
+import type { GenerationLimits } from "./generation-quota";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -55,13 +58,53 @@ export function failure(error: unknown) {
 }
 export function createApplication(
   db: Database,
-  config: { secret: string; origin: string },
+  config: {
+    secret: string;
+    origin: string;
+    model?: TripModel;
+    generationLimits?: GenerationLimits;
+  },
 ) {
   const auth = createAuth(db, config);
   const trips = createTripStore(db);
+  const generations = createGenerationStore(
+    db,
+    config.model ?? createTripModel({}),
+    config.generationLimits,
+  );
   return {
     auth,
     trips,
+    generations,
+    async generationHandler(
+      request: Request,
+      id: string,
+      schedule: (work: () => Promise<void>) => void,
+    ) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Please sign in to generate your trip.");
+        checkOrigin(request, config.origin);
+        let data;
+        if (request.method === "GET")
+          data = await generations.read(session.user.id, id);
+        else if (request.method === "POST") {
+          data = await generations.action(
+            session.user.id,
+            id,
+            await readJson(request),
+          );
+          if (data.status === "queued")
+            schedule(() => generations.run(session.user.id, id));
+        } else throw new RequestError(405, "Method not allowed.");
+        return Response.json(data, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async authHandler(request: Request) {
       try {
         checkOrigin(request, config.origin);

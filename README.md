@@ -2,9 +2,16 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 1B — authentication, private persistent trip intents,
-and four-step wizard drafts.** AI generation, PayPal, bookings and Trip Recovery
-are not implemented. No Milestone 2 work or deployment is included.
+**Current scope: Milestone 2A — authenticated, persistent AI trip generation.**
+PayPal, bookings, refunds, Trip Recovery, AI editing and Bryntum are not implemented.
+No deployment or push is included; Milestone 2B requires approval.
+
+**Milestone 2A passes final offline acceptance and is ready for sign-off.** The
+exact recorded Sol Paris response passes the complete pipeline with unchanged
+activity times, persists with its historical failed audit, and renders €250
+reserve separately from €226 unallocated. No further live requests were made.
+See the [final acceptance report](docs/milestone-2a-offline-acceptance.md) for
+regressions, UI evidence, hosting requirements and remaining limitations.
 
 ## Local setup
 
@@ -47,7 +54,9 @@ npm run db:migrate
 
 Tests exercise Better Auth and real disk-backed PGlite, including revocation,
 unauthorized access, user isolation, validation, stale draft conflicts, idempotent
-trip creation, and closing/reopening the database. No auth or database mocks are
+trip creation, generation failures, budget/timing validation, duplicate job claims,
+and closing/reopening the database. Model tests use explicitly labeled provider-boundary
+fixtures; the application has no simulated AI fallback. No auth or database mocks are
 used. `db:generate` is for schema changes only; review and commit generated SQL.
 `db:migrate` applies committed migrations, preferring `DIRECT_URL` when supplied.
 Do not point tests at a production database.
@@ -73,9 +82,9 @@ not concurrently open the same directory. See `docs/validation.md` for results.
 - A 1220px split-screen desktop wizard with live destination photography and
   trip summary. Six supported destination matches; an explicitly labeled default
   for other input. Mobile stacks the form and compact, collapsible photo summary.
-- Review → Save trip intent atomically stores the user's dates, budget denomination
+- Review → Save & continue to AI planning atomically stores the user's dates, budget denomination
   and scope, preferences and departure/destination intent. Retrying this action
-  cannot create duplicate trips for the same draft. No generation is simulated.
+  cannot create duplicate trips for the same draft. The immutable original draft remains available throughout generation.
 - Saved trip overview, private trip cards and resumable drafts on the dashboard.
   The existing dashboard empty composition is retained until actual trips exist.
 - User IDs always come from verified sessions. Reads/writes constrain both owner
@@ -87,8 +96,63 @@ not concurrently open the same directory. See `docs/validation.md` for results.
 
 ## Configuration
 
-All assignments in `.env.example` are blank. Set values locally or through your
-hosting provider's secret configuration. No auth/database value uses `NEXT_PUBLIC_`.
+Use Node.js **22+** (Node 24 is validated; the OpenAI SDK requires at least 22).
+The default server configuration is the official `openai` TypeScript SDK,
+**Responses API**, `gpt-6.1-sol`, **medium reasoning**, and standard service tier.
+Configure the key in ignored `.env.local`, then restart the server:
+
+```dotenv
+AI_PROVIDER=openai
+OPENAI_API_KEY=
+OPENAI_MODEL=gpt-6.1-sol
+OPENAI_REASONING_EFFORT=medium
+```
+
+Supply the key locally; never paste it into chat, commit it, or use `NEXT_PUBLIC_`.
+Gemini remains an explicit server-controlled backup:
+
+```dotenv
+AI_PROVIDER=gemini
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
+
+`MODEL_NAME` remains a legacy Gemini-only alias when `GEMINI_MODEL` is unset.
+It cannot override the OpenAI default. Only the two approved model IDs are allowed;
+GPT-6 Astra is rejected. No missing key, error, quota denial or invalid response
+switches providers/models. There is no frontend credential/provider control.
+
+Both providers share the same prompts, internal response schemas, normalization,
+strict validation, inclusive budget reconciliation, meal/location checks and
+persistent jobs. OpenAI uses strict Responses `text.format` with the SDK Zod
+helper; Gemini retains its compact grammar and full server validation. All SDK
+HTTP retries and continuation/fallback paths are disabled. Requests have a
+150-second deadline and 24KB planning-input bound. OpenAI proposal/itinerary caps
+are 8192/32768 tokens including reasoning; Gemini retains 2048/32768 with low/medium
+thinking. Retry remains explicit and governed by the existing shared SQL quotas.
+
+Per-attempt provider/model, input/output/reasoning usage, estimated USD cost,
+normalization corrections and validation outcomes persist privately, including
+failed attempts. Output token totals include reasoning **once** for both providers;
+visible output is separate. Unknown usage/cost is null, not a fabricated zero.
+Costs use dated standard-paid reference rates, not invoices or free-tier charges.
+See [provider architecture, accounting and controlled-test readiness](docs/ai-providers.md).
+
+Model/account access, credits/billing, provider retention and network availability
+are external requirements. Trip preferences, including free-text dietary/accessibility
+fields, go only to the selected provider; omit unnecessary personal information.
+`store:false` is set and SDK logging is disabled where supported; this does not
+replace provider retention/data-use policies. No tools, grounding or live venue API
+is enabled. All itinerary costs and unsourced details remain unverified estimates.
+After an initial authentication failure, one newly approved Sol request returned
+a complete itinerary (HTTP 200, 63.727 seconds, estimated USD 0.036331). The unchanged
+quality gate rejected a classifier false positive on “Temple” in a street name;
+no completed trip was saved. See [the latest live report](docs/milestone-2a-sol-paris-result.md).
+Full live acceptance is still pending. The historical Gemini report remains in
+[the prior live report](docs/milestone-2a-live-quality.md), not evidence of Sol quality.
+
+Secret assignments in `.env.example` are blank placeholders. Non-secret model and
+provider defaults are included. Use secure server environment variables in production.
 
 | Names                                    | Use                                                                         |
 | ---------------------------------------- | --------------------------------------------------------------------------- |
@@ -99,7 +163,7 @@ hosting provider's secret configuration. No auth/database value uses `NEXT_PUBLI
 | `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH` | Explicit local PGlite selection and persistent directory                    |
 | `ALLOW_LOCAL_DATABASE`                   | Local production-preview override only, not a serverless deployment option  |
 
-OAuth, PayPal Sandbox, FX, model-provider and demo merchant names remain reserved
+OAuth, PayPal Sandbox, FX and demo merchant names remain reserved
 for future milestones. They are not working integrations. Only the future PayPal
 public client identifier may use `NEXT_PUBLIC_`; secrets must remain server-only.
 
@@ -108,7 +172,9 @@ public client identifier may use `NEXT_PUBLIC_`; secrets must remain server-only
 Next.js App Router + React + strict TypeScript + Tailwind/CSS tokens. Better Auth
 handles authentication; Drizzle owns PostgreSQL tables and committed migrations.
 PGlite supplies local PostgreSQL storage; `pg` supplies the hosted PostgreSQL path.
-Zod validates incomplete drafts and complete trip intents separately.
+Zod validates incomplete drafts, complete trip intents, city proposals and complete
+itineraries separately. See `src/server/model.ts`, `generation.ts` and
+`src/lib/itinerary.ts` for the provider boundary, job lifecycle and domain checks.
 
 ```text
 src/app/                 Public/protected pages and thin route handlers
@@ -137,21 +203,187 @@ and APIMatic skills supplied before development remain untouched.
   work. The local database is not a serverless/shared production database.
 - Draft conflicts preserve the current tab's data and block writes until the user
   explicitly reloads the saved version. There is no automatic merge or history UI.
-- Saved trips are planning intents, not itineraries, reservations or supplier
-  confirmations. Trip editing/deletion, generation, FX, ledger calculations,
-  availability, checkout, refunds and recovery are future work.
+- Generation supports 1–14 days, fixed or flexible dates, known destinations or
+  discovery, and one explicitly confirmed base city. Longer intents remain saved;
+  adjust a copy of preferences to request a supported length.
+- Generation has durable database stages and runs through Next.js `after()` on
+  a Node host. Configure a route duration of at least 240 seconds. This is not
+  an independent durable worker queue: host interruption requires an explicit
+  retry after the five-minute stale-job timeout. Calls have a 150-second timeout,
+  three attempts per phase, and shared database admission limits described below.
+- AI estimates cannot establish actual affordability, opening hours, accessibility,
+  availability or geographic accuracy. Server checks enforce structured output,
+  confirmed city, dates, pace, distances, buffers and arithmetic budget including
+  a 10% reserve. Users must verify real-world details before making arrangements.
+- Monetary values are integer minor units with group-wide costs, separate category
+  totals and explicit currency. Spending-only budgets exclude travel/accommodation.
+  No FX conversion or verified spending is implied. There are no bookings or payments.
+- AI editing, trip deletion, FX, ledger transactions, live availability, checkout,
+  refunds and recovery remain future work.
 - Curated content is hand-authored editorial seed data. Its non-live per-person
   USD estimates exclude flights/accommodation and are not bookable offers.
 
-**Milestone 2 requires approval.** Its next task is validated AI itinerary
-creation with durable job states and a confirmed base city; it has not started.
+## Quota protection
+
+The default is `gemini-3.5-flash-lite`. The application never switches models,
+adds tools, retries a failed request, or continues truncated output automatically.
+A failed attempt preserves input and offers an explicit retry or a labeled example.
+Neither provider selection nor app quotas guarantees free billing. OpenAI requires
+available API credits/billing; Gemini backup free-tier eligibility must be verified
+in Google AI Studio. This application does
+not enable billing or upgrade your project.
+
+Server-side defaults protect the shared project allowance across accounts:
+
+| Setting                        | Default | Meaning                                                    |
+| ------------------------------ | ------- | ---------------------------------------------------------- |
+| `GENERATION_GLOBAL_RPM`        | 2       | Model attempts per shared rolling minute                   |
+| `GENERATION_GLOBAL_RPD`        | 20      | Model attempts per Pacific calendar day                    |
+| `GENERATION_USER_HOURLY_LIMIT` | 6       | Model attempts per user/hour                               |
+| Concurrency                    | 1       | One active model operation across the application database |
+
+A complete trip normally requires two model calls: city proposal and itinerary.
+Three explicit attempts per phase remain the ceiling; local admission denials do
+not consume those retries. Failed provider calls still consume app allowance.
+Counters and expiring leases live in a dedicated SQL table, isolated from auth
+cleanup, so shared limits cannot be bypassed by signing up a second account. Invalid limit
+configuration fails closed. No raw prompts, cookies or keys are used as quota keys.
+
+Match these settings to your project's actual free quota. Other applications,
+separate dev/production databases and other keys on the same provider account also
+use its provider quota; the app cannot observe that usage. Defaults are conservative
+application limits, not a guarantee of provider capacity. Requests are additionally
+bounded by 24KB of serialized preferences, 1–14 days, token caps and 150s timeout.
+
+## Judge demonstration and production configuration
+
+**Deployment status: not deployed by this milestone.** The organizer will publish
+the final HTTPS demonstration URL after deployment approval. There is no claimed
+live judge URL yet.
+
+Judges will only need that website URL. They can open `/example-trip` without an
+account or provider key, or create a normal TravelRelay account to save preferences
+and request a personal itinerary while quota is available. They must never be asked
+for OpenAI, Gemini or PayPal API credentials. If AI is unavailable, the footer and generation
+page link to the clearly labeled, hand-authored, read-only example. That example
+is never substituted into a failed generation or inserted into their saved trips.
+
+Before an approved deployment, the maintainer must configure `OPENAI_API_KEY`,
+`AI_PROVIDER=openai`, `OPENAI_MODEL=gpt-6.1-sol`, `OPENAI_REASONING_EFFORT=medium`, `AUTH_SECRET`, `APP_URL` (the exact HTTPS demo
+origin), `DATABASE_URL` and quota limits in the hosting provider's secure server-side
+runtime environment. Apply migrations using `DIRECT_URL` if needed, then restart
+or redeploy to load changed secrets. Use hosted PostgreSQL; local PGlite is not a
+shared/serverless production database. No credentials belong in Git, frontend
+forms, public build variables, screenshots or the browser bundle.
+
+Milestone 2A makes OpenAI/Gemini calls exclusively on the server. PayPal transactions
+are not implemented; no PayPal secret or merchant request is sent by the browser.
+When the later approved PayPal milestone is implemented, the organizer's Sandbox
+credentials must remain in server-side secrets and judges will not supply their
+own API credentials. This documentation does not enable payments or deploy anything.
+
+## Manual live check
+
+For the next controlled **one-request** Paris test, first configure `OPENAI_API_KEY`
+in ignored `.env.local`. The following preflight is offline and needs no API approval:
+
+```powershell
+npx tsx scripts/check-live-generation.ts --preflight --reuse-proposal --quality-check --provider=openai
+```
+
+Only after separate approval for exactly one request:
+
+```powershell
+npx tsx scripts/check-live-generation.ts --confirm-live --reuse-proposal --quality-check --provider=openai
+```
+
+It reuses/revalidates the original recorded Paris base without a proposal request,
+uses the same four-day EUR 2500/two-traveler balanced Culture/Food scenario, enforces
+one transport call to the fixed OpenAI endpoint, and records raw output, token/cost
+usage, stage audits, normalization, budget and SQL reopen checks in ignored
+`.test-data/live-openai-paris-latest.json`. Existing Gemini reports are preserved.
+The first Sol call returned 401; the next newly approved call returned a real
+itinerary but failed the current quality gate. Both authorizations are consumed.
+No additional live request or retry is currently authorized.
+
+The historical Gemini check remains available only after explicit approval:
+
+```powershell
+npx tsx scripts/check-live-generation.ts --confirm-live --provider=gemini
+```
+
+This opt-in check is excluded from `npm test`. It uses actual authentication and
+resource handlers, an isolated persistent SQL database and at most two real Gemini
+calls (proposal plus itinerary), without retry or fallback. It verifies saved draft,
+full schema/domain validation, budget/reserve, ownership and database reopening.
+Token usage and sanitized provider errors are written to ignored
+`.test-data/live-gemini-latest.json`; credentials are never printed or stored there.
+It does not deploy, mutate development trip data or claim production-host verification.
+
+When approval is for exactly one itinerary request using the original saved Paris
+proposal, the restricted mode is:
+
+```powershell
+npx tsx scripts/check-live-generation.ts --confirm-live --reuse-proposal --quality-check --provider=gemini
+```
+
+This mode requires the earlier ignored report, makes no new proposal request,
+hard-limits the transport to one exact-model request, and records full findings in
+`.test-data/live-gemini-quality-latest.json` without replacing earlier reports.
+The latest one-request approval has been consumed; do not run either live command
+again without new approval.
+
+## Itinerary quality
+
+The [targeted reliability pass](docs/itinerary-reliability.md) now records safe
+server-derived buffer corrections without moving activities. It reconciles inclusive
+food/transport allocations with itemized estimates and additional unitemized
+allowances, keeping emergency reserve and unallocated remaining budget separate.
+New versioned plans retain stable expense/activity references and explicit currency;
+older saved totals are not silently recalculated. These are planning estimates,
+not TripWallet spending or verified supplier prices. Substantial lunch/dinner
+opportunities, realistic meal-start windows and vague city locations receive stronger
+checks. No new live model request was made for this follow-up.
+
+Generation now applies pace-aware detail and scheduling checks before saving:
+full days target 2–3 relaxed, 3–5 balanced or 5–7 packed experiences, with lighter
+arrival/departure plans. Selected interests must appear in concrete activities;
+food expenses alone do not satisfy Food. Durations, meal space, travel buffers
+and supported published venue hours receive additional checks.
+
+Exact travel times are not collected, so arrival-after-14:00 and departure-before-
+12:00 activity windows are disclosed planning assumptions. Published hours are
+source-checked references with dates/links, not confirmed future availability.
+Other venue hours and all prices remain unverified estimates. Older saved plans
+are labeled as predating the new checks and are not silently modified.
+
+The historical Gemini Paris response is an offline regression fixture; it fails the
+stronger quality gate. Authored offline candidates pass without changing budget
+calculations. The subsequent single approved live test improved activity detail,
+Food coverage and Orsay timing but failed one declared travel buffer. Manual review
+also found meal-category and meal-timing concerns; live quality sign-off is not
+passed for that historical attempt. The later Sol recording now passes the
+[final offline acceptance](docs/milestone-2a-offline-acceptance.md), including
+address-aware venue classification and reserve-separated financial summaries.
+See [the Gemini live report](docs/milestone-2a-live-quality.md) and
+[quality policies and remaining limitations](docs/itinerary-quality.md).
+
+## Generation flow
+
+Complete and review the wizard, then save. The generation screen first requests
+one city and dates; review and confirm before generating. Real backend stages
+replace synthetic percentages. No individual days appear until the entire plan
+is validated and atomically saved. Return from My Trips after leaving the page.
+Failures retain the original input and offer safe retries or a new draft copied
+from those preferences. Completed plans appear on Dashboard/My Trips and the
+Overview/Itinerary tabs. Ask TravelRelay is visible with editing clearly disabled.
 
 ## Sponsors and licenses
 
 Nine APIMatic PayPal TypeScript skills are available under `.agents/skills`.
 Installation is not an integration or sponsor-award claim. Before PayPal work,
 load `typescript-integrate-paypal`, follow its SDK map/contract-sheet gates and
-companion skills. No PayPal/model SDK, Bryntum, or AG Grid is installed.
+companion skills. No PayPal SDK, Bryntum, or AG Grid is installed. The model APIs use the official server-side OpenAI and Google GenAI SDKs.
 
 Existing project MIT license preserved. Unsplash photography sources are in
 `docs/image-credits.md` and `/credits`; fonts include SIL Open Font License texts;

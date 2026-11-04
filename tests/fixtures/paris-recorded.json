@@ -1,0 +1,163 @@
+{
+  "provenance": {
+    "kind": "recorded-live-output",
+    "model": "gemini-3.5-flash-lite",
+    "recordedAt": "2026-11-04T18:42:02.194Z",
+    "note": "Historical real Paris response used only for offline regression tests. It intentionally fails the newer quality policy; never substituted for user generation."
+  },
+  "intent": {
+    "step": 3,
+    "review": true,
+    "mode": "known",
+    "destination": "Paris, France",
+    "vibe": "",
+    "departure": "London",
+    "start": "2027-04-15",
+    "end": "2027-04-18",
+    "flexible": false,
+    "month": "",
+    "duration": 7,
+    "travelers": 2,
+    "pace": "balanced",
+    "budget": "2500",
+    "currency": "EUR",
+    "scope": "entire",
+    "style": "balanced",
+    "selected": ["Culture", "Food"],
+    "mustSee": "Neighborhood walks and one art museum",
+    "avoids": "Nightclubs and multi-city travel",
+    "dietary": "",
+    "accessibility": ""
+  },
+  "base": {
+    "feasible": true,
+    "explanation": "Paris is selected as the single base city for your trip starting April 15, 2027. Estimated costs are rough group totals in EUR minor units. Please confirm this city and dates before proceeding with the itinerary.",
+    "city": "Paris",
+    "country": "France",
+    "timeZone": "Europe/Paris",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "startDate": "2027-04-15"
+  },
+  "plan": {
+    "feasible": true,
+    "explanation": "Your 4-day Paris trip is fully feasible within your 2500 EUR budget, leaving a healthy margin for the reserve.",
+    "city": "Paris",
+    "currency": "EUR",
+    "introduction": "Enjoy a wonderful balanced itinerary featuring art, neighborhood walks, and culinary delights in Paris.",
+    "flightsMinor": 30000,
+    "accommodationMinor": 70000,
+    "foodMinor": 40000,
+    "localTransportMinor": 10000,
+    "days": [
+      {
+        "date": "2027-04-15",
+        "title": "Arrival and Le Marais Neighborhood Walk",
+        "activities": [
+          {
+            "title": "Le Marais Exploration",
+            "description": "A gentle stroll through the historic Le Marais district to start your Parisian journey.",
+            "city": "Paris",
+            "location": "Le Marais",
+            "latitude": 48.855,
+            "longitude": 2.36,
+            "startMinute": 600,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          },
+          {
+            "title": "Place des Vosges",
+            "description": "Relax in Paris's oldest planned square surrounded by red-brick pavilions.",
+            "city": "Paris",
+            "location": "Place des Vosges",
+            "latitude": 48.8556,
+            "longitude": 2.367,
+            "startMinute": 750,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          }
+        ]
+      },
+      {
+        "date": "2027-04-16",
+        "title": "Art Museum and Seine Walk",
+        "activities": [
+          {
+            "title": "Musée d'Orsay",
+            "description": "Explore the world's largest collection of Impressionist and Post-Impressionist masterpieces.",
+            "city": "Paris",
+            "location": "Musée d'Orsay",
+            "latitude": 48.86,
+            "longitude": 2.3266,
+            "startMinute": 540,
+            "durationMinutes": 180,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 3200
+          },
+          {
+            "title": "Seine River Promenade",
+            "description": "Take a scenic walk along the banks of the Seine.",
+            "city": "Paris",
+            "location": "Seine River",
+            "latitude": 48.8584,
+            "longitude": 2.3375,
+            "startMinute": 750,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          }
+        ]
+      },
+      {
+        "date": "2027-04-17",
+        "title": "Montmartre Neighborhood Walk",
+        "activities": [
+          {
+            "title": "Montmartre Historic Walk",
+            "description": "Discover charming cobblestone streets, artistic history, and stunning views of the city.",
+            "city": "Paris",
+            "location": "Montmartre",
+            "latitude": 48.8867,
+            "longitude": 2.3431,
+            "startMinute": 540,
+            "durationMinutes": 180,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          },
+          {
+            "title": "Basilica of Sacré-Cœur",
+            "description": "Visit the iconic white basilica perched high on the Butte Montmartre.",
+            "city": "Paris",
+            "location": "Sacré-Cœur",
+            "latitude": 48.8864,
+            "longitude": 2.3444,
+            "startMinute": 750,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          }
+        ]
+      },
+      {
+        "date": "2027-04-18",
+        "title": "Latin Quarter Stroll and Departure",
+        "activities": [
+          {
+            "title": "Latin Quarter Walk",
+            "description": "Wander through the lively student district filled with bookshops, cafes, and historic squares.",
+            "city": "Paris",
+            "location": "Latin Quarter",
+            "latitude": 48.85,
+            "longitude": 2.34,
+            "startMinute": 540,
+            "durationMinutes": 150,
+            "bufferBeforeMinutes": 15,
+            "costMinor": 0
+          }
+        ]
+      }
+    ]
+  }
+}

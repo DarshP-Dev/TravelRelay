@@ -44,7 +44,11 @@ async function jsonResponse<T>(response: Response): Promise<T> {
   return data;
 }
 
-export function useTripDraft(userId: string, templateId?: string) {
+export function useTripDraft(
+  userId: string,
+  templateId?: string,
+  sourceTripId?: string,
+) {
   const router = useRouter();
   const [draft, setDraft] = useState<TripIntent>(() =>
     initialIntent(templateId),
@@ -58,7 +62,7 @@ export function useTripDraft(userId: string, templateId?: string) {
   const initialized = useRef(false);
   const blocked = useRef(false);
   const inFlight = useRef<Promise<boolean> | null>(null);
-  const bufferKey = `travelrelay:unsaved:${userId}:${templateId ?? "blank"}`;
+  const bufferKey = `travelrelay:unsaved:${userId}:${sourceTripId ? `revision:${sourceTripId}` : (templateId ?? "blank")}`;
   const remember = useCallback(() => {
     if (!record.current) return;
     try {
@@ -135,7 +139,13 @@ export function useTripDraft(userId: string, templateId?: string) {
           await fetch("/api/drafts", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(templateId ? { templateId } : {}),
+            body: JSON.stringify(
+              sourceTripId
+                ? { sourceTripId }
+                : templateId
+                  ? { templateId }
+                  : {},
+            ),
             signal: controller.signal,
           }),
         );
@@ -192,7 +202,7 @@ export function useTripDraft(userId: string, templateId?: string) {
       active = false;
       controller.abort();
     };
-  }, [templateId, bufferKey]);
+  }, [templateId, sourceTripId, bufferKey]);
 
   useEffect(() => {
     if (!initialized.current) return;
@@ -243,7 +253,7 @@ export function useTripDraft(userId: string, templateId?: string) {
         }),
       );
       forget();
-      router.push(`/trips/${trip.id}`);
+      router.push(`/trips/${trip.id}/generate`);
       router.refresh();
     } catch (cause) {
       const code = cause instanceof SaveError ? cause.status : 0;

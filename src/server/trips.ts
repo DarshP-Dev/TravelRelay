@@ -48,19 +48,37 @@ export function createTripStore(db: Database) {
       return record;
     },
     async openDraft(userId: string, input: unknown) {
-      const { templateId } = z
-        .object({ templateId: z.string().max(40).optional() })
+      const { templateId, sourceTripId } = z
+        .object({
+          templateId: z.string().max(40).optional(),
+          sourceTripId: z.uuid().optional(),
+        })
         .strict()
+        .refine(
+          (value) => !(value.templateId && value.sourceTripId),
+          "Choose one source for your draft.",
+        )
         .parse(input);
       if (templateId && !getTemplate(templateId))
         throw new RequestError(
           400,
           "Choose a supported inspiration or start a new trip.",
         );
-      const slot = templateId ?? "blank";
+      const source = sourceTripId
+        ? await this.read(userId, sourceTripId)
+        : null;
+      const slot = sourceTripId
+        ? `revision:${sourceTripId}`
+        : (templateId ?? "blank");
       await db
         .insert(draft)
-        .values({ userId, slot, data: initialIntent(templateId) })
+        .values({
+          userId,
+          slot,
+          data: source
+            ? { ...source.data, step: 0, review: false }
+            : initialIntent(templateId),
+        })
         .onConflictDoNothing();
       const [record] = await db
         .select()

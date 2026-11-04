@@ -1,6 +1,8 @@
 import "server-only";
 import { openDatabase } from "./db/connection";
 import { createApplication } from "./application";
+import { createTripModel, providerConfigFromEnv } from "./model";
+import { generationLimitsFromEnv } from "./generation-quota";
 
 // Reuse the connection across dev reloads, while rebuilding application code
 // with each module revision. PGlite must never open the same directory twice.
@@ -38,7 +40,12 @@ async function connect() {
       globalDatabase.travelRelayConnection = undefined;
       throw error;
     }));
-  return createApplication(connection.db, { secret, origin });
+  return createApplication(connection.db, {
+    secret,
+    origin,
+    generationLimits: generationLimitsFromEnv(process.env),
+    model: createTripModel(providerConfigFromEnv(process.env)),
+  });
 }
 export function getApp() {
   return (application ??= connect().catch((error) => {

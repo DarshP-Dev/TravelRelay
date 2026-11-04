@@ -169,8 +169,8 @@ export default function HomePage() {
           ))}
         </div>
         <p className="development-note">
-          Trip intents and drafts can now be saved. AI planning and payments are
-          still to come.
+          Save your ideas and create a personalized AI itinerary. Payments and
+          AI trip editing are still to come.
         </p>
       </section>
       <section className="showcase-section">

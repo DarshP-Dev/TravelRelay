@@ -9,12 +9,12 @@ export const metadata: Metadata = { title: "Create Trip" };
 export default async function CreateTripPage({
   searchParams,
 }: {
-  searchParams: Promise<{ template?: string }>;
+  searchParams: Promise<{ template?: string; source?: string }>;
 }) {
-  const { template: templateId } = await searchParams;
+  const { template: templateId, source } = await searchParams;
   const template = getTemplate(templateId);
   const user = await requireUser(
-    `/trips/new${template ? `?template=${template.id}` : ""}`,
+    `/trips/new${source ? `?source=${encodeURIComponent(source)}` : template ? `?template=${template.id}` : ""}`,
   );
   return (
     <div className="container page-content wizard-page">
@@ -24,8 +24,9 @@ export default async function CreateTripPage({
         description="A few thoughtful details. A trip that feels like you."
       />
       <TripWizard
-        key={`${user.id}:${template?.id ?? "new"}`}
-        template={template}
+        key={`${user.id}:${source ?? template?.id ?? "new"}`}
+        template={source ? undefined : template}
+        sourceTripId={source}
         userId={user.id}
       />
     </div>

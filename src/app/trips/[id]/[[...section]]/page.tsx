@@ -14,6 +14,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
+import { ItineraryView } from "@/components/itinerary-view";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -84,25 +85,37 @@ export default async function TripWorkspacePage({
     <div className="container page-content">
       <PageHeading
         eyebrow={
-          saved ? "SAVED TRIP INTENT" : "TRIP WORKSPACE · LAYOUT PREVIEW"
+          saved?.itinerary
+            ? "YOUR PERSONAL ITINERARY"
+            : saved
+              ? "SAVED TRIP INTENT"
+              : "TRIP WORKSPACE · LAYOUT PREVIEW"
         }
         title={
-          saved
-            ? saved.data.mode === "known"
-              ? saved.data.destination
-              : "Your escape, taking shape."
-            : "A home for your next adventure."
+          saved?.itinerary
+            ? `${saved.itinerary.base.city}, ${saved.itinerary.base.country}`
+            : saved
+              ? saved.data.mode === "known"
+                ? saved.data.destination
+                : "Your escape, taking shape."
+              : "A home for your next adventure."
         }
         description="One calm space for the details, the decisions, and everything in between."
       />
       <div className="notice">
         <strong>
-          {saved ? "Your trip intent is saved." : "No saved trip is open."}
+          {saved?.itinerary
+            ? "Your complete itinerary is saved."
+            : saved
+              ? "Your trip intent is saved."
+              : "No saved trip is open."}
         </strong>
         <p>
-          {saved
-            ? "Your dates, budget, and preferences are stored in your account. AI generation, bookings and financial services aren’t connected."
-            : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
+          {saved?.itinerary
+            ? "Activities, costs and schedules are AI estimates, not verified availability or prices. No bookings, payments or spending records have been created."
+            : saved
+              ? "Your dates, budget, and preferences are stored in your account. Confirm one base city to generate your personalized itinerary."
+              : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
         </p>
       </div>
       <nav className="trip-tabs" aria-label="Trip sections">
@@ -118,7 +131,14 @@ export default async function TripWorkspacePage({
       </nav>
       <div className="workspace-layout">
         <section className="panel workspace-main">
-          {saved && active === "" && (
+          {saved?.itinerary && ["", "itinerary"].includes(active) && (
+            <ItineraryView
+              itinerary={saved.itinerary}
+              intent={saved.data}
+              timeline={active === "itinerary"}
+            />
+          )}
+          {saved && !saved.itinerary && active === "" && (
             <>
               <div className="saved-trip-hero">
                 <DestinationImage
@@ -181,30 +201,44 @@ export default async function TripWorkspacePage({
                 </dl>
                 <p className="inline-note">
                   Destination input is saved as intent. A country, region or
-                  vibe will still need a confirmed base city before future
-                  generation. No availability or costs have been verified.
+                  vibe will still need a confirmed base city before generation.
+                  No availability or costs have been verified.
                 </p>
               </div>
             </>
           )}
-          <EmptyState
-            icon={<selected.icon size={30} aria-hidden="true" />}
-            title={selected.title}
-            description={
-              saved && active === ""
-                ? "Your planning intent is stored. AI itinerary generation is reserved for the next milestone and is not available yet."
-                : selected.description
-            }
-            action={
-              <ButtonLink
-                href={active === "explore" ? "/explore" : "/trips/new"}
-              >
-                {active === "explore"
-                  ? "Browse inspirations"
-                  : "Explore the planning form"}
-              </ButtonLink>
-            }
-          />
+          {!(saved?.itinerary && ["", "itinerary"].includes(active)) && (
+            <EmptyState
+              icon={<selected.icon size={30} aria-hidden="true" />}
+              title={selected.title}
+              description={
+                saved && ["", "itinerary"].includes(active)
+                  ? "Your planning intent is stored. Continue to destination confirmation and real AI generation. Your input remains saved throughout."
+                  : selected.description
+              }
+              action={
+                <ButtonLink
+                  href={
+                    saved &&
+                    !saved.itinerary &&
+                    ["", "itinerary"].includes(active)
+                      ? `/trips/${id}/generate`
+                      : active === "explore"
+                        ? "/explore"
+                        : "/trips/new"
+                  }
+                >
+                  {saved &&
+                  !saved.itinerary &&
+                  ["", "itinerary"].includes(active)
+                    ? "Create my itinerary"
+                    : active === "explore"
+                      ? "Browse inspirations"
+                      : "Explore the planning form"}
+                </ButtonLink>
+              }
+            />
+          )}
         </section>
         <details className="assistant-panel">
           <summary>
@@ -221,8 +255,8 @@ export default async function TripWorkspacePage({
               alongside your plans.
             </h2>
             <p>
-              Your context-aware trip companion will live here. AI is not
-              connected in this foundation preview.
+              Your context-aware trip companion will live here. AI trip editing
+              is not available yet.
             </p>
             <p>
               Future suggestions will need your review and approval. No changes,

@@ -8,7 +8,7 @@
     "setup:local": "node scripts/setup-local.mjs && tsx scripts/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts",
+    "test": "node --import tsx --test --test-concurrency=1 tests/*.test.ts tests/*.test.tsx",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
@@ -19,11 +19,13 @@
   "dependencies": {
     "@better-auth/drizzle-adapter": "^1.7.16",
     "@electric-sql/pglite": "^0.5.15",
+    "@google/genai": "^2.32.0",
     "@next/env": "^16.4.5",
     "better-auth": "^1.7.16",
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^0.468.0",
     "next": "16.4.5",
+    "openai": "^7.50.0",
     "pg": "^8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
@@ -45,6 +47,6 @@
     "typescript": "^5.9.0"
   },
   "engines": {
-    "node": ">=20.9.0"
+    "node": ">=22.0.0"
   }
 }

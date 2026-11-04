@@ -22,9 +22,11 @@ const steps = ["Destination", "Trip details", "Budget", "Preferences"];
 export function TripWizard({
   template,
   userId,
+  sourceTripId,
 }: {
   template?: CuratedTrip;
   userId: string;
+  sourceTripId?: string;
 }) {
   const {
     draft,
@@ -35,7 +37,7 @@ export function TripWizard({
     flush,
     saveTrip,
     reloadSaved,
-  } = useTripDraft(userId, template?.id);
+  } = useTripDraft(userId, template?.id, sourceTripId);
   const {
     step,
     review,
@@ -137,8 +139,8 @@ export function TripWizard({
                         : "Draft needs attention"}
         </strong>
         <p>
-          Your draft autosaves to your account. Saving a trip creates a planning
-          intent; AI generation is not connected.
+          Your draft autosaves to your account. Next, confirm one base city
+          before real AI itinerary generation. Your original input stays saved.
         </p>
         {error && (
           <p className="form-error" role="alert">
@@ -286,7 +288,7 @@ export function TripWizard({
                   This form does not confirm a base city, check availability,
                   convert currencies, or validate a trip’s cost. Country and
                   vibe matching will require a confirmed single base city before
-                  future generation.
+                  generation.
                 </p>
                 <div className="wizard-controls">
                   <button
@@ -310,7 +312,9 @@ export function TripWizard({
                       void saveTrip();
                     }}
                   >
-                    {status === "completing" ? "Saving…" : "Save trip intent"}
+                    {status === "completing"
+                      ? "Saving…"
+                      : "Save & continue to AI planning"}
                   </button>
                 </div>
                 <ButtonLink href="/trips/preview" variant="text">
@@ -397,8 +401,7 @@ export function TripWizard({
                         />
                         <span>
                           We’ll plan around one base city. Country or region
-                          choices will need city confirmation once generation is
-                          connected.
+                          choices will need your confirmation of one base city.
                         </span>
                       </label>
                     ) : (
@@ -413,8 +416,8 @@ export function TripWizard({
                           rows={4}
                         />
                         <span>
-                          Destination suggestions aren’t connected in this
-                          preview.
+                          We’ll suggest one base city for you to confirm after
+                          reviewing your preferences.
                         </span>
                       </label>
                     )}
@@ -614,9 +617,9 @@ export function TripWizard({
                     <div className="notice compact">
                       <strong>A little breathing room matters.</strong>
                       <p>
-                        Category allocations, a protected reserve, and
-                        destination currency estimates will follow when the
-                        budget service is implemented.
+                        Your AI itinerary will include category estimates and a
+                        10% spending reserve in your selected currency. No
+                        currency conversion or verified prices are provided.
                       </p>
                     </div>
                   </div>

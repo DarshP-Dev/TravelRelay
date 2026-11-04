@@ -1,0 +1,231 @@
+{
+  "provenance": {
+    "kind": "recorded-live-output",
+    "model": "gemini-3.5-flash-lite",
+    "recordedAt": "2026-11-04T20:01:37.376Z",
+    "usage": {
+      "phase": "itinerary",
+      "model": "gemini-3.5-flash-lite",
+      "promptTokens": 1671,
+      "outputTokens": 2042,
+      "thinkingTokens": 1743,
+      "totalTokens": 5456
+    },
+    "note": "Unchanged rejected revised-prompt response; test-only, never runtime fallback."
+  },
+  "intent": {
+    "step": 3,
+    "review": true,
+    "mode": "known",
+    "destination": "Paris, France",
+    "vibe": "",
+    "departure": "London",
+    "start": "2027-04-15",
+    "end": "2027-04-18",
+    "flexible": false,
+    "month": "",
+    "duration": 7,
+    "travelers": 2,
+    "pace": "balanced",
+    "budget": "2500",
+    "currency": "EUR",
+    "scope": "entire",
+    "style": "balanced",
+    "selected": ["Culture", "Food"],
+    "mustSee": "Neighborhood walks and one art museum",
+    "avoids": "Nightclubs and multi-city travel",
+    "dietary": "",
+    "accessibility": ""
+  },
+  "base": {
+    "feasible": true,
+    "explanation": "Paris is selected as the single base city for your trip starting April 15, 2027. Estimated costs are rough group totals in EUR minor units. Please confirm this city and dates before proceeding with the itinerary.",
+    "city": "Paris",
+    "country": "France",
+    "timeZone": "Europe/Paris",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "startDate": "2027-04-15"
+  },
+  "plan": {
+    "feasible": true,
+    "explanation": "This itinerary for Paris fully respects your preferences for culture and food while avoiding multi-city travel and nightclubs. The estimated costs fit comfortably within your 2500 EUR budget, leaving a healthy reserve. Musée d'Orsay is scheduled during published opening hours, and all daily activities respect your pace and travel buffers.",
+    "city": "Paris",
+    "currency": "EUR",
+    "introduction": "Welcome to Paris for a delightful four-day escape blending rich cultural heritage, world-class art at the Musée d'Orsay, charming neighborhood walks, and exceptional culinary experiences.",
+    "flightsMinor": 40000,
+    "accommodationMinor": 90000,
+    "foodMinor": 45000,
+    "localTransportMinor": 10000,
+    "days": [
+      {
+        "date": "2027-04-15",
+        "title": "Arrival in Paris and Evening Stroll",
+        "activities": [
+          {
+            "title": "Latin Quarter Neighborhood Walk",
+            "description": "Enjoy a gentle afternoon introductory walk through the historic Latin Quarter, soaking in the vibrant atmosphere and charming historic streets as you settle into Paris.",
+            "city": "Paris",
+            "location": "Latin Quarter, Paris",
+            "latitude": 48.8512,
+            "longitude": 2.3444,
+            "startMinute": 900,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "Classic Parisian Bistro Dinner",
+            "description": "Indulge in your first authentic food experience with a delightful multi-course dinner at a traditional Parisian bistro in Saint-Germain, savoring classic French flavors.",
+            "city": "Paris",
+            "location": "Saint-Germain-des-Prés, Paris",
+            "latitude": 48.8534,
+            "longitude": 2.3333,
+            "startMinute": 1050,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 8000
+          }
+        ]
+      },
+      {
+        "date": "2027-04-16",
+        "title": "Art at Musée d'Orsay and Montmartre",
+        "activities": [
+          {
+            "title": "Morning Coffee and Croissant",
+            "description": "Begin your full day with a relaxed traditional Parisian breakfast featuring freshly baked pastries and café au lait at a classic local café.",
+            "city": "Paris",
+            "location": "Rue de Rivoli, Paris",
+            "latitude": 48.8606,
+            "longitude": 2.3376,
+            "startMinute": 540,
+            "durationMinutes": 45,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 2000
+          },
+          {
+            "title": "Musée d’Orsay Masterpieces Tour",
+            "description": "Explore the world's largest collection of Impressionist and Post-Impressionist masterpieces housed in a magnificent former railway station.",
+            "city": "Paris",
+            "location": "Musée d’Orsay, Paris",
+            "latitude": 48.86,
+            "longitude": 2.3266,
+            "startMinute": 615,
+            "durationMinutes": 180,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 3200
+          },
+          {
+            "title": "Bistro Lunch near Orsay",
+            "description": "Relax and enjoy a fulfilling midday dining experience featuring seasonal French cuisine in a cozy neighborhood restaurant near the river.",
+            "city": "Paris",
+            "location": "Quay Anatole France, Paris",
+            "latitude": 48.861,
+            "longitude": 2.324,
+            "startMinute": 855,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 5000
+          },
+          {
+            "title": "Montmartre Neighborhood Walk",
+            "description": "Stroll through the artistic hilltop village of Montmartre, admiring historic winding streets, quaint squares, and sweeping views over the Parisian skyline.",
+            "city": "Paris",
+            "location": "Montmartre, Paris",
+            "latitude": 48.8867,
+            "longitude": 2.3431,
+            "startMinute": 975,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          }
+        ]
+      },
+      {
+        "date": "2027-04-17",
+        "title": "Historic Le Marais and Culinary Exploration",
+        "activities": [
+          {
+            "title": "Le Marais Historic Walk",
+            "description": "Discover the architectural charm and medieval history of Le Marais, exploring elegant squares, historic townhouses, and bustling boutiques.",
+            "city": "Paris",
+            "location": "Le Marais, Paris",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "startMinute": 540,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "Traditional French Bakery and Pastry Tasting",
+            "description": "Sample artisan breads and signature pastries at a renowned local patisserie as part of an immersive culinary exploration.",
+            "city": "Paris",
+            "location": "Rue de Bretagne, Paris",
+            "latitude": 48.8632,
+            "longitude": 2.3621,
+            "startMinute": 690,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 2500
+          },
+          {
+            "title": "Seine Riverbank Stroll",
+            "description": "Take a scenic walk along the iconic banks of the Seine, browsing traditional bouquiniste bookstalls and admiring the historic bridges.",
+            "city": "Paris",
+            "location": "Seine Riverbanks, Paris",
+            "latitude": 48.8584,
+            "longitude": 2.345,
+            "startMinute": 780,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "Culinary Dinner Experience",
+            "description": "Conclude your full exploration days with an exceptional dinner celebrating contemporary French gastronomy and seasonal local ingredients.",
+            "city": "Paris",
+            "location": "Bastille, Paris",
+            "latitude": 48.853,
+            "longitude": 2.369,
+            "startMinute": 930,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 9000
+          }
+        ]
+      },
+      {
+        "date": "2027-04-18",
+        "title": "Farewell Coffee and Departure",
+        "activities": [
+          {
+            "title": "Final Parisian Morning Cafe",
+            "description": "Savor a peaceful final morning coffee and fresh pastry at a neighborhood café while reflecting on your wonderful Parisian journey.",
+            "city": "Paris",
+            "location": "Central Paris",
+            "latitude": 48.8566,
+            "longitude": 2.3522,
+            "startMinute": 540,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 1500
+          },
+          {
+            "title": "Souvenir Stroll in Central Paris",
+            "description": "Take a leisurely final walk through central avenues to pick up last-minute gifts before heading towards your return travel.",
+            "city": "Paris",
+            "location": "Rivoli District, Paris",
+            "latitude": 48.858,
+            "longitude": 2.347,
+            "startMinute": 630,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          }
+        ]
+      }
+    ]
+  }
+}

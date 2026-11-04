@@ -1,0 +1,286 @@
+{
+  "provenance": {
+    "kind": "recorded-live-output",
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "recordedAt": "2026-11-04T22:20:16.089Z",
+    "usage": {
+      "provider": "openai",
+      "phase": "itinerary",
+      "model": "gpt-6.1-sol",
+      "inputTokens": 1917,
+      "promptTokens": 1917,
+      "outputTokens": 3154,
+      "reasoningTokens": 977,
+      "thinkingTokens": 977,
+      "visibleOutputTokens": 2177,
+      "cachedInputTokens": 0,
+      "cacheWriteTokens": 1914,
+      "totalTokens": 5071,
+      "estimatedCostUsd": 0.036331,
+      "pricing": {
+        "checkedOn": "2026-11-04",
+        "sourceUrl": "https://developers.openai.com/api/docs/pricing",
+        "basis": "standard-paid-reference",
+        "note": "USD estimate, not an invoice. Standard short-context text rates; reasoning is already included in output. Cached reads/writes use reported counts (missing cache counts assume none). Taxes, regional surcharges and account discounts excluded; nonstandard returned tiers have unknown cost."
+      }
+    },
+    "responseLatencyMs": 63727,
+    "originalQualityIssues": [
+      {
+        "code": "unverified-venue-window",
+        "message": "French bistro dinner on Rue Vieille-du-Temple has no source-checked hours; use a conservative 10:00–17:00 visitor window and mark hours unverified.",
+        "dayIndex": 0,
+        "activityIndex": 1
+      }
+    ],
+    "rawPlanSha256": "8394775201cbc0618939d89e18e4459b6d3e8896a24a3d2c7aeca67fc6fbf3e1",
+    "note": "Exact unedited Sol response; historical live failure preserved. Test-only, never a runtime model fallback.",
+    "originalAudit": {
+      "provider": "openai",
+      "model": "gpt-6.1-sol",
+      "phase": "itinerary",
+      "attempt": 1,
+      "status": "failed",
+      "usage": {
+        "model": "gpt-6.1-sol",
+        "phase": "itinerary",
+        "pricing": {
+          "note": "USD estimate, not an invoice. Standard short-context text rates; reasoning is already included in output. Cached reads/writes use reported counts (missing cache counts assume none). Taxes, regional surcharges and account discounts excluded; nonstandard returned tiers have unknown cost.",
+          "basis": "standard-paid-reference",
+          "checkedOn": "2026-11-04",
+          "sourceUrl": "https://developers.openai.com/api/docs/pricing"
+        },
+        "provider": "openai",
+        "inputTokens": 1917,
+        "totalTokens": 5071,
+        "outputTokens": 3154,
+        "promptTokens": 1917,
+        "thinkingTokens": 977,
+        "reasoningTokens": 977,
+        "cacheWriteTokens": 1914,
+        "estimatedCostUsd": 0.036331,
+        "cachedInputTokens": 0,
+        "visibleOutputTokens": 2177
+      },
+      "validation": {
+        "domain": "passed",
+        "schema": "passed",
+        "quality": "failed",
+        "provider": "passed",
+        "persistence": "not-run",
+        "normalization": "passed"
+      },
+      "normalization": {
+        "version": 1,
+        "corrections": []
+      },
+      "error": "The itinerary needs revision before it can be saved. French bistro dinner on Rue Vieille-du-Temple has no source-checked hours; use a conservative 10:00–17:00 visitor window and mark hours unverified. Your original preferences are safe; retry or adjust a copy.",
+      "createdAt": "2026-11-04T22:20:20.108Z",
+      "updatedAt": "2026-11-04T22:21:23.857Z"
+    }
+  },
+  "intent": {
+    "step": 3,
+    "review": true,
+    "mode": "known",
+    "destination": "Paris, France",
+    "vibe": "",
+    "departure": "London",
+    "start": "2027-04-15",
+    "end": "2027-04-18",
+    "flexible": false,
+    "month": "",
+    "duration": 7,
+    "travelers": 2,
+    "pace": "balanced",
+    "budget": "2500",
+    "currency": "EUR",
+    "scope": "entire",
+    "style": "balanced",
+    "selected": ["Culture", "Food"],
+    "mustSee": "Neighborhood walks and one art museum",
+    "avoids": "Nightclubs and multi-city travel",
+    "dietary": "",
+    "accessibility": ""
+  },
+  "base": {
+    "feasible": true,
+    "explanation": "Paris is selected as the single base city for your trip starting April 15, 2027. Estimated costs are rough group totals in EUR minor units. Please confirm this city and dates before proceeding with the itinerary.",
+    "city": "Paris",
+    "country": "France",
+    "timeZone": "Europe/Paris",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "startDate": "2027-04-15"
+  },
+  "plan": {
+    "feasible": true,
+    "explanation": "This plan follows the confirmed April 15–18 dates: four days and three nights in Paris for two travelers, rather than the conflicting seven-day duration field. All figures are rough group estimates in EUR cents, not verified prices or bookings. Estimated total spending is €2,024, including €44 for museum admission separately from the category allocations, leaving €476 (19%) of the €2,500 budget unallocated, exceeding the required 10% reserve. Flights cover estimated return economy travel from London for both travelers; accommodation covers three nights in one shared room. Transport includes airport transfers and local journeys, while food includes the itemized meals plus breakfasts, other meals and snacks. Timing assumes you can reach your Paris accommodation by approximately 14:30 on arrival day and choose return travel departing no earlier than 16:00 on departure day; these are planning conditions, not invented flight schedules. If suitable travel cannot meet these assumptions and estimates, the plan needs revision. The Musée d’Orsay visit follows the supplied published-hours snapshot, checked November 4, 2026, but future hours, admission prices and availability remain uncertain.",
+    "city": "Paris",
+    "currency": "EUR",
+    "introduction": "A balanced Paris stay combining an Impressionist art museum, distinctive neighborhood walks and relaxed French meals. Paris remains your only base, with generous breaks and no nightclub visits or out-of-city excursions. Restaurant streets are concrete dining suggestions rather than booked venues; meal service and suitable tables must be checked locally.",
+    "flightsMinor": 48000,
+    "accommodationMinor": 78000,
+    "foodMinor": 50000,
+    "localTransportMinor": 22000,
+    "days": [
+      {
+        "date": "2027-04-15",
+        "title": "Arrival and a gentle introduction to Le Marais",
+        "activities": [
+          {
+            "title": "Le Marais neighborhood walk",
+            "description": "Begin around Place des Vosges, then follow Rue des Francs-Bourgeois toward Rue Vieille-du-Temple. Enjoy the historic façades, small courtyards visible from public streets and neighborhood atmosphere without committing to indoor visits after travel.",
+            "city": "Paris",
+            "location": "Place des Vosges and Rue des Francs-Bourgeois, Le Marais",
+            "latitude": 48.8556,
+            "longitude": 2.3655,
+            "startMinute": 900,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "French bistro dinner on Rue Vieille-du-Temple",
+            "description": "Choose a neighborhood bistro along Rue Vieille-du-Temple for a substantial first dinner, such as a seasonal main course and dessert. The intervening break allows time to rest; restaurant service, menus and seating are unconfirmed.",
+            "city": "Paris",
+            "location": "Rue Vieille-du-Temple, Le Marais",
+            "latitude": 48.8593,
+            "longitude": 2.3589,
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 7000
+          }
+        ]
+      },
+      {
+        "date": "2027-04-16",
+        "title": "Impressionist art and the literary Left Bank",
+        "activities": [
+          {
+            "title": "Art museum visit at Musée d’Orsay",
+            "description": "Spend two focused hours exploring Impressionist and Post-Impressionist paintings inside the former railway station. Prioritize a few galleries rather than attempting the entire collection; the supplied Friday hours accommodate this visit, subject to future changes and ticket availability.",
+            "city": "Paris",
+            "location": "Musée d’Orsay, Esplanade Valéry Giscard d’Estaing",
+            "latitude": 48.86,
+            "longitude": 2.3266,
+            "startMinute": 600,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 4400
+          },
+          {
+            "title": "Substantial café lunch on Rue du Bac",
+            "description": "Find a café near the northern end of Rue du Bac for a proper lunch, such as a quiche with salad or a daily main dish. This is a seated meal break after the museum, with the group food estimate included in the whole-trip allocation.",
+            "city": "Paris",
+            "location": "Rue du Bac near Rue de Verneuil",
+            "latitude": 48.8571,
+            "longitude": 2.3291,
+            "startMinute": 750,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 5000
+          },
+          {
+            "title": "Saint-Germain-des-Prés culture walk",
+            "description": "Walk through Place Saint-Germain-des-Prés, Rue Bonaparte and the small streets toward Place Saint-Sulpice. Look for literary café façades, bookshops and historic architecture; church interiors and other indoor stops are not assumed.",
+            "city": "Paris",
+            "location": "Place Saint-Germain-des-Prés to Place Saint-Sulpice",
+            "latitude": 48.8539,
+            "longitude": 2.3338,
+            "startMinute": 840,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "French dinner around Rue de Buci",
+            "description": "Return to the lively streets around Rue de Buci for a relaxed two-course dinner. Try a traditional French main and a shared dessert, with a long afternoon rest available beforehand; choose a restaurant only after checking service and menu prices.",
+            "city": "Paris",
+            "location": "Rue de Buci, Saint-Germain-des-Prés",
+            "latitude": 48.8536,
+            "longitude": 2.3373,
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 7500
+          }
+        ]
+      },
+      {
+        "date": "2027-04-17",
+        "title": "Montmartre village streets and Canal Saint-Martin",
+        "activities": [
+          {
+            "title": "Montmartre neighborhood and artists’ streets walk",
+            "description": "Explore Rue des Abbesses, Rue Lepic and the lanes around Place du Tertre, finishing with exterior views around Sacré-Cœur. Expect hills and steps on some routes; pause regularly and avoid rushing through this atmospheric former artists’ neighborhood.",
+            "city": "Paris",
+            "location": "Rue des Abbesses, Rue Lepic and Place du Tertre, Montmartre",
+            "latitude": 48.8865,
+            "longitude": 2.338,
+            "startMinute": 570,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          },
+          {
+            "title": "Bistro lunch around Rue des Abbesses",
+            "description": "Settle into a bistro around Rue des Abbesses for a substantial lunch after the uphill walk. Look for a daily main course or a savory tart with salad, leaving time to sit and recover before crossing to the canal neighborhood.",
+            "city": "Paris",
+            "location": "Rue des Abbesses, Montmartre",
+            "latitude": 48.8845,
+            "longitude": 2.3378,
+            "startMinute": 720,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 5500
+          },
+          {
+            "title": "Canal Saint-Martin waterside neighborhood walk",
+            "description": "Travel to the canal, then stroll along Quai de Valmy and Quai de Jemmapes between the locks and footbridges. Discover a different side of Paris through waterside streets and independent storefronts, with an optional seated pause along the route.",
+            "city": "Paris",
+            "location": "Quai de Valmy and Quai de Jemmapes, Canal Saint-Martin",
+            "latitude": 48.8715,
+            "longitude": 2.3635,
+            "startMinute": 855,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 45,
+            "costMinor": 0
+          },
+          {
+            "title": "Neighborhood dinner near Rue de Lancry",
+            "description": "Choose a restaurant around Rue de Lancry for a final substantial Paris dinner, focusing on seasonal French cooking. The afternoon gap provides a proper rest rather than additional sightseeing; evening service and availability require confirmation.",
+            "city": "Paris",
+            "location": "Rue de Lancry near Canal Saint-Martin",
+            "latitude": 48.8703,
+            "longitude": 2.3617,
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 7500
+          }
+        ]
+      },
+      {
+        "date": "2027-04-18",
+        "title": "A quiet Seine-side farewell",
+        "activities": [
+          {
+            "title": "Île Saint-Louis and Seine neighborhood walk",
+            "description": "Take an easy final stroll along Quai de Bourbon and Rue Saint-Louis-en-l’Île, enjoying river views and the island’s historic façades. Finish early enough to retrieve luggage and begin your return transfer; no indoor admission or timed booking is assumed.",
+            "city": "Paris",
+            "location": "Quai de Bourbon and Rue Saint-Louis-en-l’Île",
+            "latitude": 48.852,
+            "longitude": 2.3564,
+            "startMinute": 570,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30,
+            "costMinor": 0
+          }
+        ]
+      }
+    ]
+  }
+}

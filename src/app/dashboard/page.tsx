@@ -37,12 +37,12 @@ export default async function DashboardPage() {
       <div className="notice">
         <strong>
           {trips.length
-            ? "Your saved trip intents"
+            ? "Your saved trips"
             : "Your adventure starts with an idea."}
         </strong>
         <p>
           {trips.length
-            ? "Your plans are saved to your account. Itineraries, bookings, and financial records aren’t connected yet."
+            ? "Your plans and completed AI itineraries are saved to your account. All costs are estimates; bookings and financial services aren’t connected."
             : "No saved trips yet. Start a plan or explore a little inspiration. No bookings or spending records have been created."}
         </p>
       </div>
@@ -81,8 +81,8 @@ export default async function DashboardPage() {
           <strong>{trips.length}</strong>
           <p>
             {trips.length
-              ? "Saved to your account. Itineraries haven’t been generated."
-              : "Your saved trip intents will appear here."}
+              ? "Saved intent and completed itineraries, together."
+              : "Your saved trips will appear here."}
           </p>
         </div>
         <div>
@@ -105,7 +105,7 @@ export default async function DashboardPage() {
             <Link
               className="section-link"
               key={draft.id}
-              href={`/trips/new${draft.slot !== "blank" ? `?template=${draft.slot}` : ""}`}
+              href={`/trips/new${draft.slot.startsWith("revision:") ? `?source=${draft.slot.slice(9)}` : draft.slot !== "blank" ? `?template=${draft.slot}` : ""}`}
             >
               Continue {draft.data.destination || "your trip draft"} · Step{" "}
               {draft.data.step + 1}

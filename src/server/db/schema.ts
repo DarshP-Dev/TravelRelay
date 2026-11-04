@@ -12,6 +12,10 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { TripIntent } from "../../lib/trip-intent";
+import type { CityProposal, Itinerary } from "../../lib/itinerary";
+import type { ModelUsage } from "../ai/contracts";
+import type { ValidationChecks } from "../ai/audit";
+import type { ItineraryNormalization } from "../../lib/itinerary-normalization";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -84,6 +88,13 @@ export const rateLimit = pgTable("rate_limit", {
   count: integer("count").notNull(),
   lastRequest: bigint("last_request", { mode: "number" }).notNull(),
 });
+// Isolated from Better Auth: its rate-limit cleanup prunes old rows globally.
+export const generationQuota = pgTable("generation_quota", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
 export const draft = pgTable(
   "trip_draft",
   {
@@ -115,7 +126,62 @@ export const trip = pgTable(
       .references(() => draft.id)
       .unique(),
     data: jsonb("data").$type<TripIntent>().notNull(),
+    itinerary: jsonb("itinerary").$type<Itinerary>(),
     ...timestamps(),
   },
   (table) => [index("trip_owner_idx").on(table.userId)],
+);
+export const generation = pgTable(
+  "trip_generation",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .unique()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("queued"),
+    proposal: jsonb("proposal").$type<CityProposal>(),
+    confirmed: boolean("confirmed").notNull().default(false),
+    attempts: integer("attempts").notNull().default(0),
+    error: text("error"),
+    ...timestamps(),
+  },
+  (table) => [index("generation_owner_idx").on(table.userId)],
+);
+
+export const generationAttempt = pgTable(
+  "trip_generation_attempt",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    generationId: uuid("generation_id")
+      .notNull()
+      .references(() => generation.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    phase: text("phase").notNull(),
+    attempt: integer("attempt").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    status: text("status").notNull().default("started"),
+    usage: jsonb("usage").$type<ModelUsage>(),
+    validation: jsonb("validation").$type<ValidationChecks>().notNull(),
+    normalization: jsonb("normalization").$type<ItineraryNormalization>(),
+    error: text("error"),
+    ...timestamps(),
+  },
+  (table) => [
+    uniqueIndex("generation_phase_attempt_idx").on(
+      table.generationId,
+      table.phase,
+      table.attempt,
+    ),
+    index("generation_attempt_owner_idx").on(table.userId, table.tripId),
+  ],
 );
