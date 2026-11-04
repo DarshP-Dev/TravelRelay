@@ -147,3 +147,19 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Credentials and private key files
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+service-account*.json
+.vercel/
+.playwright/
+test-results/
+playwright-report/
+
+# Local Python helper cache
+__pycache__/
+*.pyc
