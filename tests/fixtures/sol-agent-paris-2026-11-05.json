@@ -1,0 +1,644 @@
+{
+  "kind": "Recorded real controlled Sol response; replay is offline and does not incur usage",
+  "recordedAt": "2026-11-05T17:48:18.176Z",
+  "question": "Day 2 feels a little too packed. Suggest one change that makes it more relaxed while preserving our main culture and food interests and staying within budget.",
+  "intent": {
+    "end": "2027-04-18",
+    "mode": "known",
+    "pace": "balanced",
+    "step": 3,
+    "vibe": "",
+    "month": "",
+    "scope": "entire",
+    "start": "2027-04-15",
+    "style": "balanced",
+    "avoids": "Nightclubs and multi-city travel",
+    "budget": "2500",
+    "review": true,
+    "dietary": "",
+    "mustSee": "Neighborhood walks and one art museum",
+    "currency": "EUR",
+    "duration": 7,
+    "flexible": false,
+    "selected": ["Culture", "Food"],
+    "departure": "London",
+    "travelers": 2,
+    "destination": "Paris, France",
+    "accessibility": ""
+  },
+  "itinerary": {
+    "base": {
+      "city": "Paris",
+      "country": "France",
+      "feasible": true,
+      "latitude": 48.8566,
+      "timeZone": "Europe/Paris",
+      "longitude": 2.3522,
+      "startDate": "2027-04-15",
+      "explanation": "Paris is selected as the single base city for your trip starting April 15, 2027. Estimated costs are rough group totals in EUR minor units. Please confirm this city and dates before proceeding with the itinerary."
+    },
+    "city": "Paris",
+    "days": [
+      {
+        "id": "9e1a09dd-933d-4a75-8762-d7f091bc96d5",
+        "date": "2027-04-15",
+        "title": "Arrival and a gentle introduction to Le Marais",
+        "activities": [
+          {
+            "id": "1d362d72-cf4d-42bc-b313-57952eb1dab6",
+            "city": "Paris",
+            "title": "Le Marais neighborhood walk",
+            "latitude": 48.8556,
+            "location": "Place des Vosges and Rue des Francs-Bourgeois, Le Marais",
+            "costMinor": 0,
+            "longitude": 2.3655,
+            "description": "Begin around Place des Vosges, then follow Rue des Francs-Bourgeois toward Rue Vieille-du-Temple. Enjoy the historic façades, small courtyards visible from public streets and neighborhood atmosphere without committing to indoor visits after travel.",
+            "startMinute": 900,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "05b3a346-7c25-4b58-8a45-b998f32febe7",
+            "city": "Paris",
+            "title": "French bistro dinner on Rue Vieille-du-Temple",
+            "latitude": 48.8593,
+            "location": "Rue Vieille-du-Temple, Le Marais",
+            "costMinor": 7000,
+            "longitude": 2.3589,
+            "description": "Choose a neighborhood bistro along Rue Vieille-du-Temple for a substantial first dinner, such as a seasonal main course and dessert. The intervening break allows time to rest; restaurant service, menus and seating are unconfirmed.",
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30
+          }
+        ]
+      },
+      {
+        "id": "1c2c97bd-486e-44b4-9547-552c523e5862",
+        "date": "2027-04-16",
+        "title": "Impressionist art and the literary Left Bank",
+        "activities": [
+          {
+            "id": "7a634131-68b0-42ae-a886-3d8c0113c79d",
+            "city": "Paris",
+            "title": "Art museum visit at Musée d’Orsay",
+            "latitude": 48.86,
+            "location": "Musée d’Orsay, Esplanade Valéry Giscard d’Estaing",
+            "costMinor": 4400,
+            "longitude": 2.3266,
+            "description": "Spend two focused hours exploring Impressionist and Post-Impressionist paintings inside the former railway station. Prioritize a few galleries rather than attempting the entire collection; the supplied Friday hours accommodate this visit, subject to future changes and ticket availability.",
+            "startMinute": 600,
+            "durationMinutes": 120,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "b2538b40-624b-405f-804c-7f752c23dff1",
+            "city": "Paris",
+            "title": "Substantial café lunch on Rue du Bac",
+            "latitude": 48.8571,
+            "location": "Rue du Bac near Rue de Verneuil",
+            "costMinor": 5000,
+            "longitude": 2.3291,
+            "description": "Find a café near the northern end of Rue du Bac for a proper lunch, such as a quiche with salad or a daily main dish. This is a seated meal break after the museum, with the group food estimate included in the whole-trip allocation.",
+            "startMinute": 750,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "b379a744-04bb-493d-9d65-e0969d0e7533",
+            "city": "Paris",
+            "title": "Saint-Germain-des-Prés culture walk",
+            "latitude": 48.8539,
+            "location": "Place Saint-Germain-des-Prés to Place Saint-Sulpice",
+            "costMinor": 0,
+            "longitude": 2.3338,
+            "description": "Walk through Place Saint-Germain-des-Prés, Rue Bonaparte and the small streets toward Place Saint-Sulpice. Look for literary café façades, bookshops and historic architecture; church interiors and other indoor stops are not assumed.",
+            "startMinute": 840,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "c70ec1cf-f2e2-4beb-9912-4a55196edaed",
+            "city": "Paris",
+            "title": "French dinner around Rue de Buci",
+            "latitude": 48.8536,
+            "location": "Rue de Buci, Saint-Germain-des-Prés",
+            "costMinor": 7500,
+            "longitude": 2.3373,
+            "description": "Return to the lively streets around Rue de Buci for a relaxed two-course dinner. Try a traditional French main and a shared dessert, with a long afternoon rest available beforehand; choose a restaurant only after checking service and menu prices.",
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30
+          }
+        ]
+      },
+      {
+        "id": "854031e2-e232-4d65-bbe4-a7ec9a32c9c8",
+        "date": "2027-04-17",
+        "title": "Montmartre village streets and Canal Saint-Martin",
+        "activities": [
+          {
+            "id": "8cda6d62-6aff-4c1e-8870-7b3d4eaff21f",
+            "city": "Paris",
+            "title": "Montmartre neighborhood and artists’ streets walk",
+            "latitude": 48.8865,
+            "location": "Rue des Abbesses, Rue Lepic and Place du Tertre, Montmartre",
+            "costMinor": 0,
+            "longitude": 2.338,
+            "description": "Explore Rue des Abbesses, Rue Lepic and the lanes around Place du Tertre, finishing with exterior views around Sacré-Cœur. Expect hills and steps on some routes; pause regularly and avoid rushing through this atmospheric former artists’ neighborhood.",
+            "startMinute": 570,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "6429a713-5f49-4d1a-bf89-10abcbc02d50",
+            "city": "Paris",
+            "title": "Bistro lunch around Rue des Abbesses",
+            "latitude": 48.8845,
+            "location": "Rue des Abbesses, Montmartre",
+            "costMinor": 5500,
+            "longitude": 2.3378,
+            "description": "Settle into a bistro around Rue des Abbesses for a substantial lunch after the uphill walk. Look for a daily main course or a savory tart with salad, leaving time to sit and recover before crossing to the canal neighborhood.",
+            "startMinute": 720,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30
+          },
+          {
+            "id": "38cc71ff-61ee-4c18-8f3d-790beceb98e5",
+            "city": "Paris",
+            "title": "Canal Saint-Martin waterside neighborhood walk",
+            "latitude": 48.8715,
+            "location": "Quai de Valmy and Quai de Jemmapes, Canal Saint-Martin",
+            "costMinor": 0,
+            "longitude": 2.3635,
+            "description": "Travel to the canal, then stroll along Quai de Valmy and Quai de Jemmapes between the locks and footbridges. Discover a different side of Paris through waterside streets and independent storefronts, with an optional seated pause along the route.",
+            "startMinute": 855,
+            "durationMinutes": 90,
+            "bufferBeforeMinutes": 45
+          },
+          {
+            "id": "ecf7cdd1-ccb4-44f5-becc-03d6fdd31cbd",
+            "city": "Paris",
+            "title": "Neighborhood dinner near Rue de Lancry",
+            "latitude": 48.8703,
+            "location": "Rue de Lancry near Canal Saint-Martin",
+            "costMinor": 7500,
+            "longitude": 2.3617,
+            "description": "Choose a restaurant around Rue de Lancry for a final substantial Paris dinner, focusing on seasonal French cooking. The afternoon gap provides a proper rest rather than additional sightseeing; evening service and availability require confirmation.",
+            "startMinute": 1080,
+            "durationMinutes": 75,
+            "bufferBeforeMinutes": 30
+          }
+        ]
+      },
+      {
+        "id": "726255d9-675b-4621-ab8a-245172359460",
+        "date": "2027-04-18",
+        "title": "A quiet Seine-side farewell",
+        "activities": [
+          {
+            "id": "a221ee7e-7873-419b-8f31-4e567914a826",
+            "city": "Paris",
+            "title": "Île Saint-Louis and Seine neighborhood walk",
+            "latitude": 48.852,
+            "location": "Quai de Bourbon and Rue Saint-Louis-en-l’Île",
+            "costMinor": 0,
+            "longitude": 2.3564,
+            "description": "Take an easy final stroll along Quai de Bourbon and Rue Saint-Louis-en-l’Île, enjoying river views and the island’s historic façades. Finish early enough to retrieve luggage and begin your return transfer; no indoor admission or timed booking is assumed.",
+            "startMinute": 570,
+            "durationMinutes": 60,
+            "bufferBeforeMinutes": 30
+          }
+        ]
+      }
+    ],
+    "model": "offline-replay:gpt-6.1-sol",
+    "budget": {
+      "kind": "planning-only",
+      "scope": "entire",
+      "version": 1,
+      "currency": "EUR",
+      "expenses": [
+        {
+          "dayId": "9e1a09dd-933d-4a75-8762-d7f091bc96d5",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 0,
+          "activityId": "1d362d72-cf4d-42bc-b313-57952eb1dab6",
+          "activityIndex": 0,
+          "estimatedMinor": 0
+        },
+        {
+          "dayId": "9e1a09dd-933d-4a75-8762-d7f091bc96d5",
+          "source": "ai-estimate",
+          "category": "food",
+          "currency": "EUR",
+          "dayIndex": 0,
+          "activityId": "05b3a346-7c25-4b58-8a45-b998f32febe7",
+          "activityIndex": 1,
+          "estimatedMinor": 7000
+        },
+        {
+          "dayId": "1c2c97bd-486e-44b4-9547-552c523e5862",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 1,
+          "activityId": "7a634131-68b0-42ae-a886-3d8c0113c79d",
+          "activityIndex": 0,
+          "estimatedMinor": 4400
+        },
+        {
+          "dayId": "1c2c97bd-486e-44b4-9547-552c523e5862",
+          "source": "ai-estimate",
+          "category": "food",
+          "currency": "EUR",
+          "dayIndex": 1,
+          "activityId": "b2538b40-624b-405f-804c-7f752c23dff1",
+          "activityIndex": 1,
+          "estimatedMinor": 5000
+        },
+        {
+          "dayId": "1c2c97bd-486e-44b4-9547-552c523e5862",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 1,
+          "activityId": "b379a744-04bb-493d-9d65-e0969d0e7533",
+          "activityIndex": 2,
+          "estimatedMinor": 0
+        },
+        {
+          "dayId": "1c2c97bd-486e-44b4-9547-552c523e5862",
+          "source": "ai-estimate",
+          "category": "food",
+          "currency": "EUR",
+          "dayIndex": 1,
+          "activityId": "c70ec1cf-f2e2-4beb-9912-4a55196edaed",
+          "activityIndex": 3,
+          "estimatedMinor": 7500
+        },
+        {
+          "dayId": "854031e2-e232-4d65-bbe4-a7ec9a32c9c8",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 2,
+          "activityId": "8cda6d62-6aff-4c1e-8870-7b3d4eaff21f",
+          "activityIndex": 0,
+          "estimatedMinor": 0
+        },
+        {
+          "dayId": "854031e2-e232-4d65-bbe4-a7ec9a32c9c8",
+          "source": "ai-estimate",
+          "category": "food",
+          "currency": "EUR",
+          "dayIndex": 2,
+          "activityId": "6429a713-5f49-4d1a-bf89-10abcbc02d50",
+          "activityIndex": 1,
+          "estimatedMinor": 5500
+        },
+        {
+          "dayId": "854031e2-e232-4d65-bbe4-a7ec9a32c9c8",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 2,
+          "activityId": "38cc71ff-61ee-4c18-8f3d-790beceb98e5",
+          "activityIndex": 2,
+          "estimatedMinor": 0
+        },
+        {
+          "dayId": "854031e2-e232-4d65-bbe4-a7ec9a32c9c8",
+          "source": "ai-estimate",
+          "category": "food",
+          "currency": "EUR",
+          "dayIndex": 2,
+          "activityId": "ecf7cdd1-ccb4-44f5-becc-03d6fdd31cbd",
+          "activityIndex": 3,
+          "estimatedMinor": 7500
+        },
+        {
+          "dayId": "726255d9-675b-4621-ab8a-245172359460",
+          "source": "ai-estimate",
+          "category": "activities",
+          "currency": "EUR",
+          "dayIndex": 3,
+          "activityId": "a221ee7e-7873-419b-8f31-4e567914a826",
+          "activityIndex": 0,
+          "estimatedMinor": 0
+        }
+      ],
+      "allocations": [
+        {
+          "inScope": true,
+          "category": "flights",
+          "currency": "EUR",
+          "allocatedMinor": 48000,
+          "itemizedEstimateMinor": 0,
+          "unitemizedAllowanceMinor": 48000
+        },
+        {
+          "inScope": true,
+          "category": "accommodation",
+          "currency": "EUR",
+          "allocatedMinor": 78000,
+          "itemizedEstimateMinor": 0,
+          "unitemizedAllowanceMinor": 78000
+        },
+        {
+          "inScope": true,
+          "category": "food",
+          "currency": "EUR",
+          "allocatedMinor": 50000,
+          "itemizedEstimateMinor": 32500,
+          "unitemizedAllowanceMinor": 17500
+        },
+        {
+          "inScope": true,
+          "category": "localTransport",
+          "currency": "EUR",
+          "allocatedMinor": 22000,
+          "itemizedEstimateMinor": 0,
+          "unitemizedAllowanceMinor": 22000
+        },
+        {
+          "inScope": true,
+          "category": "activities",
+          "currency": "EUR",
+          "allocatedMinor": 4400,
+          "itemizedEstimateMinor": 4400,
+          "unitemizedAllowanceMinor": 0
+        }
+      ],
+      "reserveMinor": 25000,
+      "allocatedMinor": 202400,
+      "classification": "title-location-rules-v1",
+      "remainingMinor": 22600,
+      "selectedBudgetMinor": 250000,
+      "itemizedEstimateMinor": 36900,
+      "totalWithReserveMinor": 227400,
+      "unitemizedAllowanceMinor": 165500
+    },
+    "quality": {
+      "days": [
+        {
+          "date": "2027-04-15",
+          "role": "arrival",
+          "endMinute": 1260,
+          "startMinute": 840,
+          "maxActivities": 3,
+          "minActivities": 2,
+          "maxPlannedMinutes": 240
+        },
+        {
+          "date": "2027-04-16",
+          "role": "full",
+          "endMinute": 1320,
+          "startMinute": 540,
+          "maxActivities": 5,
+          "minActivities": 3,
+          "maxPlannedMinutes": 480
+        },
+        {
+          "date": "2027-04-17",
+          "role": "full",
+          "endMinute": 1320,
+          "startMinute": 540,
+          "maxActivities": 5,
+          "minActivities": 3,
+          "maxPlannedMinutes": 480
+        },
+        {
+          "date": "2027-04-18",
+          "role": "departure",
+          "endMinute": 720,
+          "startMinute": 540,
+          "maxActivities": 2,
+          "minActivities": 1,
+          "maxPlannedMinutes": 120
+        }
+      ],
+      "version": 3,
+      "assumptions": [
+        "Arrival and departure times were not supplied: arrival activities start from 14:00 and departure activities end by 12:00. Check these assumptions against your own travel arrangements.",
+        "Travel buffers are conservative distance-based estimates, not verified routes or journey times.",
+        "Published venue references describe source-checked information, not future opening guarantees, ticket availability, verified prices or bookings.",
+        "Review specific must-sees, avoidance requests, dietary needs and accessibility directly; these preferences have not been independently verified."
+      ],
+      "venueChecks": [
+        {
+          "name": "Musée d’Orsay",
+          "scope": "published-hours",
+          "dayIndex": 1,
+          "checkedOn": "2026-11-04",
+          "sourceUrl": "https://www.musee-orsay.fr/en/visit",
+          "activityIndex": 0,
+          "publishedWindow": {
+            "endMinute": 1050,
+            "openMinute": 570,
+            "lastAdmissionMinute": 1020
+          }
+        }
+      ],
+      "classifications": [
+        {
+          "basis": "activity-context",
+          "category": "outdoor",
+          "dayIndex": 0,
+          "ambiguous": false,
+          "activityIndex": 0
+        },
+        {
+          "basis": "structured-activity-category",
+          "category": "dining",
+          "dayIndex": 0,
+          "ambiguous": false,
+          "activityIndex": 1
+        },
+        {
+          "basis": "published-venue-metadata",
+          "category": "indoor-attraction",
+          "dayIndex": 1,
+          "ambiguous": false,
+          "activityIndex": 0,
+          "attractionType": "museum"
+        },
+        {
+          "basis": "structured-activity-category",
+          "category": "dining",
+          "dayIndex": 1,
+          "ambiguous": false,
+          "activityIndex": 1
+        },
+        {
+          "basis": "activity-context",
+          "category": "outdoor",
+          "dayIndex": 1,
+          "ambiguous": false,
+          "activityIndex": 2
+        },
+        {
+          "basis": "structured-activity-category",
+          "category": "dining",
+          "dayIndex": 1,
+          "ambiguous": false,
+          "activityIndex": 3
+        },
+        {
+          "basis": "activity-context",
+          "category": "outdoor",
+          "dayIndex": 2,
+          "ambiguous": false,
+          "activityIndex": 0
+        },
+        {
+          "basis": "structured-activity-category",
+          "category": "dining",
+          "dayIndex": 2,
+          "ambiguous": false,
+          "activityIndex": 1
+        },
+        {
+          "basis": "activity-context",
+          "category": "outdoor",
+          "dayIndex": 2,
+          "ambiguous": false,
+          "activityIndex": 2
+        },
+        {
+          "basis": "structured-activity-category",
+          "category": "dining",
+          "dayIndex": 2,
+          "ambiguous": false,
+          "activityIndex": 3
+        },
+        {
+          "basis": "activity-context",
+          "category": "outdoor",
+          "dayIndex": 3,
+          "ambiguous": false,
+          "activityIndex": 0
+        }
+      ],
+      "interestCoverage": [
+        {
+          "matches": [
+            {
+              "dayIndex": 1,
+              "activityIndex": 0
+            }
+          ],
+          "interest": "Culture"
+        },
+        {
+          "matches": [
+            {
+              "dayIndex": 0,
+              "activityIndex": 1
+            },
+            {
+              "dayIndex": 1,
+              "activityIndex": 1
+            },
+            {
+              "dayIndex": 1,
+              "activityIndex": 3
+            },
+            {
+              "dayIndex": 2,
+              "activityIndex": 1
+            },
+            {
+              "dayIndex": 2,
+              "activityIndex": 3
+            }
+          ],
+          "interest": "Food"
+        }
+      ]
+    },
+    "currency": "EUR",
+    "feasible": true,
+    "foodMinor": 50000,
+    "totalMinor": 227400,
+    "explanation": "This plan follows the confirmed April 15–18 dates: four days and three nights in Paris for two travelers, rather than the conflicting seven-day duration field. All figures are rough group estimates in EUR cents, not verified prices or bookings. Estimated total spending is €2,024, including €44 for museum admission separately from the category allocations, leaving €476 (19%) of the €2,500 budget unallocated, exceeding the required 10% reserve. Flights cover estimated return economy travel from London for both travelers; accommodation covers three nights in one shared room. Transport includes airport transfers and local journeys, while food includes the itemized meals plus breakfasts, other meals and snacks. Timing assumes you can reach your Paris accommodation by approximately 14:30 on arrival day and choose return travel departing no earlier than 16:00 on departure day; these are planning conditions, not invented flight schedules. If suitable travel cannot meet these assumptions and estimates, the plan needs revision. The Musée d’Orsay visit follows the supplied published-hours snapshot, checked November 4, 2026, but future hours, admission prices and availability remain uncertain.",
+    "generatedAt": "2026-11-05T17:48:07.239Z",
+    "priceSource": "ai-estimate",
+    "flightsMinor": 48000,
+    "introduction": "A balanced Paris stay combining an Impressionist art museum, distinctive neighborhood walks and relaxed French meals. Paris remains your only base, with generous breaks and no nightclub visits or out-of-city excursions. Restaurant streets are concrete dining suggestions rather than booked venues; meal service and suitable tables must be checked locally.",
+    "reserveMinor": 25000,
+    "normalization": {
+      "version": 1,
+      "corrections": []
+    },
+    "schemaVersion": 2,
+    "accommodationMinor": 78000,
+    "localTransportMinor": 22000
+  },
+  "response": {
+    "answer": "I suggest shortening Day 2’s Saint-Germain-des-Prés culture walk from 90 to 45 minutes: 14:00–14:45 instead of 14:00–15:30 on April 16. Focus on fewer streets rather than rushing the full route. This frees another 45 minutes for rest while keeping your Musée d’Orsay visit, café lunch, and dinner unchanged—and preserving all travel buffers.\n\nThe walk’s estimated group cost remains 0 EUR minor units, so the budget is unchanged and no reserve is needed. This is a proposal only; nothing has been changed.",
+    "proposal": {
+      "actions": [
+        {
+          "city": null,
+          "type": "resize_activity",
+          "dayId": null,
+          "title": null,
+          "category": null,
+          "currency": null,
+          "location": null,
+          "costMinor": null,
+          "activityId": "b379a744-04bb-493d-9d65-e0969d0e7533",
+          "description": null,
+          "startMinute": null,
+          "durationMinutes": 45,
+          "bufferBeforeMinutes": null
+        }
+      ],
+      "summary": "Shorten the Day 2 culture walk by 45 minutes to create more afternoon rest without changing the museum or meals."
+    },
+    "activityIds": ["b379a744-04bb-493d-9d65-e0969d0e7533"],
+    "uncertainties": [
+      "The shorter walk is a pacing suggestion, not a verified route or journey-time estimate. Existing costs remain unverified planning estimates."
+    ]
+  },
+  "provenance": {
+    "provider": "openai",
+    "model": "gpt-6.1-sol",
+    "reasoningEffort": "medium",
+    "liveRequests": 1,
+    "httpStatus": 200,
+    "transportLatencyMs": 10811,
+    "auditLatencyMs": 10828,
+    "usage": {
+      "model": "gpt-6.1-sol",
+      "phase": "assistant",
+      "pricing": {
+        "note": "USD estimate, not an invoice. Standard short-context text rates; reasoning is already included in output. Cached reads/writes use reported counts (missing cache counts assume none). Taxes, regional surcharges and account discounts excluded; nonstandard returned tiers have unknown cost.",
+        "basis": "standard-paid-reference",
+        "checkedOn": "2026-11-04",
+        "sourceUrl": "https://developers.openai.com/api/docs/pricing"
+      },
+      "provider": "openai",
+      "inputTokens": 4644,
+      "totalTokens": 5100,
+      "outputTokens": 456,
+      "promptTokens": 4644,
+      "thinkingTokens": 149,
+      "reasoningTokens": 149,
+      "cacheWriteTokens": 4641,
+      "estimatedCostUsd": 0.0161685,
+      "cachedInputTokens": 0,
+      "visibleOutputTokens": 307
+    },
+    "validation": {
+      "stage": "passed",
+      "errors": [],
+      "contextBytes": 12342,
+      "contextTurns": 0,
+      "contextVersion": 0
+    },
+    "proposalStatus": "pending"
+  }
+}

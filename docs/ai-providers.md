@@ -11,8 +11,10 @@ and explicit atomic approval before changing the saved trip.
 Generation and assistant requests share the existing persistent quota. Assistant
 attempts record the `assistant` usage phase, provider/model, input/output/reasoning
 tokens, estimated USD cost, elapsed time, proposed actions and validation results.
-These are private owner-scoped audits. All new validation was offline; the real
-assistant model's output quality awaits separate live-test approval. See the
+These are private owner-scoped audits. Initial validation was offline; one
+separately authorized [live Sol acceptance request](milestone-3b-live-agent-paris-result.md)
+now passes the Day 2 Paris scenario, with its proposal still pending. No further
+request is authorized; Gemini's assistant quality remains live-untested. See the
 [3B architecture](architecture.md) and [full validation report](milestone-3b-validation.md).
 The original generation-provider implementation report follows.
 

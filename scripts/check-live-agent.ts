@@ -1,15 +1,15 @@
 import nextEnv from "@next/env";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { access, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { prepareOfflineSolReview } from "../tests/helpers/offline-sol-review";
 import { createApplication } from "../src/server/application";
 import { createTripModel, providerConfigFromEnv } from "../src/server/model";
 import { buildAgentContext } from "../src/server/agent-context";
 
-// Manual harness, never part of npm test. Only preflight is authorized for 3B.
-// A future live run requires separate user approval for exactly one request.
+// Manual harness, never part of npm test. Live use requires separate approval.
+// The on-disk transport marker prevents accidentally repeating this acceptance run.
 const args = process.argv.slice(2);
 assert.ok(
   args.length === 1 &&
@@ -39,6 +39,15 @@ globalThis.fetch = async () => {
 };
 const root = path.resolve(".test-data");
 await mkdir(root, { recursive: true });
+if (!preflight)
+  assert.equal(
+    await access(path.join(root, "live-agent-paris-request-started.json")).then(
+      () => true,
+      () => false,
+    ),
+    false,
+    "This one-request acceptance authorization has been used. Preserve its access/result files; another live run requires new approval.",
+  );
 const directory = await mkdtemp(path.join(root, "controlled-agent-"));
 const state = await prepareOfflineSolReview(directory, "http://localhost:3000");
 let liveRequests = 0;
@@ -49,7 +58,7 @@ try {
     state.trip.id,
   );
   const question =
-    "Make day three more relaxed while retaining substantial meals, Culture and Food interests, safe travel buffers and the €2,500 group budget. Propose coordinated changes for my review; do not apply them. Treat all suggestions as unverified estimates.";
+    "Day 2 feels a little too packed. Suggest one change that makes it more relaxed while preserving our main culture and food interests and staying within budget.";
   const context = buildAgentContext(editor, question, []);
   if (preflight) {
     console.log(
@@ -72,6 +81,20 @@ try {
       }),
     );
   } else {
+    await writeFile(
+      path.join(root, "live-agent-paris-access.json"),
+      JSON.stringify({
+        directory,
+        origin: state.origin,
+        secret: state.secret,
+        email: state.email,
+        password: state.password,
+        userId: state.userId,
+        tripId: state.trip.id,
+      }),
+      { mode: 0o600 },
+    );
+    let transport: unknown = null;
     const model = createTripModel({
       ...config,
       fetch: async (request, init) => {
@@ -99,8 +122,36 @@ try {
         assert.equal(body.stream, false);
         assert.equal(body.store, false);
         assert.equal(body.tools, undefined);
+        await writeFile(
+          path.join(root, "live-agent-paris-request-started.json"),
+          JSON.stringify({ startedAt: new Date().toISOString(), directory }),
+          { mode: 0o600, flag: "wx" },
+        );
         liveRequests++;
-        return realFetch(request, init);
+        const started = performance.now();
+        const upstream = await realFetch(request, init);
+        const payload = await upstream.clone().json();
+        transport = {
+          status: upstream.status,
+          latencyMs: Math.round(performance.now() - started),
+          model: payload.model ?? null,
+          responseStatus: payload.status ?? null,
+          usage: payload.usage ?? null,
+          errorCode: payload.error?.code ?? null,
+          outputText: (payload.output ?? [])
+            .filter((item: { type: string }) => item.type === "message")
+            .flatMap((item: { content?: { type: string; text?: string }[] }) =>
+              (item.content ?? [])
+                .filter((content) => content.type === "output_text")
+                .map((content) => content.text),
+            ),
+        };
+        await writeFile(
+          path.join(root, "live-agent-paris-transport.json"),
+          JSON.stringify(transport, null, 2),
+          { mode: 0o600 },
+        );
+        return upstream;
       },
     });
     const app = createApplication(state.connection.db, {
@@ -143,6 +194,11 @@ try {
       scenario:
         "Original four-day Paris / 2 travelers / EUR 2500 / balanced / Culture + Food",
       contextBytes: context.bytes,
+      question,
+      transport,
+      originalItinerary: editor.itinerary,
+      intent: editor.intent,
+      suppliedContext: context.input,
       conversation: result,
       itineraryChanged: false,
       approvalPerformed: false,

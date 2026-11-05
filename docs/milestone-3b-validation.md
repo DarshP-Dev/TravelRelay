@@ -1,5 +1,11 @@
 # Milestone 3B — Context-aware AI travel assistant
 
+Historical offline implementation report. A subsequently authorized **single
+live Sol request passed**; see the [controlled acceptance report](milestone-3b-live-agent-paris-result.md).
+The suite now has **101 passing tests**, including four regressions replaying
+that exact response. The original live proposal remains pending. Statements
+below about live-test readiness describe the original pre-live validation.
+
 Implemented November 5, 2026, on `codex/milestone-3b-travel-agent`, using the
 existing Next.js/Better Auth/Drizzle architecture, AI adapters and versioned 3A
 editor. No live OpenAI/Gemini request, push, deployment, payment, refund, TripWallet

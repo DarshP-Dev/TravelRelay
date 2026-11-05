@@ -15,8 +15,12 @@ assistant and itinerary without an overlay or lost conversation state.
 The existing GPT-6.1 Sol/medium primary and manually configured Gemini backup
 share the same server schemas, editor and project quota. No assistant call happens
 on a page read, approval, rejection, preview refresh or undo. Send/explicit retry
-may consume provider quota when configured. No live AI request was made during 3B.
-See [Milestone 3B validation, costs and limitations](docs/milestone-3b-validation.md).
+may consume provider quota when configured. One separately authorized live Sol
+agent request passed: a single Day 2 Paris adjustment stayed pending for approval,
+with unchanged budget and safe scheduling. Its exact result passes offline
+approval/rejection/stale-version regression tests; **101 tests pass**.
+See the [live acceptance report](docs/milestone-3b-live-agent-paris-result.md) and
+[original offline validation, costs and limitations](docs/milestone-3b-validation.md).
 Apply committed migrations through **`0005`** using `npm run db:migrate` before
 starting this version; stop any process using the same PGlite directory first.
 
@@ -48,7 +52,7 @@ cost estimates. The generation page restores real backend progress and supports
 explicit recovery; it never reveals partial days or retries the model on refresh.
 See [Milestone 2B validation](docs/milestone-2b-validation.md) and the
 [hosting/recovery runbook](docs/generation-hosting.md). No new live model call was
-made for this milestone.
+made for Milestone 2B.
 
 **Milestone 2A passes final offline acceptance and is ready for sign-off.** The
 exact recorded Sol Paris response passes the complete pipeline with unchanged
@@ -340,17 +344,19 @@ own API credentials. This documentation does not enable payments or deploy anyth
 
 ## Manual live check
 
-For the next **one controlled AI-agent request**, the following is offline:
+The controlled AI-agent request has been used. The following remains offline:
 
 ```powershell
 npx tsx scripts/check-live-agent.ts --preflight
 ```
 
 It uses the original four-day Paris recording, two travelers, EUR 2,500, balanced,
-Culture/Food, and asks for a calmer third day. After separate approval, the harness
-supports `--confirm-one-live-agent-request`: exactly one Sol/medium Responses call,
-no retry/fallback, private usage/validation report, and **no automatic proposal
-approval or itinerary edit**. That live mode was not run for this milestone.
+Culture/Food, and the approved Day 2 relaxation message. The one-request live mode
+was run once, with no retry/fallback or automatic proposal approval/itinerary edit.
+An exclusive ignored request marker now prevents accidental repetition of that
+acceptance run. **Do not remove it or run live mode again without new approval.**
+The private transport/access/result evidence is under ignored `.test-data/`;
+the sanitized recording is replayed by `tests/recorded-agent-acceptance.test.ts`.
 
 Offline browser/HTTP QA uses an isolated seeded database and the guarded
 `scripts/offline-agent-transport.mjs` Node preloader, not application fallback code.

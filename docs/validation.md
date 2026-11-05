@@ -1,4 +1,21 @@
-# Milestone 3B — context-aware assistant validation
+# Milestone 3B — controlled live acceptance
+
+One authorized Sol/medium request passed with the exact Day 2 Paris message.
+It proposed shortening the saved 14:00 culture walk from 90 to 45 minutes, with
+museum/meals/buffers and all budget figures unchanged. The original live proposal
+remains **pending**, itinerary revision **0**. No retry, fallback or other live
+request was made. Fresh-login/database-reopen restoration passed; approval,
+rejection/idempotency and stale guards passed using offline copies of this exact
+recorded result. **101 tests now pass**, with lint/type-check/format/build passing.
+No application validator or prompt was changed.
+
+Actual usage: 4,644 input, 456 output including 149 reasoning, 4,641 cache-write
+tokens; estimated $0.01616850, transport 10.811s/application 10.828s, HTTP 200.
+Zero hard preview errors; one unchanged Day 4 meal advisory. See the
+[full live result, fixture, before/after comparison and UI evidence](milestone-3b-live-agent-paris-result.md).
+No push, deployment, financial feature or Milestone 4 work occurred.
+
+## Milestone 3B — original offline assistant validation
 
 The real provider-backed assistant path is implemented with persistent private
 chat/drafts/jobs, typed multi-activity proposals, versioned previews and explicit
