@@ -6,6 +6,7 @@ import {
 } from "../../lib/itinerary";
 import { qualityPlanningBrief } from "../../lib/itinerary-quality";
 import { venueReferences } from "../venue-references";
+import { curatedPlanningBrief } from "../../lib/curated-trips";
 import type { AIProvider, StructuredCall, TripModel } from "./contracts";
 
 export const planningSystemInstruction =
@@ -33,6 +34,7 @@ export function createPlanner(
         "Build a complete, specific day-by-day itinerary within the confirmed base city. Follow every day policy and planningBrief requirement: meaningful experience counts, day windows, maximum planned minutes, interest coverage, durations, lunch/rest space and conservative travel buffers. Arrival/departure times have NOT been supplied: use the explicit conservative planning assumptions, never invent a flight schedule, hotel reservation or confirmed transport. Include concrete food experiences if Food is selected, not merely foodMinor. Use named locations, helpful descriptions explaining what travelers will do and why it suits them, and varied experiences rather than duplicate venues or filler. Treat must-see/avoidance/dietary/accessibility text as constraints; if they cannot be honored reasonably, return feasible=false and explain instead of silently omitting them. Do not assert accessibility or opening hours without supplied evidence. Supplied published-hours references are source-checked snapshots, not future availability guarantees; follow them and identify other venue-hour assumptions honestly in the explanation. Never invent a source, verified status, price or booking. Dates must be consecutive from confirmed startDate. Use local minutes since midnight, durationMinutes and bufferBeforeMinutes. Activities must stay within 50km of the base. All costs must be nonnegative group minor-unit estimates, not per-person costs. Treat foodMinor and localTransportMinor as inclusive whole-trip category allocations covering their itemized activity estimates plus unitemized expenses. Give food activities realistic itemized costMinor values; do not add these again to foodMinor. Itemized food/transport estimates must not exceed the matching allocation. Non-food activity admission costs remain separate. Use explicit food/meal/coffee wording in food activity titles so category mapping is transparent. Separate culinary experiences from museum or transport activities; do not mix cost categories in one stop. Flights and accommodation are whole-trip estimates; spending-only scope excludes them from the budget. Include all travelers and days and reasonable return travel/accommodation for entire scope. Leave at least 10% of the selected budget for the server reserve. If realistic timing, interests, budget or other constraints cannot fit, return feasible=false with a clear limitation. Do not force success by omitting essential costs.",
         {
           intent,
+          curatedInspiration: curatedPlanningBrief(intent.templateId),
           confirmedBase: base,
           days: tripDays(intent),
           groupBudgetMinor: budgetMinor(intent),

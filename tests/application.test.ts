@@ -299,6 +299,8 @@ test("saving intent is atomic and idempotent, and trips remain private", async (
   ).json();
   const data = {
     ...initialIntent("kyoto"),
+    budget: "1200",
+    travelersConfirmed: true,
     departure: "Toronto",
     start: "2027-04-10",
     end: "2027-04-14",
@@ -380,7 +382,7 @@ test("users, sessions, drafts and saved trips survive closing and reopening the 
   assert.equal(response.status, 200);
   const saved = await response.json();
   assert.equal(saved.length, 1);
-  assert.equal(saved[0].data.destination, "Kyoto");
+  assert.equal(saved[0].data.destination, "Kyoto, Japan");
   const drafts = await (
     await app.handle(request("/api/drafts", "GET", alice), "drafts")
   ).json();

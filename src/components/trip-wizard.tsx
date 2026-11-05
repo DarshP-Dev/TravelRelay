@@ -150,7 +150,7 @@ export function TripWizard({
         {status === "expired" && (
           <Link
             className="section-link"
-            href={`/login?next=${encodeURIComponent(`/trips/new${template ? `?template=${template.id}` : ""}`)}`}
+            href={`/login?next=${encodeURIComponent(`/trips/new${sourceTripId ? `?source=${sourceTripId}` : template ? `?template=${template.id}` : ""}`)}`}
           >
             Sign in and restore your draft
           </Link>
@@ -172,6 +172,20 @@ export function TripWizard({
           </button>
         )}
       </div>
+      {template && (
+        <div className="notice template-personalization">
+          <strong>Inspired by {template.title}</strong>
+          <p>
+            We’ve suggested one destination and interests. Choose your own
+            dates, confirm your travelers and enter a group budget. Every
+            preference is editable; the template’s per-person estimate is not
+            your budget or a booking.
+          </p>
+          <Link className="section-link" href={`/explore/${template.id}`}>
+            Review this inspiration
+          </Link>
+        </div>
+      )}
       <ol className="wizard-steps" aria-label="Trip planning steps">
         {steps.map((label, index) => (
           <li
@@ -337,6 +351,18 @@ export function TripWizard({
                       );
                       return;
                     }
+                    if (
+                      flexible
+                        ? duration > 14
+                        : (Date.parse(nextEnd) - Date.parse(nextStart)) /
+                            86400000 >=
+                          14
+                    ) {
+                      setDateError(
+                        "AI planning supports 1–14 days. Choose a shorter stay; your other preferences are kept.",
+                      );
+                      return;
+                    }
                     setDateError("");
                     if (flexible) setMonth(String(fields.get("month") ?? ""));
                     else {
@@ -460,7 +486,7 @@ export function TripWizard({
                           <input
                             type="number"
                             min={1}
-                            max={60}
+                            max={14}
                             value={duration}
                             onChange={(event) =>
                               setDuration(Number(event.target.value))
@@ -499,6 +525,11 @@ export function TripWizard({
                         {dateError}
                       </p>
                     )}
+                    <p className="inline-note">
+                      AI planning supports 1–14 days. Exact arrival and
+                      departure times are not collected; travel-day windows will
+                      be disclosed assumptions.
+                    </p>
                     <div className="field">
                       <span id="travelers-label">Travelers</span>
                       <div
@@ -525,6 +556,21 @@ export function TripWizard({
                         </button>
                       </div>
                     </div>
+                    {draft.templateId && (
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          required
+                          checked={draft.travelersConfirmed ?? false}
+                          onChange={(event) =>
+                            update("travelersConfirmed", event.target.checked)
+                          }
+                        />
+                        Confirm {travelers}{" "}
+                        {travelers === 1 ? "traveler" : "travelers"} for this
+                        trip
+                      </label>
+                    )}
                     <label className="field">
                       Your pace
                       <select
@@ -583,7 +629,8 @@ export function TripWizard({
                     <p className="inline-note">
                       Use your total for all travelers. Selecting a currency
                       only changes the denomination; it does not convert the
-                      amount. Template defaults assume one traveler.
+                      amount. Template illustrations are per person; enter your
+                      own group budget here.
                     </p>
                     <label className="field">
                       What does this budget cover?

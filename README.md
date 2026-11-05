@@ -2,9 +2,24 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 2A — authenticated, persistent AI trip generation.**
+**Current scope: Milestone 2B — custom trip creation and curated personalization.**
 PayPal, bookings, refunds, Trip Recovery, AI editing and Bryntum are not implemented.
-No deployment or push is included; Milestone 2B requires approval.
+No deployment or push is included; Milestone 3 requires approval.
+
+All six inspirations have public previews at `/explore/{templateId}`. Customize
+opens the persistent four-step wizard with a destination and interests, leaving
+dates and budget for you to choose and requiring traveler confirmation. Your
+current choices override optional editorial themes supplied to the AI. Template
+estimates remain unverified, per-person USD illustrations, not group budgets.
+Existing saved drafts are resumed without replacing your edits.
+
+Generated Overview day cards open stable days in the detailed Itinerary tab.
+Dashboard/My Trips show saved job status, dates, travelers and reserve-separated
+cost estimates. The generation page restores real backend progress and supports
+explicit recovery; it never reveals partial days or retries the model on refresh.
+See [Milestone 2B validation](docs/milestone-2b-validation.md) and the
+[hosting/recovery runbook](docs/generation-hosting.md). No new live model call was
+made for this milestone.
 
 **Milestone 2A passes final offline acceptance and is ready for sign-off.** The
 exact recorded Sol Paris response passes the complete pipeline with unchanged
@@ -147,8 +162,9 @@ is enabled. All itinerary costs and unsourced details remain unverified estimate
 After an initial authentication failure, one newly approved Sol request returned
 a complete itinerary (HTTP 200, 63.727 seconds, estimated USD 0.036331). The unchanged
 quality gate rejected a classifier false positive on “Temple” in a street name;
-no completed trip was saved. See [the latest live report](docs/milestone-2a-sol-paris-result.md).
-Full live acceptance is still pending. The historical Gemini report remains in
+no completed trip was saved by that original attempt. The exact recorded response
+subsequently passed the corrected pipeline in [full offline acceptance](docs/milestone-2a-offline-acceptance.md), approved for Milestone 2A.
+See [the historical live report](docs/milestone-2a-sol-paris-result.md). The historical Gemini report remains in
 [the prior live report](docs/milestone-2a-live-quality.md), not evidence of Sol quality.
 
 Secret assignments in `.env.example` are blank placeholders. Non-secret model and
@@ -225,7 +241,8 @@ and APIMatic skills supplied before development remain untouched.
 
 ## Quota protection
 
-The default is `gemini-3.5-flash-lite`. The application never switches models,
+The primary is GPT-6.1 Sol/medium; Gemini 3.5 Flash-Lite is a manually configured
+backup. The application never switches models,
 adds tools, retries a failed request, or continues truncated output automatically.
 A failed attempt preserves input and offers an explicit retry or a labeled example.
 Neither provider selection nor app quotas guarantees free billing. OpenAI requires

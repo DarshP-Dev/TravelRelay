@@ -3,11 +3,16 @@ import { ArrowUpRight } from "lucide-react";
 import { DestinationImage } from "./destination-image";
 import { destinationPhoto, type TripIntent } from "@/lib/trip-intent";
 import type { Itinerary } from "@/lib/itinerary";
-import { dateAfter } from "@/lib/itinerary";
+import { dateAfter, money, budgetMinor } from "@/lib/itinerary";
 export function SavedTripCard({
   trip,
 }: {
-  trip: { id: string; data: TripIntent; itinerary?: Itinerary | null };
+  trip: {
+    id: string;
+    data: TripIntent;
+    itinerary?: Itinerary | null;
+    generationStatus?: string | null;
+  };
 }) {
   const photo = destinationPhoto(
     trip.itinerary?.base.city ??
@@ -23,7 +28,15 @@ export function SavedTripCard({
           }
         />
         <span className="photo-badge">
-          {trip.itinerary ? "AI itinerary · Saved" : "Saved trip intent"}
+          {trip.itinerary
+            ? "AI itinerary · Saved"
+            : trip.generationStatus === "failed"
+              ? "Planning needs attention"
+              : trip.generationStatus === "awaiting_confirmation"
+                ? "Confirm your destination"
+                : trip.generationStatus
+                  ? "Planning in progress"
+                  : "Saved trip intent"}
         </span>
       </div>
       <div className="trip-card-body">
@@ -47,8 +60,36 @@ export function SavedTripCard({
           · {trip.data.travelers}{" "}
           {trip.data.travelers === 1 ? "traveler" : "travelers"}
         </p>
-        <Link className="section-link" href={`/trips/${trip.id}`}>
-          Open trip <ArrowUpRight size={18} aria-hidden="true" />
+        {trip.itinerary && (
+          <div className="saved-card-budget">
+            <p>
+              Allocation + reserve{" "}
+              <strong>
+                {money(trip.itinerary.totalMinor, trip.itinerary.currency)}{" "}
+                {trip.itinerary.currency}
+              </strong>
+            </p>
+            <p>
+              Reserve{" "}
+              {money(trip.itinerary.reserveMinor, trip.itinerary.currency)} ·
+              Unallocated{" "}
+              {money(
+                trip.itinerary.budget?.remainingMinor ??
+                  budgetMinor(trip.data) - trip.itinerary.totalMinor,
+                trip.itinerary.currency,
+              )}
+            </p>
+            <small>Group planning estimates · no spending recorded</small>
+          </div>
+        )}
+        <Link
+          className="section-link"
+          href={`/trips/${trip.id}${!trip.itinerary && trip.generationStatus ? "/generate" : ""}`}
+        >
+          {!trip.itinerary && trip.generationStatus
+            ? "Continue planning"
+            : "Open trip"}{" "}
+          <ArrowUpRight size={18} aria-hidden="true" />
         </Link>
       </div>
     </article>

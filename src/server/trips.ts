@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql, getTableColumns } from "drizzle-orm";
 import { z } from "zod";
 import {
   completeIntentSchema,
@@ -7,7 +7,7 @@ import {
 } from "../lib/trip-intent";
 import { getTemplate } from "../lib/curated-trips";
 import type { Database } from "./db/connection";
-import { draft, trip } from "./db/schema";
+import { draft, trip, generation } from "./db/schema";
 
 export class RequestError extends Error {
   constructor(
@@ -25,8 +25,15 @@ export function createTripStore(db: Database) {
   return {
     async list(userId: string) {
       return db
-        .select()
+        .select({
+          ...getTableColumns(trip),
+          generationStatus: generation.status,
+        })
         .from(trip)
+        .leftJoin(
+          generation,
+          and(eq(generation.tripId, trip.id), eq(generation.userId, userId)),
+        )
         .where(eq(trip.userId, userId))
         .orderBy(desc(trip.createdAt));
     },

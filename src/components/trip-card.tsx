@@ -22,8 +22,15 @@ export function TripCard({
           <MapPin size={13} aria-hidden="true" />
           {trip.city}, {trip.country}
         </p>
-        <h3>{trip.title}</h3>
+        <h3>
+          <Link href={`/explore/${trip.id}`}>{trip.title}</Link>
+        </h3>
         <p className="trip-description">{trip.description}</p>
+        {expanded && (
+          <Link className="section-link" href={`/explore/${trip.id}`}>
+            Preview this trip <ArrowUpRight size={16} aria-hidden="true" />
+          </Link>
+        )}
         {expanded && (
           <details className="day-preview">
             <summary>Peek at the day themes</summary>

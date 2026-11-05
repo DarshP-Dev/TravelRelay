@@ -2905,6 +2905,244 @@ legend {
   color: var(--primary-dark);
   white-space: nowrap;
 }
+
+/* Milestone 2B: existing editorial surfaces, connected trip navigation. */
+.curated-preview > .section-link {
+  margin-bottom: 28px;
+}
+.curated-preview-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 28px;
+}
+.curated-preview-photo {
+  position: relative;
+  min-height: 490px;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.curated-preview-photo .photo-badge {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+}
+.curated-preview-details {
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+}
+.curated-preview-details h2 {
+  font-size: clamp(26px, 3vw, 36px);
+}
+.curated-preview-details > p:not(.eyebrow) {
+  font-size: 15px;
+  color: var(--muted);
+}
+.curated-preview-details > p.curated-preview-estimate {
+  color: var(--ink);
+  font-size: 30px;
+}
+.curated-preview-estimate small {
+  font-size: 14px;
+}
+.curated-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 20px;
+}
+.curated-theme {
+  padding: 28px;
+}
+.curated-theme h3 {
+  font-size: 20px;
+  margin-bottom: 14px;
+}
+.curated-theme p,
+.template-personalization p {
+  font-size: 15px;
+  color: var(--muted);
+}
+.template-personalization {
+  margin-top: -12px;
+}
+.template-personalization .section-link {
+  margin-top: 12px;
+}
+.generation-status-message {
+  padding: 15px 18px;
+  border-radius: 12px;
+  background: var(--soft);
+  font-size: 15px;
+  margin-bottom: 12px;
+}
+.saved-card-budget {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  margin-block: 18px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.saved-card-budget strong {
+  display: block;
+  color: var(--ink);
+  font-size: 20px;
+  font-weight: 500;
+  margin-block: 4px 10px;
+}
+.saved-card-budget small {
+  display: block;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.itinerary-overview-days {
+  padding: 32px;
+  border-bottom: 1px solid var(--line);
+  min-width: 0;
+}
+.itinerary-overview-days .section-heading {
+  gap: 20px;
+  margin-bottom: 14px;
+}
+.itinerary-overview-days h2 {
+  font-size: clamp(25px, 3vw, 34px);
+}
+.overview-day-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding-block: 20px 8px;
+}
+.overview-day-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  overflow: hidden;
+  min-width: 0;
+}
+.overview-day-card > a {
+  display: block;
+  height: 100%;
+}
+.overview-day-card > a:hover h3 {
+  color: var(--primary-dark);
+}
+.overview-day-photo {
+  position: relative;
+  height: 170px;
+}
+.overview-day-photo span {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  padding: 5px 9px;
+  background: rgb(25 39 35 / 85%);
+  color: white;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.overview-day-body {
+  padding: 22px;
+}
+.overview-day-body h3 {
+  font-size: 21px;
+  margin-top: 12px;
+}
+.overview-day-body ul {
+  padding-left: 18px;
+  margin-block: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.overview-day-body li + li {
+  margin-top: 6px;
+}
+.overview-day-body .section-link {
+  margin-top: 18px;
+  font-size: 14px;
+}
+.overview-more-days > summary {
+  min-height: 44px;
+  padding-block: 12px;
+  color: var(--primary-dark);
+  font-weight: 600;
+}
+.itinerary-day-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 24px 32px 0;
+}
+.itinerary-day-nav a {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-height: 44px;
+  color: var(--primary-dark);
+}
+.itinerary-day-nav small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.itinerary-day {
+  scroll-margin-top: 110px;
+}
+.itinerary-day:target {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (max-width: 1000px) {
+  .curated-preview-layout {
+    grid-template-columns: 1fr;
+  }
+  .curated-preview-photo {
+    min-height: 380px;
+  }
+  .overview-day-grid,
+  .curated-theme-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 640px) {
+  .curated-preview-photo {
+    min-height: 290px;
+  }
+  .curated-preview-details,
+  .curated-theme {
+    padding: 24px;
+  }
+  .curated-theme-grid {
+    grid-template-columns: 1fr;
+  }
+  .itinerary-overview-days {
+    padding: 24px 18px;
+  }
+  .itinerary-overview-days .section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .overview-day-grid {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding: 20px 4px 12px;
+  }
+  .overview-day-card {
+    flex: 0 0 88%;
+    scroll-snap-align: start;
+  }
+  .itinerary-day-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 22px 18px 4px;
+  }
+  .itinerary-day-nav a {
+    flex-shrink: 0;
+  }
+}
 .venue-evidence {
   display: grid;
   gap: 5px;

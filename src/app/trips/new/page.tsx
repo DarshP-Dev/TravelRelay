@@ -3,6 +3,7 @@ import { TripWizard } from "@/components/trip-wizard";
 import { PageHeading } from "@/components/ui";
 import { getTemplate } from "@/lib/curated-trips";
 import { requireUser } from "@/server/session";
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = { title: "Create Trip" };
 
@@ -13,6 +14,8 @@ export default async function CreateTripPage({
 }) {
   const { template: templateId, source } = await searchParams;
   const template = getTemplate(templateId);
+  if (templateId && !template) notFound();
+  if (templateId && source) notFound();
   const user = await requireUser(
     `/trips/new${source ? `?source=${encodeURIComponent(source)}` : template ? `?template=${template.id}` : ""}`,
   );

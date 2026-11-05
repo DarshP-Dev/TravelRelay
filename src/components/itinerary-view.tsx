@@ -4,6 +4,7 @@ import { budgetMinor, dateAfter, money, type Itinerary } from "@/lib/itinerary";
 import { planningBudgetSummary } from "@/lib/budget-presentation";
 import type { VenueCheck, DayRole } from "@/lib/itinerary-quality";
 import { ItineraryBudgetView, budgetLabels } from "./itinerary-budget-view";
+import { ItineraryDayOverview } from "./itinerary-day-overview";
 function clock(minute: number) {
   return `${Math.floor(minute / 60)
     .toString()
@@ -60,11 +61,13 @@ export function ItineraryView({
   intent,
   timeline = false,
   example = false,
+  tripId,
 }: {
   itinerary: Omit<Itinerary, "generatedAt" | "model" | "priceSource">;
   intent: TripIntent;
   timeline?: boolean;
   example?: boolean;
+  tripId?: string;
 }) {
   const photo = destinationPhoto(plan.base.city);
   return (
@@ -106,6 +109,14 @@ export function ItineraryView({
           {dateAfter(plan.base.startDate, plan.days.length - 1)} ·{" "}
           {intent.travelers} {intent.travelers === 1 ? "traveler" : "travelers"}{" "}
           · Local time: {plan.base.timeZone}
+        </p>
+        <p className="inline-note">
+          Selected group budget: {money(budgetMinor(intent), intent.currency)}{" "}
+          {intent.currency} ·{" "}
+          {intent.scope === "entire"
+            ? "Entire vacation"
+            : "Spending only; flights and accommodation excluded"}
+          .
         </p>
         {plan.quality && (
           <p className="inline-note">
@@ -188,6 +199,9 @@ export function ItineraryView({
           <small>Planning estimate · no spending recorded</small>
         </div>
       </div>
+      {tripId && !timeline && !example && (
+        <ItineraryDayOverview plan={plan} tripId={tripId} />
+      )}
       <div className="itinerary-costs">
         <h3>What the estimate includes</h3>
         {plan.budget ? (
@@ -238,96 +252,116 @@ export function ItineraryView({
           or availability have been confirmed.
         </p>
       </div>
-      <div
-        className={
-          timeline ? "itinerary-days itinerary-timeline" : "itinerary-days"
-        }
-      >
-        {plan.days.map((day, index) => (
-          <article className="itinerary-day" key={day.id}>
-            <div className="itinerary-day-heading">
-              <span className="eyebrow">
-                DAY {index + 1} · {day.date}
-              </span>
-              {plan.quality && (
-                <p className="day-role">
-                  {dayLabels[plan.quality.days[index]?.role]} · {intent.pace}{" "}
-                  pace
-                </p>
-              )}
-              <h3>{day.title}</h3>
-            </div>
-            <ol>
-              {day.activities.map((activity, activityIndex) => {
-                const expense = plan.budget?.expenses.find(
-                  (item) =>
-                    item.dayIndex === index &&
-                    item.activityIndex === activityIndex,
-                );
-                const correction = plan.normalization?.corrections.find(
-                  (item) =>
-                    item.dayIndex === index &&
-                    item.activityIndex === activityIndex,
-                );
-                return (
-                  <li key={activity.id}>
-                    <div className="activity-time">
-                      {clock(activity.startMinute)}
-                      <span className="activity-end">
-                        to{" "}
-                        {clock(activity.startMinute + activity.durationMinutes)}
-                      </span>
-                      <span>{activity.durationMinutes} min</span>
-                    </div>
-                    <div>
-                      <h4>{activity.title}</h4>
-                      <p>{activity.description}</p>
-                      <p className="activity-place">
-                        {activity.location} · {activity.city}
-                      </p>
-                      <VenueInformation
-                        reference={plan.quality?.venueChecks.find(
-                          (item) =>
-                            item.dayIndex === index &&
-                            item.activityIndex === activityIndex,
-                        )}
-                        example={example}
-                      />
-                      <small>
-                        {activity.bufferBeforeMinutes} min travel / arrival
-                        buffer ·{" "}
-                        {expense?.category === "food" &&
-                        expense.estimatedMinor === 0
-                          ? "Food cost unitemized within its allocation"
-                          : `${money(activity.costMinor, plan.currency)} ${plan.currency} estimated for your group`}
-                      </small>
-                      {expense && (
-                        <small className="activity-budget-note">
-                          {budgetLabels[expense.category]} estimate · already
-                          included in the category allocation, not an extra
-                          charge.
-                          {expense.category === "food" &&
-                          expense.estimatedMinor === 0
-                            ? " Meal costs are unitemized within the food allowance."
-                            : ""}
-                        </small>
-                      )}
-                      {correction && (
-                        <small className="activity-budget-note">
-                          Buffer corrected from {correction.originalMinutes} to{" "}
-                          {correction.correctedMinutes} minutes within the{" "}
-                          {correction.availableGapMinutes}-minute scheduled gap;
-                          activity times unchanged.
-                        </small>
-                      )}
-                    </div>
-                  </li>
-                );
-              })}
-            </ol>
-          </article>
-        ))}
-      </div>
+      {(timeline || example || !tripId) && (
+        <>
+          {timeline && (
+            <nav className="itinerary-day-nav" aria-label="Itinerary days">
+              {plan.days.map((day, index) => (
+                <a href={`#day-${day.id}`} key={day.id}>
+                  Day {index + 1}
+                  <small>{day.date}</small>
+                </a>
+              ))}
+            </nav>
+          )}
+          <div
+            className={
+              timeline ? "itinerary-days itinerary-timeline" : "itinerary-days"
+            }
+          >
+            {plan.days.map((day, index) => (
+              <article
+                className="itinerary-day"
+                id={`day-${day.id}`}
+                key={day.id}
+              >
+                <div className="itinerary-day-heading">
+                  <span className="eyebrow">
+                    DAY {index + 1} · {day.date}
+                  </span>
+                  {plan.quality && (
+                    <p className="day-role">
+                      {dayLabels[plan.quality.days[index]?.role]} ·{" "}
+                      {intent.pace} pace
+                    </p>
+                  )}
+                  <h3>{day.title}</h3>
+                </div>
+                <ol>
+                  {day.activities.map((activity, activityIndex) => {
+                    const expense = plan.budget?.expenses.find(
+                      (item) =>
+                        item.dayIndex === index &&
+                        item.activityIndex === activityIndex,
+                    );
+                    const correction = plan.normalization?.corrections.find(
+                      (item) =>
+                        item.dayIndex === index &&
+                        item.activityIndex === activityIndex,
+                    );
+                    return (
+                      <li key={activity.id}>
+                        <div className="activity-time">
+                          {clock(activity.startMinute)}
+                          <span className="activity-end">
+                            to{" "}
+                            {clock(
+                              activity.startMinute + activity.durationMinutes,
+                            )}
+                          </span>
+                          <span>{activity.durationMinutes} min</span>
+                        </div>
+                        <div>
+                          <h4>{activity.title}</h4>
+                          <p>{activity.description}</p>
+                          <p className="activity-place">
+                            {activity.location} · {activity.city}
+                          </p>
+                          <VenueInformation
+                            reference={plan.quality?.venueChecks.find(
+                              (item) =>
+                                item.dayIndex === index &&
+                                item.activityIndex === activityIndex,
+                            )}
+                            example={example}
+                          />
+                          <small>
+                            {activity.bufferBeforeMinutes} min travel / arrival
+                            buffer ·{" "}
+                            {expense?.category === "food" &&
+                            expense.estimatedMinor === 0
+                              ? "Food cost unitemized within its allocation"
+                              : `${money(activity.costMinor, plan.currency)} ${plan.currency} estimated for your group`}
+                          </small>
+                          {expense && (
+                            <small className="activity-budget-note">
+                              {budgetLabels[expense.category]} estimate ·
+                              already included in the category allocation, not
+                              an extra charge.
+                              {expense.category === "food" &&
+                              expense.estimatedMinor === 0
+                                ? " Meal costs are unitemized within the food allowance."
+                                : ""}
+                            </small>
+                          )}
+                          {correction && (
+                            <small className="activity-budget-note">
+                              Buffer corrected from {correction.originalMinutes}{" "}
+                              to {correction.correctedMinutes} minutes within
+                              the {correction.availableGapMinutes}-minute
+                              scheduled gap; activity times unchanged.
+                            </small>
+                          )}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </article>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

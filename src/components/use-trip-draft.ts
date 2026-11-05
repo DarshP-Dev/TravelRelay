@@ -7,6 +7,7 @@ import {
   type TripIntent,
 } from "@/lib/trip-intent";
 import { useRouter } from "next/navigation";
+import { validateGenerationIntent } from "@/lib/itinerary";
 
 type SaveStatus =
   | "loading"
@@ -238,6 +239,16 @@ export function useTripDraft(
     const parsed = completeIntentSchema.safeParse(latest.current);
     if (!parsed.success) {
       setError(parsed.error.issues.map((issue) => issue.message).join(" "));
+      return;
+    }
+    try {
+      validateGenerationIntent(parsed.data);
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Review the trip length before planning.",
+      );
       return;
     }
     if (!(await flush())) return;

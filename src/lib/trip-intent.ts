@@ -13,6 +13,12 @@ const date = z
   );
 export const intentSchema = z
   .object({
+    templateId: z
+      .string()
+      .max(40)
+      .refine((id) => !!getTemplate(id), "Choose a supported inspiration.")
+      .optional(),
+    travelersConfirmed: z.boolean().optional(),
     step: z.number().int().min(0).max(3),
     review: z.boolean(),
     mode: z.enum(["known", "discover"]),
@@ -49,6 +55,11 @@ export const completeIntentSchema = intentSchema.superRefine((value, ctx) => {
   if (value.mode === "known" ? !value.destination : !value.vibe)
     issue("destination", "Enter a destination or describe your escape.");
   if (!value.departure) issue("departure", "Enter your departure city.");
+  if (value.templateId && !value.travelersConfirmed)
+    issue(
+      "travelersConfirmed",
+      "Confirm the traveler count for your personalized trip.",
+    );
   if (value.flexible) {
     if (!value.month || value.duration < 1)
       issue(
@@ -70,10 +81,11 @@ export const completeIntentSchema = intentSchema.superRefine((value, ctx) => {
 export function initialIntent(templateId?: string): TripIntent {
   const template = getTemplate(templateId);
   return {
+    ...(template ? { templateId: template.id, travelersConfirmed: false } : {}),
     step: 0,
     review: false,
     mode: "known",
-    destination: template?.city ?? "",
+    destination: template ? `${template.city}, ${template.country}` : "",
     vibe: "",
     departure: "",
     start: "",
@@ -83,11 +95,11 @@ export function initialIntent(templateId?: string): TripIntent {
     duration: template?.days ?? 7,
     travelers: 1,
     pace: "balanced",
-    budget: template ? String(template.estimate) : "",
+    budget: "",
     currency: template ? "USD" : "CAD",
     scope: template ? "spending" : "entire",
     style: "balanced",
-    selected: template?.interests ?? [],
+    selected: [...(template?.interests ?? [])],
     mustSee: "",
     avoids: "",
     dietary: "",

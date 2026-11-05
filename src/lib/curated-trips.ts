@@ -135,6 +135,20 @@ export function getTemplate(id?: string) {
   return curatedTrips.find((trip) => trip.id === id);
 }
 
+export function curatedPlanningBrief(id?: string) {
+  const template = getTemplate(id);
+  return template
+    ? {
+        id: template.id,
+        title: template.title,
+        description: template.description,
+        themes: template.preview,
+        personalizationRule:
+          "These are optional editorial ideas, not verified venues, schedules or prices. The user's current destination, dates, traveler count, budget, pace, selected interests and constraints take precedence over all template defaults. Adapt or omit themes that conflict. Never add another base city. Do not copy the template's illustrative budget or length.",
+      }
+    : undefined;
+}
+
 export const interests = [
   "Food",
   "Culture",

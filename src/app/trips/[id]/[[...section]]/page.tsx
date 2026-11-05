@@ -136,6 +136,7 @@ export default async function TripWorkspacePage({
               itinerary={saved.itinerary}
               intent={saved.data}
               timeline={active === "itinerary"}
+              tripId={id}
             />
           )}
           {saved && !saved.itinerary && active === "" && (

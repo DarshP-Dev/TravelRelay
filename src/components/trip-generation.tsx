@@ -11,6 +11,10 @@ import {
   tripDays,
   type CityProposal,
 } from "@/lib/itinerary";
+import {
+  generationPresentation,
+  generationStages as stages,
+} from "@/lib/generation-presentation";
 
 type Job = {
   status: string;
@@ -18,29 +22,8 @@ type Job = {
   error: string | null;
   attempts: number;
   confirmed: boolean;
+  updatedAt?: string;
 };
-const stages = [
-  {
-    key: "choosing",
-    label: "Find your base city",
-    description: "Matching your destination, budget and preferences.",
-  },
-  {
-    key: "awaiting_confirmation",
-    label: "Make it yours",
-    description: "Review and confirm one city and your dates.",
-  },
-  {
-    key: "generating",
-    label: "Shape the days ahead",
-    description: "Building a personalized plan with room to breathe.",
-  },
-  {
-    key: "validating",
-    label: "Bring it all together",
-    description: "Checking timing, budget and saving your complete itinerary.",
-  },
-];
 export function TripGeneration({
   id,
   intent,
@@ -62,7 +45,10 @@ export function TripGeneration({
     async function poll() {
       try {
         const response = await fetch(url, {
-          signal: controller.signal,
+          signal: AbortSignal.any([
+            controller.signal,
+            AbortSignal.timeout(15_000),
+          ]),
           cache: "no-store",
         });
         const data = await response.json();
@@ -88,7 +74,13 @@ export function TripGeneration({
         if (!alive) return;
         setLoading(false);
         setError(
-          cause instanceof Error
+          cause instanceof Error &&
+            ![
+              "TypeError",
+              "TimeoutError",
+              "AbortError",
+              "SyntaxError",
+            ].includes(cause.name)
             ? cause.message
             : "Connection interrupted. Your trip remains saved. Check again when connected.",
         );
@@ -101,6 +93,15 @@ export function TripGeneration({
       clearTimeout(timer);
     };
   }, [url, refresh]);
+  useEffect(() => {
+    const checkStatus = () => setRefresh((value) => value + 1);
+    window.addEventListener("online", checkStatus);
+    window.addEventListener("focus", checkStatus);
+    return () => {
+      window.removeEventListener("online", checkStatus);
+      window.removeEventListener("focus", checkStatus);
+    };
+  }, []);
   async function act(action: "start" | "confirm" | "retry") {
     setBusy(true);
     setError("");
@@ -109,6 +110,7 @@ export function TripGeneration({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action }),
+        signal: AbortSignal.timeout(15_000),
       });
       const data = await response.json();
       setNeedsSignin(response.status === 401);
@@ -120,7 +122,10 @@ export function TripGeneration({
       setRefresh((value) => value + 1);
     } catch (cause) {
       setError(
-        cause instanceof Error
+        cause instanceof Error &&
+          !["TypeError", "TimeoutError", "AbortError", "SyntaxError"].includes(
+            cause.name,
+          )
           ? cause.message
           : "Connection interrupted. Check the saved status before retrying.",
       );
@@ -132,14 +137,8 @@ export function TripGeneration({
     job?.proposal?.city ?? (intent.mode === "known" ? intent.destination : ""),
   );
   const status = job?.status;
-  const current =
-    status === "complete"
-      ? 4
-      : status === "queued"
-        ? job?.confirmed
-          ? 2
-          : 0
-        : stages.findIndex((stage) => stage.key === status);
+  const presentation = generationPresentation(job);
+  const current = presentation.stageIndex;
   return (
     <div className="container generation-page">
       <div className="generation-scene">
@@ -181,7 +180,9 @@ export function TripGeneration({
               ? "Ready when you are."
               : status === "awaiting_confirmation"
                 ? "One place to call your base."
-                : "Good things take a little thought."}
+                : status === "failed"
+                  ? "Let’s find the next step."
+                  : "Good things take a little thought."}
           </h2>
           <p>
             {intent.travelers}{" "}
@@ -191,6 +192,30 @@ export function TripGeneration({
             {intent.pace}
           </p>
         </div>
+        {!loading && (
+          <p
+            role="status"
+            aria-live="polite"
+            className="generation-status-message"
+          >
+            {presentation.message}
+          </p>
+        )}
+        {job && (
+          <p className="inline-note">
+            {job.confirmed ? "Itinerary" : "Destination"} attempts used:{" "}
+            {job.attempts} of 3.{" "}
+            {job.updatedAt && (
+              <>
+                Saved update:{" "}
+                <time dateTime={job.updatedAt}>
+                  {job.updatedAt.replace("T", " ").slice(0, 19)} UTC
+                </time>
+                .
+              </>
+            )}
+          </p>
+        )}
         {status &&
           ["queued", "choosing", "generating", "validating"].includes(
             status,
@@ -258,7 +283,7 @@ export function TripGeneration({
             </p>
             <button
               className="button button-primary"
-              disabled={busy}
+              disabled={busy || needsSignin}
               onClick={() => void act("confirm")}
             >
               {busy ? "Starting…" : "Confirm city & generate my trip"}
@@ -296,14 +321,20 @@ export function TripGeneration({
             {busy ? "Starting…" : "Find my base city"}
           </button>
         )}
-        {status === "failed" && job && job.attempts < 3 && (
+        {presentation.canRetry && (
           <button
             className="button button-primary"
-            disabled={busy}
+            disabled={busy || needsSignin}
             onClick={() => void act("retry")}
           >
-            {busy ? "Retrying…" : "Retry safely"}
+            {busy ? "Retrying…" : "Retry AI planning"}
           </button>
+        )}
+        {status === "failed" && job && job.attempts >= 3 && (
+          <p className="inline-note">
+            This planning phase has reached its three-attempt limit. Your saved
+            input is unchanged. Adjust a copy of your preferences to plan again.
+          </p>
         )}
         {status === "complete" && (
           <Link className="button button-primary" href={`/trips/${id}`}>

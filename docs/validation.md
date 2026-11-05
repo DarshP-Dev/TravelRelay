@@ -1,4 +1,35 @@
-# Milestone 2A — final offline acceptance
+# Milestone 2B — completed offline validation
+
+Custom trip creation and all six curated-template paths are connected to the
+approved persistent generation engine. No live model calls, deployment or push
+were made. The original 2A validators, provider settings, rate limits, budget
+reconciliation and exact recorded-response regression remain intact.
+
+| Final check                                 | Result                                                                                                                                                                                        |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`                                  | **69 passed**, zero failures (63 existing + 6 new)                                                                                                                                            |
+| `npm run lint`                              | Passed, zero warnings                                                                                                                                                                         |
+| `npm run typecheck`                         | Passed                                                                                                                                                                                        |
+| `npm run build`                             | Passed; all six curated previews statically generated                                                                                                                                         |
+| `npm run format:check` / `git diff --check` | Passed                                                                                                                                                                                        |
+| Production HTTP smoke                       | **29 assertions passed**: six public previews, unknown-template 404, protected redirects, anonymous API denials, six authenticated template pages, Dashboard/My Trips and completed itinerary |
+| Credential boundary                         | **20 public assets** checked against 3 configured private values; zero leaks or frontend provider transports                                                                                  |
+| Responsive review                           | Overview and curated preview at 360/390/768/1440px; no page overflow. Mobile cards scroll inside their section. Wizard review and itinerary checked on desktop/mobile.                        |
+| Browser flow                                | Preview → sign-in → personalized wizard → autosave/refresh → real saved intent → honest offline configuration failure; generated day links and saved/failed trip cards verified               |
+
+See [Milestone 2B implementation and limitations](milestone-2b-validation.md) and
+the [hosting/recovery runbook](generation-hosting.md). Hosted PostgreSQL and the
+240-second Node background execution/drain window remain unprovisioned deployment
+requirements; a persistent job is not a durable distributed worker queue. Live
+quality of the new curated prompt context requires separately approved testing.
+
+The approved 2A changes were checkpointed separately and 2B committed locally on
+`codex/milestone-2b-trip-experience`, both attributed to DarshP-Dev. Nothing was
+pushed, and no Milestone 3 work was started. Historical reports follow unchanged.
+
+---
+
+## Milestone 2A — final offline acceptance
 
 **Pass: ready for Milestone 2A sign-off.** The exact recorded real GPT-6.1 Sol
 Paris response passes every schema, schedule, budget, geography and quality check

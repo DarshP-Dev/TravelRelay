@@ -1,4 +1,41 @@
-# Architecture — Milestone 2A
+# Architecture — Milestone 2B
+
+Milestone 2B connects the existing generation engine to public curated previews,
+personalized wizard drafts and navigable generated-trip overviews. It adds no
+provider, database driver, dependency, payment integration or external worker.
+The approved Milestone 2A validators, budget reconciliation, provider settings,
+quota and atomic persistence remain unchanged.
+
+## Curated personalization and workspace connections
+
+- `src/app/explore/[templateId]/page.tsx` statically builds the six known public
+  previews; unknown IDs return 404. Explore/landing/dashboard cards link to preview
+  and customize URLs. Protected wizard return paths preserve the selected template.
+- `initialIntent` adds an optional validated `templateId` and traveler-confirmation
+  flag to new template drafts. Destination includes city/country; interests are
+  copied rather than sharing a mutable template array. Dates/departure/budget are
+  blank. Choosing travel dates/count, a group budget, pace and preferences remains
+  the user's responsibility. Complete-intent validation requires confirmation for
+  new template drafts. Older saved JSON remains valid; saved values are not reset.
+  These optional JSONB fields require no SQL migration.
+- `curatedPlanningBrief` resolves only known server-shipped editorial themes.
+  Both providers receive identical optional inspiration context. User intent and
+  confirmed base take precedence; template cost/length never replace user values.
+  There is still exactly one confirmed base; multi-city generation is unsupported.
+- `createTripStore.list` joins owner-scoped job status for Dashboard/My Trips;
+  authenticated generated cards show dates/travelers and saved budget metadata.
+  `ItineraryDayOverview` shows three photo cards, remaining-day disclosure and
+  stable links to `/trips/{id}/itinerary#day-{uuid}`. Detailed timelines keep every
+  time, duration, location, buffer, currency, cost and source label unchanged.
+  Mobile uses a swipeable card row; tabs and day selectors remain horizontal.
+- `generation-presentation.ts` maps real persisted states to UI copy, current
+  stage and explicit retry availability. Fetches are bounded; focus/online checks
+  perform reads only. Failed/exhausted states preserve the original source draft
+  and provide a separate revision-copy path. No timed synthetic progress exists.
+
+See [Milestone 2B validation](milestone-2b-validation.md) and the
+[hosting/recovery contract](generation-hosting.md) for tests and deployment blockers.
+The following engine architecture remains in force from Milestone 2A.
 
 OpenAI is now primary (`AI_PROVIDER=openai`, `OPENAI_MODEL=gpt-6.1-sol`, medium
 reasoning), with Gemini 3.5 Flash-Lite retained as a manual server-configuration
@@ -179,7 +216,7 @@ control; model choice and app quotas alone cannot guarantee zero provider charge
 
 ## Deferred
 
-AI editing (2B), live supplier data, independent worker infrastructure, hosted
+AI editing (a later scope), live supplier data, independent worker infrastructure, hosted
 PostgreSQL verification/deployment, FX, ledger transactions, PayPal checkout,
 refunds, Trip Recovery, Bryntum and AG Grid remain outside this milestone.
 Existing auth limits (email verification/reset/OAuth/MFA) remain unchanged.

@@ -20,7 +20,7 @@ export default async function TripsPage() {
       <PageHeading
         eyebrow="YOUR PERSONAL DEPARTURE BOARD"
         title="Every adventure, in one place."
-        description="Your saved plans will have a home here."
+        description="Your complete itineraries and saved plans, ready to return to."
       >
         <ButtonLink href="/trips/new">
           <Plus size={17} aria-hidden="true" />
