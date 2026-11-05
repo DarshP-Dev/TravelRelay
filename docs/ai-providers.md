@@ -1,3 +1,21 @@
+# Current provider extension: Milestone 3B
+
+The same configured adapter now also implements `TripModel.respond` for the
+context-aware travel assistant. It uses GPT-6.1 Sol/medium by default, preserves
+manual Gemini selection, and never falls back or retries automatically. The
+assistant has a separate strict response/action schema, a 96KB context limit and
+an 8,192-token output cap including reasoning. No model tools or arbitrary URLs
+are executable. Typed activity proposals must pass the existing editor preview
+and explicit atomic approval before changing the saved trip.
+
+Generation and assistant requests share the existing persistent quota. Assistant
+attempts record the `assistant` usage phase, provider/model, input/output/reasoning
+tokens, estimated USD cost, elapsed time, proposed actions and validation results.
+These are private owner-scoped audits. All new validation was offline; the real
+assistant model's output quality awaits separate live-test approval. See the
+[3B architecture](architecture.md) and [full validation report](milestone-3b-validation.md).
+The original generation-provider implementation report follows.
+
 # Milestone 2A: OpenAI primary and manual Gemini backup
 
 Implemented November 4, 2026 and initially validated offline. The first live attempt

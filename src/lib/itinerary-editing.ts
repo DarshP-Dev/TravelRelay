@@ -41,7 +41,7 @@ export const editableActivitySchema = z
     "Supply both coordinates, or leave both blank.",
   );
 const identity = { activityId: z.uuid() };
-export const editOperationSchema = z.discriminatedUnion("action", [
+export const activityOperationSchema = z.discriminatedUnion("action", [
   z
     .object({
       action: z.literal("add"),
@@ -64,6 +64,15 @@ export const editOperationSchema = z.discriminatedUnion("action", [
       action: z.literal("reorder"),
       ...identity,
       direction: z.enum(["earlier", "later"]),
+    })
+    .strict(),
+]);
+export const editOperationSchema = z.discriminatedUnion("action", [
+  ...activityOperationSchema.options,
+  z
+    .object({
+      action: z.literal("batch"),
+      operations: z.array(activityOperationSchema).min(1).max(12),
     })
     .strict(),
   z.object({ action: z.literal("restore"), editId: z.uuid() }).strict(),
@@ -167,6 +176,12 @@ export function applyActivityOperation(
   intent: TripIntent,
   operation: Exclude<EditRequest["operation"], { action: "restore" }>,
 ): Itinerary {
+  if (operation.action === "batch") {
+    return operation.operations.reduce(
+      (plan, item) => applyActivityOperation(plan, intent, item),
+      original,
+    );
+  }
   const plan = materializeActivities(original);
   const day = plan.days.find((d) =>
     d.activities.some((a) => a.id === operation.activityId),

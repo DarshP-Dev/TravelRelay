@@ -6,6 +6,7 @@ import { createGenerationStore } from "./generation";
 import { createTripModel, type TripModel } from "./model";
 import type { GenerationLimits } from "./generation-quota";
 import { createItineraryEditor } from "./itinerary-edits";
+import { createTravelAgent } from "./agent";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -69,15 +70,57 @@ export function createApplication(
   const auth = createAuth(db, config);
   const trips = createTripStore(db);
   const itineraryEditor = createItineraryEditor(db);
-  const generations = createGenerationStore(
-    db,
-    config.model ?? createTripModel({}),
-    config.generationLimits,
-  );
+  const model = config.model ?? createTripModel({});
+  const travelAgent = createTravelAgent(db, model, config.generationLimits);
+  const generations = createGenerationStore(db, model, config.generationLimits);
   return {
     auth,
     trips,
     itineraryEditor,
+    travelAgent,
+    async agentHandler(
+      request: Request,
+      id: string,
+      schedule: (work: () => Promise<void>) => void,
+    ) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to use your trip assistant.");
+        checkOrigin(request, config.origin);
+        let data;
+        let status = 200;
+        if (request.method === "GET") {
+          const before = new URL(request.url).searchParams.get("before");
+          data = await travelAgent.read(
+            session.user.id,
+            id,
+            before === null
+              ? undefined
+              : z.coerce.number().int().min(1).parse(before),
+          );
+        } else if (request.method === "POST") {
+          const result = await travelAgent.action(
+            session.user.id,
+            id,
+            await readJson(request),
+          );
+          if (result.queuedTurnId) {
+            schedule(() =>
+              travelAgent.run(session.user.id, id, result.queuedTurnId!),
+            );
+            status = 202;
+          }
+          data = { ...result.state, itineraryChanged: result.itineraryChanged };
+        } else throw new RequestError(405, "Method not allowed.");
+        return Response.json(data, {
+          status,
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async itineraryHandler(request: Request, id: string, preview = false) {
       try {
         const session = await auth.api.getSession({ headers: request.headers });

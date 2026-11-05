@@ -1,5 +1,17 @@
 # Generation hosting and recovery
 
+Milestone 3B adds the assistant route to this same execution contract. Both
+`/api/trips/{id}/generation` and `/api/trips/{id}/assistant` declare Node runtime
+and a 240-second duration. Assistant Send/Retry queue short HTTP requests; polling,
+draft writes, preview refresh and approvals are short reads/transactions. Assistant
+workers use the existing 150-second provider deadline, shared 180-second lease
+and five-minute stale recovery, with no automatic paid retry. A late response
+cannot overwrite a replacement worker. Conversation/messages and pending proposal
+reviews persist independently of the browser. The agent's original model context
+version remains visible after edits; stale approvals require a new local preview.
+No additional host or durable queue was provisioned for 3B. All earlier deployment
+limitations below continue to apply; offline/browser tests are not host verification.
+
 Milestone 2B preserves the existing execution architecture. **Not deployed or
 host-verified yet.** A successful local build is not evidence that a hosting plan
 supports long-running background work.

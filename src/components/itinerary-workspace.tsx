@@ -26,6 +26,11 @@ import { money, type SavedActivity } from "@/lib/itinerary";
 import type { createItineraryEditor } from "@/server/itinerary-edits";
 import type { schedulerChange } from "@/lib/schedule-adapter";
 import type { ScheduleReference } from "@/lib/itinerary-editing";
+import {
+  itineraryUpdatedEvent,
+  notifyItineraryChanged,
+  type ItineraryUpdate,
+} from "@/lib/workspace-events";
 type State = Awaited<
   ReturnType<ReturnType<typeof createItineraryEditor>["read"]>
 >;
@@ -162,6 +167,20 @@ export function ItineraryWorkspace({
       setBusy(false);
     }
   }, [url]);
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const change = (event as CustomEvent<ItineraryUpdate>).detail;
+      if (change.tripId !== tripId || change.source !== "agent") return;
+      if (form || preview) {
+        setConflict(true);
+        setError(
+          "An approved AI proposal changed the saved itinerary. Your unsaved edit is preserved here; reload the saved version before applying it.",
+        );
+      } else void load();
+    };
+    window.addEventListener(itineraryUpdatedEvent, sync);
+    return () => window.removeEventListener(itineraryUpdatedEvent, sync);
+  }, [tripId, form, preview, load]);
   useEffect(() => {
     const protect = (e: BeforeUnloadEvent) => {
       if (form || preview) e.preventDefault();
@@ -305,6 +324,7 @@ export function ItineraryWorkspace({
         "Changes saved to your account. No AI request or payment was made.",
       );
       router.refresh();
+      notifyItineraryChanged(tripId, "manual");
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -814,6 +834,11 @@ export function ItineraryWorkspace({
               <p className="eyebrow">
                 DAY {plan.days.indexOf(day) + 1} · {day.date}
               </p>
+              {plan.manualEdit && (
+                <p className="inline-note">
+                  Original day theme · current schedule below
+                </p>
+              )}
               <h3>{day.title}</h3>
             </div>
             {!day.activities.length && (
@@ -854,6 +879,8 @@ export function ItineraryWorkspace({
                           index,
                         )}{" "}
                       · {a.origin === "manual" ? "Added by you" : "AI origin"}
+                      {a.lastEditSource === "ai-proposal" &&
+                        " · Approved AI suggestion"}
                     </p>
                     <h4>{a.title}</h4>
                     <p>{a.description}</p>
@@ -975,8 +1002,11 @@ export function ItineraryWorkspace({
               {state.history.map((entry) => (
                 <li key={entry.id}>
                   Revision {entry.version} · {entry.operation.action} ·{" "}
-                  {new Date(entry.createdAt).toISOString()} · Manual estimate,
-                  no AI or payment request
+                  {new Date(entry.createdAt).toISOString()} ·{" "}
+                  {entry.source === "ai-proposal"
+                    ? "Approved AI proposal"
+                    : "Manual edit"}{" "}
+                  · Planning estimates, no payment
                 </li>
               ))}
             </ol>

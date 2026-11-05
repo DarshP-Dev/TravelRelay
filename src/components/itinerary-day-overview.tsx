@@ -33,6 +33,11 @@ export function ItineraryDayOverview({
           <p className="eyebrow">
             DAY {index + 1} · {day.date}
           </p>
+          {plan.manualEdit && (
+            <small className="inline-note">
+              Original day theme · current activities below
+            </small>
+          )}
           <h3>{day.title}</h3>
           <ul>
             {day.activities.slice(0, 3).map((activity) => (

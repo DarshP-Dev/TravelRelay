@@ -1,4 +1,110 @@
-# Architecture — Milestone 3A
+# Architecture — Milestone 3B
+
+## Context-aware assistant and approval boundary
+
+`src/server/agent.ts` owns the authenticated conversation/job/proposal lifecycle.
+`GET/POST /api/trips/{id}/assistant` uses the same Better Auth session, exact-origin
+checks, 20KB bounded strict JSON and no-store responses as other resources. GET
+restores state or pages older turns; POST accepts only draft/send/retry/approve/
+reject/request-changes/refresh-preview actions. Effective owner IDs come only from
+verified sessions. Every read/write, including proposal history and audits, is
+trip/owner-scoped; anonymous access is 401 and foreign IDs are 404.
+
+Migration `0005_dark_black_widow.sql` adds `agent_conversation`, `agent_turn`,
+`agent_attempt`, `agent_proposal` and `agent_proposal_event`. It also adds server-
+assigned `source`/`proposal_id` to existing itinerary edits. Conversation draft
+versions protect concurrent typing. Unique message-mutation/ordinal indexes plus
+a conversation active-turn reservation prevent duplicate sends/concurrent jobs.
+Up to 200 turns are retained per trip, read in pages of 20; proposal/event history
+and original generation records remain separate. SQL rows use existing owner/trip
+foreign keys and migrations, without new database/provider dependencies.
+
+Send persists and queues a turn before returning HTTP 202. Next.js `after()` claims
+one worker with a unique token, then records actual generating/validating/ready or
+failed/interrupted states. GET/focus/online/poll reads never start a model request.
+The original generation quota module supplies the SAME project minute/Pacific-day,
+user hourly counters and single 180-second lease across both features/providers.
+Only admitted attempts consume the three-attempt ceiling. Missing/incomplete
+results, schema failures, 429s, timeouts and interruptions never retry or switch
+provider automatically. Five-minute stale recovery fences late workers; explicit
+retry uses current saved context. A host crash can still lose an in-flight result:
+this reuses the existing recoverable `after()` contract, not a durable queue.
+
+`agent-context.ts` builds a server-owned snapshot of destination/dates/travelers,
+preferences, every stable day/activity ID, times/durations/buffers, stored location
+uncertainty, costs/categories and reconciled budget/reserve/remaining amounts.
+Only the latest eight prior turns and typed proposals with actual approval status
+are included. Optional descriptions/history may be trimmed to 96KB; IDs, times,
+costs and locations are not silently omitted. Oversized essential context fails
+before contacting a provider. Sessions, credentials, email/account tables,
+generation internals and hidden reasoning are never included. Free-text preferences
+and chat go to the selected provider; they are untrusted data, not tool authority.
+
+The existing `TripModel` adapter gains `respond`, using the same official SDKs,
+fixed endpoints and accounting. OpenAI Responses uses strict `zodTextFormat`,
+GPT-6.1 Sol, medium reasoning, standard tier, `store:false`, no SDK retries and
+8,192 total output tokens including reasoning. Gemini retains the existing compact
+schema projection, explicit manual selection and no continuation/fallback; its
+assistant request uses the same DTO/cap and medium thinking. Provider settings,
+generation schemas, normalization and acceptance remain unchanged.
+
+`agent-contracts.ts` is a closed structured answer/proposal envelope. Planning
+tools are add/remove/update/move/resize/replace, with at most 12 actions. Unknown
+tools/fields, foreign/fabricated IDs, wrong currency/city, hidden move/resize fields
+and duplicate targets fail. The model cannot supply coordinates, URLs, verified
+metadata, user IDs, totals or executable code. Add IDs are assigned once server-
+side. Replacements preserve the targeted stable ID; changed locations have unknown
+coordinates. No model text is parsed into execution instructions. Grounded activity
+references are checked and clear first-person false execution claims rejected;
+other factual prose remains an AI estimate, with explicit uncertainty labels.
+
+Translation produces a bounded `batch` of EXISTING 3A editor operations. The editor
+applies them in memory, runs the same schedule/geography/venue checks and budget
+reconciliation once over the final candidate, then creates one before/after preview.
+No action is committed while answering. A valid pending proposal stores its base
+version, immutable typed intentions, assigned IDs, preview and proposal revision.
+Refresh re-translates only explicit patches against current saved activities so
+unrelated manual fields survive; it never calls AI or moves unsupplied times.
+Invalid/deleted references require a revised suggestion. Each refresh is audited
+and invalidates old approval revisions, with a 50-revision resource bound.
+
+Approval calls the SAME `itineraryEditor.commit` with server-only AI provenance.
+Its transaction inserts the itinerary audit and invokes an `onRecorded` hook which
+conditionally approves the exact pending proposal/revision/base version and writes
+its approval event. Any failure rolls back the plan, edit and approval together.
+Concurrent manual edits, rejected proposals and stale previews fail closed. A
+repeated approved request returns its recorded outcome without another edit/call.
+Over-budget edits retain the 10% reserve and require the traveler's explicit
+acknowledgement. Cost-source and edit-source metadata distinguish approved AI
+suggestions from manual actions; neither is an actual payment. Undo remains the
+existing latest-edit, newly audited non-financial restoration path.
+
+`use-travel-agent.ts`, `trip-assistant.tsx` and `trip-workspace-shell.tsx` implement
+the optional 400px desktop dock and mobile view switching without overlays.
+Server drafts plus owner/trip-scoped tab buffers preserve unsent messages, including
+ambiguous send outcomes with stable mutation IDs. Lost HTTP replies offer status
+checks and explicit retry; no automatic paid resend occurs. Full-size proposal
+review shares the workspace with chat and shows every activity field, budget
+categories, itemized/unitemized estimates, reserve, remaining money and conflicts.
+The editor and assistant exchange a trip-scoped refresh event after confirmed
+commits. Cards, Bryntum, map data and server-rendered Overview all read the same
+saved plan; unsaved manual forms are retained and blocked if an AI commit changes
+their version. Original generated introductions/day themes are labeled as such,
+while counts, highlights, schedules and financial projections use current data.
+
+Each admitted attempt privately records provider/model, response elapsed time,
+input/output/reasoning usage, reference USD cost, context size/version, typed
+proposals and validation results. Usage is persisted before response validation;
+unknown usage/cost is null. No keys, raw provider errors, complete internal prompts
+or hidden reasoning are audited/exposed. Proposal events preserve preview revisions
+and approval/rejection decisions. This is an application audit, not a payment ledger.
+
+Future booking/recovery tools must use separate schemas, permissions, verified
+provider records and execution/financial approval paths. They cannot be added as
+arbitrary names or mapped onto planning estimates. None is registered in 3B.
+See [3B validation, sample conversations and limits](milestone-3b-validation.md).
+
+## Retained Milestone 3A foundation
 
 ## Interactive itinerary boundary
 

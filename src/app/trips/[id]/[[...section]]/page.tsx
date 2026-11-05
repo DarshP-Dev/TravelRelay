@@ -6,16 +6,11 @@ import { getApp } from "@/server/runtime";
 import { RequestError } from "@/server/trips";
 import { destinationPhoto } from "@/lib/trip-intent";
 import { DestinationImage } from "@/components/destination-image";
-import {
-  BookOpen,
-  CalendarDays,
-  Compass,
-  Sparkles,
-  Wallet,
-} from "lucide-react";
+import { BookOpen, CalendarDays, Compass, Wallet } from "lucide-react";
 import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
 import { ItineraryView } from "@/components/itinerary-view";
 import { ItineraryWorkspace } from "@/components/itinerary-workspace";
+import { TripWorkspaceShell } from "@/components/trip-workspace-shell";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -86,8 +81,11 @@ export default async function TripWorkspacePage({
     saved?.itinerary && active === "itinerary"
       ? await (await getApp()).itineraryEditor.read(user.id, id)
       : null;
+  const assistantSnapshot = saved?.itinerary
+    ? await (await getApp()).travelAgent.read(user.id, id)
+    : null;
   return (
-    <div className="container page-content">
+    <div className="container page-content trip-workspace-container">
       <PageHeading
         eyebrow={
           saved?.itinerary
@@ -136,7 +134,12 @@ export default async function TripWorkspacePage({
           </Link>
         ))}
       </nav>
-      <div className="workspace-layout">
+      <TripWorkspaceShell
+        key={id}
+        tripId={id}
+        userId={user.id}
+        initial={assistantSnapshot}
+      >
         <section className="panel workspace-main">
           {saved?.itinerary &&
             ["", "itinerary"].includes(active) &&
@@ -256,39 +259,7 @@ export default async function TripWorkspacePage({
             />
           )}
         </section>
-        <details className="assistant-panel">
-          <summary>
-            <Sparkles size={18} aria-hidden="true" />
-            Ask TravelRelay
-          </summary>
-          <div className="assistant-content">
-            <div className="assistant-symbol">
-              <Sparkles size={28} aria-hidden="true" />
-            </div>
-            <h2>
-              A little help,
-              <br />
-              alongside your plans.
-            </h2>
-            <p>
-              Your context-aware trip companion will live here. AI trip editing
-              is not available yet.
-            </p>
-            <p>
-              Future suggestions will need your review and approval. No changes,
-              purchases, or refunds can be made here.
-            </p>
-            <label className="field">
-              Message TravelRelay
-              <textarea
-                disabled
-                placeholder="AI assistant coming in a later milestone"
-                rows={3}
-              />
-            </label>
-          </div>
-        </details>
-      </div>
+      </TripWorkspaceShell>
     </div>
   );
 }

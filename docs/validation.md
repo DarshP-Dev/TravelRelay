@@ -1,4 +1,30 @@
-# Milestone 3A — interactive itinerary acceptance
+# Milestone 3B — context-aware assistant validation
+
+The real provider-backed assistant path is implemented with persistent private
+chat/drafts/jobs, typed multi-activity proposals, versioned previews and explicit
+atomic approval through the 3A editor. No live provider request, push, deployment,
+financial feature or Milestone 4 work was performed. Model replies in validation
+were explicitly mocked; they are not evidence of new live model quality.
+
+| Final check                              | Result                                                                                                                                                                                                                   |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `npm test`                               | **97 passed**, zero failures (81 retained + 16 new)                                                                                                                                                                      |
+| Lint / type-check / format / diff checks | Passed                                                                                                                                                                                                                   |
+| Production build                         | Passed                                                                                                                                                                                                                   |
+| Production HTTP                          | **63 assertions passed**, including real auth/job/approval/undo/isolation boundaries with guarded mocked SDK transport                                                                                                   |
+| Credential boundary                      | 38 public build assets; five configured/private QA values; zero leaks/frontend provider transport                                                                                                                        |
+| Responsive/browser                       | 360/390/768/1440px, no page overflow; chat/draft restoration, coordinated approval, stale re-preview, card/scheduler/map/Overview synchronization, mobile navigation/rejection/request changes and logout/login verified |
+| Database migration                       | `0005` applied locally and to isolated fresh/reopened PGlite; hosted PostgreSQL remains unprovisioned                                                                                                                    |
+| Live-agent preflight                     | Passed, **zero live requests**; one-request Sol/medium harness ready only after separate approval                                                                                                                        |
+
+See [the full 3B report, tested conversations, screenshots and cost/hosting limits](milestone-3b-validation.md).
+The [hosting/recovery contract](generation-hosting.md) still applies to generation
+and assistant jobs. Completed changes are committed locally with DarshP-Dev
+attribution. Nothing is pushed or deployed. Historical reports follow unchanged.
+
+---
+
+## Milestone 3A — interactive itinerary acceptance
 
 Activity CRUD, same-day reorder/cross-day movement, server-validated proposals,
 atomic revisioned persistence/audited undo, real Bryntum Community drag/resize,

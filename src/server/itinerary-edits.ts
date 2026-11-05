@@ -13,6 +13,13 @@ import {
 } from "../lib/itinerary-editing";
 import { venueReferences } from "./venue-references";
 import type { Itinerary } from "../lib/itinerary";
+import { randomUUID } from "node:crypto";
+
+type EditOrigin = { source?: "ai-proposal"; proposalId?: string };
+type EditTransaction = Parameters<Parameters<Database["transaction"]>[0]>[0];
+type CommitOptions = EditOrigin & {
+  onRecorded?: (tx: EditTransaction, editId: string) => Promise<void>;
+};
 
 export function createItineraryEditor(db: Database) {
   const trips = createTripStore(db);
@@ -28,6 +35,8 @@ export function createItineraryEditor(db: Database) {
         id: itineraryEdit.id,
         version: itineraryEdit.version,
         operation: itineraryEdit.operation,
+        source: itineraryEdit.source,
+        proposalId: itineraryEdit.proposalId,
         createdAt: itineraryEdit.createdAt,
       })
       .from(itineraryEdit)
@@ -48,7 +57,12 @@ export function createItineraryEditor(db: Database) {
       ),
     };
   }
-  async function preview(userId: string, id: string, input: unknown) {
+  async function preview(
+    userId: string,
+    id: string,
+    input: unknown,
+    origin: EditOrigin = {},
+  ) {
     const state = await read(userId, id),
       request = editRequestSchema.parse(input);
     if (state.version !== request.version)
@@ -89,6 +103,28 @@ export function createItineraryEditor(db: Database) {
         );
       }
     }
+    if (request.operation.action !== "restore") {
+      const operations =
+        request.operation.action === "batch"
+          ? request.operation.operations
+          : [request.operation];
+      for (const op of operations) {
+        if (op.action !== "add" && op.action !== "update") continue;
+        const a = candidate.days
+          .flatMap((d) => d.activities)
+          .find((a) => a.id === op.activityId);
+        if (!a) continue;
+        const before = state.itinerary.days
+          .flatMap((d) => d.activities)
+          .find((item) => item.id === op.activityId);
+        a.lastEditSource = origin.source ?? "manual";
+        if (origin.source) {
+          if (op.action === "add") a.origin = "ai";
+          if (!before || before.costMinor !== a.costMinor)
+            a.estimateSource = "ai-estimate";
+        }
+      }
+    }
     // Undo restores the previous allowance/estimates too; ordinary edits retain
     // the current additional allowance, never a second copy of itemized food.
     recomputeEditedBudget(
@@ -116,13 +152,20 @@ export function createItineraryEditor(db: Database) {
       request,
     };
   }
-  async function commit(userId: string, id: string, input: unknown) {
+  async function commit(
+    userId: string,
+    id: string,
+    input: unknown,
+    options: CommitOptions = {},
+  ) {
     await trips.read(userId, id);
     const request = editRequestSchema.parse(input);
     const [previous] = await db
       .select({
         version: itineraryEdit.version,
         operation: itineraryEdit.operation,
+        source: itineraryEdit.source,
+        proposalId: itineraryEdit.proposalId,
       })
       .from(itineraryEdit)
       .where(
@@ -135,7 +178,9 @@ export function createItineraryEditor(db: Database) {
     if (previous) {
       if (
         previous.version !== request.version + 1 ||
-        !isDeepStrictEqual(previous.operation, request.operation)
+        !isDeepStrictEqual(previous.operation, request.operation) ||
+        previous.source !== (options.source ?? "manual") ||
+        (previous.proposalId ?? null) !== (options.proposalId ?? null)
       )
         throw new RequestError(
           409,
@@ -143,7 +188,7 @@ export function createItineraryEditor(db: Database) {
         );
       return read(userId, id);
     }
-    const result = await preview(userId, id, request);
+    const result = await preview(userId, id, request, options);
     if (!result.canSave)
       throw new RequestError(
         422,
@@ -187,7 +232,9 @@ export function createItineraryEditor(db: Database) {
           409,
           "This itinerary changed before the edit was saved. Reload and review your change again.",
         );
+      const editId = randomUUID();
       await tx.insert(itineraryEdit).values({
+        id: editId,
         tripId: id,
         userId,
         mutationId: request.mutationId,
@@ -196,7 +243,10 @@ export function createItineraryEditor(db: Database) {
         before: saved.itinerary!,
         after: candidate,
         assessment: result.assessment,
+        source: options.source ?? "manual",
+        proposalId: options.proposalId,
       });
+      await options.onRecorded?.(tx, editId);
     });
     return read(userId, id);
   }

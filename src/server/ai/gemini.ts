@@ -14,6 +14,7 @@ import {
 import { createPlanner, planningSystemInstruction } from "./prompts";
 import { geminiUsage } from "./usage";
 import { MODEL_TIMEOUT_MS } from "../../lib/generation-timing";
+import { assistantSystemInstruction } from "./agent-prompts";
 
 // Gemini's grammar can reject bounded nested arrays with 400 INVALID_ARGUMENT.
 // Keep structural types/required fields here; describe bounds as guidance and
@@ -114,7 +115,8 @@ export function createGeminiTripModel(config: ProviderOptions): TripModel {
       );
     let response: GenerateContentResponse;
     const contents = JSON.stringify(input);
-    if (Buffer.byteLength(contents, "utf8") > 24_000)
+    const assistant = context?.purpose === "assistant";
+    if (Buffer.byteLength(contents, "utf8") > (assistant ? 96_000 : 24_000))
       throw new ModelFailure(
         "These preferences are too long for generation. Shorten the free-text fields and retry; your input is saved.",
       );
@@ -123,14 +125,15 @@ export function createGeminiTripModel(config: ProviderOptions): TripModel {
         model: name,
         contents,
         config: {
-          systemInstruction: `${planningSystemInstruction}${task}`,
+          systemInstruction: `${assistant ? assistantSystemInstruction : planningSystemInstruction}${task}`,
           responseMimeType: "application/json",
           responseJsonSchema: geminiJsonSchema(schema),
-          maxOutputTokens: fullItinerary ? 32768 : 2048,
+          maxOutputTokens: assistant ? 8192 : fullItinerary ? 32768 : 2048,
           thinkingConfig: {
-            thinkingLevel: fullItinerary
-              ? ThinkingLevel.MEDIUM
-              : ThinkingLevel.LOW,
+            thinkingLevel:
+              fullItinerary || assistant
+                ? ThinkingLevel.MEDIUM
+                : ThinkingLevel.LOW,
             includeThoughts: false,
           },
           automaticContinuation: false,
@@ -153,7 +156,7 @@ export function createGeminiTripModel(config: ProviderOptions): TripModel {
     }
     const usage = geminiUsage(
       response.usageMetadata,
-      fullItinerary ? "itinerary" : "proposal",
+      assistant ? "assistant" : fullItinerary ? "itinerary" : "proposal",
       name,
     );
     await config.onUsage?.(usage);

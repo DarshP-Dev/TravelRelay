@@ -20,6 +20,11 @@ import type {
   EditRequest,
   ScheduleAssessment,
 } from "../../lib/itinerary-editing";
+import type {
+  AgentAction,
+  AgentResponse,
+  AgentPreview,
+} from "../../lib/agent-contracts";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -173,6 +178,8 @@ export const itineraryEdit = pgTable(
     before: jsonb("before").$type<Itinerary>().notNull(),
     after: jsonb("after").$type<Itinerary>().notNull(),
     assessment: jsonb("assessment").$type<ScheduleAssessment>().notNull(),
+    source: text("source").notNull().default("manual"),
+    proposalId: uuid("proposal_id"),
     ...timestamps(),
   },
   (t) => [
@@ -214,4 +221,136 @@ export const generationAttempt = pgTable(
     ),
     index("generation_attempt_owner_idx").on(table.userId, table.tripId),
   ],
+);
+
+export const agentConversation = pgTable(
+  "agent_conversation",
+  {
+    tripId: uuid("trip_id")
+      .primaryKey()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    draft: text("draft").notNull().default(""),
+    draftVersion: integer("draft_version").notNull().default(0),
+    turnCount: integer("turn_count").notNull().default(0),
+    activeTurnId: uuid("active_turn_id"),
+    ...timestamps(),
+  },
+  (t) => [index("agent_conversation_owner_idx").on(t.userId, t.tripId)],
+);
+export const agentTurn = pgTable(
+  "agent_turn",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => agentConversation.tripId, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    ordinal: integer("ordinal").notNull(),
+    mutationId: uuid("mutation_id").notNull(),
+    text: text("text").notNull(),
+    status: text("status").notNull().default("queued"),
+    contextVersion: integer("context_version"),
+    attempts: integer("attempts").notNull().default(0),
+    leaseToken: uuid("lease_token"),
+    response: jsonb("response").$type<AgentResponse>(),
+    error: text("error"),
+    errorStage: text("error_stage"),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex("agent_turn_mutation_idx").on(t.tripId, t.mutationId),
+    uniqueIndex("agent_turn_ordinal_idx").on(t.tripId, t.ordinal),
+    index("agent_turn_owner_idx").on(t.userId, t.tripId),
+  ],
+);
+export const agentProposal = pgTable(
+  "agent_proposal",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    turnId: uuid("turn_id")
+      .notNull()
+      .unique()
+      .references(() => agentTurn.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull().default(1),
+    baseVersion: integer("base_version").notNull(),
+    status: text("status").notNull().default("pending"),
+    summary: text("summary").notNull(),
+    actions: jsonb("actions").$type<AgentAction[]>().notNull(),
+    assignedIds: jsonb("assigned_ids").$type<string[]>().notNull(),
+    request: jsonb("request").$type<EditRequest>().notNull(),
+    preview: jsonb("preview").$type<AgentPreview>().notNull(),
+    appliedEditId: uuid("applied_edit_id"),
+    appliedVersion: integer("applied_version"),
+    ...timestamps(),
+  },
+  (t) => [index("agent_proposal_owner_idx").on(t.userId, t.tripId)],
+);
+export const agentAttempt = pgTable(
+  "agent_attempt",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    turnId: uuid("turn_id")
+      .notNull()
+      .references(() => agentTurn.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    attempt: integer("attempt").notNull(),
+    provider: text("provider").notNull(),
+    model: text("model").notNull(),
+    status: text("status").notNull().default("started"),
+    usage: jsonb("usage").$type<ModelUsage>(),
+    latencyMs: integer("latency_ms"),
+    validation: jsonb("validation")
+      .$type<{
+        stage: string;
+        errors: string[];
+        contextBytes?: number;
+        contextVersion?: number;
+        contextTurns?: number;
+      }>()
+      .notNull(),
+    toolProposals: jsonb("tool_proposals").$type<AgentAction[]>(),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex("agent_attempt_number_idx").on(t.turnId, t.attempt),
+    index("agent_attempt_owner_idx").on(t.userId, t.tripId),
+  ],
+);
+export const agentProposalEvent = pgTable(
+  "agent_proposal_event",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    proposalId: uuid("proposal_id")
+      .notNull()
+      .references(() => agentProposal.id, { onDelete: "cascade" }),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    revision: integer("revision").notNull(),
+    event: text("event").notNull(),
+    data: jsonb("data")
+      .$type<{ baseVersion: number; preview?: AgentPreview; editId?: string }>()
+      .notNull(),
+    ...timestamps(),
+  },
+  (t) => [index("agent_proposal_event_owner_idx").on(t.userId, t.tripId)],
 );

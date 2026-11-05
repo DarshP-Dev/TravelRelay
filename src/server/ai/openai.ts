@@ -10,6 +10,7 @@ import {
 import { createPlanner, planningSystemInstruction } from "./prompts";
 import { openaiUsage } from "./usage";
 import { MODEL_TIMEOUT_MS } from "../../lib/generation-timing";
+import { assistantSystemInstruction } from "./agent-prompts";
 export function createOpenAITripModel(config: ProviderOptions) {
   const name = config.name ?? "gpt-6.1-sol";
   const client = config.key
@@ -36,7 +37,8 @@ export function createOpenAITripModel(config: ProviderOptions) {
         "AI generation is not configured. Your trip is saved; configure the server OpenAI API key before retrying.",
       );
     const contents = JSON.stringify(input);
-    if (Buffer.byteLength(contents, "utf8") > 24_000)
+    const assistant = context?.purpose === "assistant";
+    if (Buffer.byteLength(contents, "utf8") > (assistant ? 96_000 : 24_000))
       throw new ModelFailure(
         "These preferences are too long for generation. Shorten the free-text fields and retry; your input is saved.",
       );
@@ -45,13 +47,17 @@ export function createOpenAITripModel(config: ProviderOptions) {
       response = await client.responses.create(
         {
           model: name,
-          instructions: `${planningSystemInstruction}${task}`,
+          instructions: `${assistant ? assistantSystemInstruction : planningSystemInstruction}${task}`,
           input: contents,
           reasoning: { effort: config.reasoningEffort ?? "medium" },
           text: {
             format: zodTextFormat(
               schema,
-              full ? "travelrelay_itinerary" : "travelrelay_base",
+              assistant
+                ? "travelrelay_assistant"
+                : full
+                  ? "travelrelay_itinerary"
+                  : "travelrelay_base",
             ),
           },
           max_output_tokens: full ? 32768 : 8192,
@@ -79,7 +85,11 @@ export function createOpenAITripModel(config: ProviderOptions) {
         "The AI service could not be reached or timed out. Your input is safe; please retry.",
       );
     }
-    const usage = openaiUsage(response, full ? "itinerary" : "proposal", name);
+    const usage = openaiUsage(
+      response,
+      assistant ? "assistant" : full ? "itinerary" : "proposal",
+      name,
+    );
     await config.onUsage?.(usage);
     await context?.onUsage?.(usage);
     if (response.status !== "completed" || response.error)

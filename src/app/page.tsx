@@ -169,8 +169,8 @@ export default function HomePage() {
           ))}
         </div>
         <p className="development-note">
-          Save your ideas and create a personalized AI itinerary. Payments and
-          AI trip editing are still to come.
+          Save your ideas, create a personalized AI itinerary, and review
+          changes with your trip-aware assistant. Payments are still to come.
         </p>
       </section>
       <section className="showcase-section">

@@ -95,8 +95,9 @@ export function ItineraryView({
           </strong>
           <p>
             Activity estimates and schedules include your changes. Original AI
-            generation audits are preserved; no AI request or payment was made
-            by editing.
+            generation audits are preserved. This save made no additional AI
+            request or payment. Original generated summaries/themes remain
+            labeled below; current activities and estimates are authoritative.
           </p>
         </div>
       )}
@@ -113,6 +114,12 @@ export function ItineraryView({
           </div>
         )}
       <div className="itinerary-intro">
+        {plan.manualEdit && (
+          <p className="inline-note">
+            Original generated trip introduction · refer to the current
+            activities for your edited plan.
+          </p>
+        )}
         <p className="eyebrow">
           {example
             ? "EDITORIAL EXAMPLE · ONE PARIS BASE"

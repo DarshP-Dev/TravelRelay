@@ -4,7 +4,7 @@ import type { TripIntent } from "../../lib/trip-intent";
 export type AIProvider = "openai" | "gemini";
 export type ModelUsage = {
   provider: AIProvider;
-  phase: "proposal" | "itinerary";
+  phase: "proposal" | "itinerary" | "assistant";
   model: string;
   inputTokens?: number;
   /** Total generated tokens, INCLUDING reasoning, for both providers. */
@@ -26,6 +26,7 @@ export type ModelUsage = {
   };
 };
 export type ModelCallContext = {
+  purpose?: "assistant";
   onUsage?: (usage: ModelUsage) => void | Promise<void>;
 };
 export type ProviderOptions = {
@@ -38,6 +39,7 @@ export type ProviderOptions = {
 export interface TripModel {
   name: string;
   provider?: AIProvider;
+  respond?(input: unknown, context?: ModelCallContext): Promise<unknown>;
   propose(intent: TripIntent, context?: ModelCallContext): Promise<unknown>;
   generate(
     intent: TripIntent,

@@ -39,6 +39,7 @@ export const safeReferenceSchema = z
 export type ActivityReference = z.infer<typeof safeReferenceSchema>;
 export type ActivityCategory = (typeof activityCategories)[number];
 export type ActivityMetadata = {
+  lastEditSource?: "manual" | "ai-proposal";
   category?: ActivityCategory;
   links?: ActivityReference[];
   origin?: "ai" | "manual";

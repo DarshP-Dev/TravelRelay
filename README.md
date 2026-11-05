@@ -2,7 +2,25 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 3A — interactive itineraries and scheduling.**
+**Current scope: Milestone 3B — context-aware AI assistant with reviewed changes.**
+Open **Ask TravelRelay** inside a saved generated trip. The docked desktop
+assistant answers questions using the saved plan and budget, and proposes typed
+activity changes. **Review itinerary proposal** opens a full before/after schedule
+and budget comparison; Approve saves atomically, Reject changes nothing, and
+Request changes prepares a follow-up message without sending it automatically.
+Stale proposals require a refreshed preview. Chat history, message drafts and
+pending proposals restore after refresh/sign-in. Mobile switches between the
+assistant and itinerary without an overlay or lost conversation state.
+
+The existing GPT-6.1 Sol/medium primary and manually configured Gemini backup
+share the same server schemas, editor and project quota. No assistant call happens
+on a page read, approval, rejection, preview refresh or undo. Send/explicit retry
+may consume provider quota when configured. No live AI request was made during 3B.
+See [Milestone 3B validation, costs and limitations](docs/milestone-3b-validation.md).
+Apply committed migrations through **`0005`** using `npm run db:migrate` before
+starting this version; stop any process using the same PGlite directory first.
+
+**Retained Milestone 3A capabilities:**
 Open a saved generated trip's **Itinerary** tab to add/edit/delete activities,
 move them between trip dates, reorder, or preview an undo. Every edit uses a
 server-checked proposal and explicit save. Chronological cards remain the default;
@@ -14,11 +32,8 @@ Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
 trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
 no map API key. Local scheduler assets and license notices ship with the app.
 See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
-Apply migration `0004` with `npm run db:migrate` before running the updated app;
-stop any process using the same local PGlite directory first.
-
-PayPal, bookings, refunds, Trip Recovery and AI editing are not implemented.
-No live model request, push, deployment or Milestone 3B work is included.
+PayPal, bookings, refunds and Trip Recovery are not implemented.
+No push, deployment or Milestone 4 work is included.
 
 All six inspirations have public previews at `/explore/{templateId}`. Customize
 opens the persistent four-step wizard with a destination and interests, leaving
@@ -249,12 +264,21 @@ and APIMatic skills supplied before development remain untouched.
 - Monetary values are integer minor units with group-wide costs, separate category
   totals and explicit currency. Spending-only budgets exclude travel/accommodation.
   No FX conversion or verified spending is implied. There are no bookings or payments.
-- AI editing, trip deletion, FX, ledger transactions, live availability, checkout,
+- Trip deletion, FX, ledger transactions, live availability, checkout,
   refunds and recovery remain future work.
 - Curated content is hand-authored editorial seed data. Its non-live per-person
   USD estimates exclude flights/accommodation and are not bookable offers.
 
 ## Quota protection
+
+The assistant uses the same SQL quota counters and single active-provider lease
+as generation. It has a 96KB context bound (saved IDs/times/costs retained, optional
+prose/history trimmed), eight preceding turns, 2,000-character user messages,
+6,000-character answers, 8,192 output tokens **including reasoning**, up to 12
+planning actions per proposal and three explicitly admitted attempts per response.
+Conversations retain at most 200 turns per trip; the UI loads history 20 at a time.
+Proposal revalidation is local and bounded to 50 revisions. These limits do not
+guarantee a free provider bill. Full accounting and estimates are in the 3B report.
 
 The primary is GPT-6.1 Sol/medium; Gemini 3.5 Flash-Lite is a manually configured
 backup. The application never switches models,
@@ -315,6 +339,34 @@ credentials must remain in server-side secrets and judges will not supply their
 own API credentials. This documentation does not enable payments or deploy anything.
 
 ## Manual live check
+
+For the next **one controlled AI-agent request**, the following is offline:
+
+```powershell
+npx tsx scripts/check-live-agent.ts --preflight
+```
+
+It uses the original four-day Paris recording, two travelers, EUR 2,500, balanced,
+Culture/Food, and asks for a calmer third day. After separate approval, the harness
+supports `--confirm-one-live-agent-request`: exactly one Sol/medium Responses call,
+no retry/fallback, private usage/validation report, and **no automatic proposal
+approval or itinerary edit**. That live mode was not run for this milestone.
+
+Offline browser/HTTP QA uses an isolated seeded database and the guarded
+`scripts/offline-agent-transport.mjs` Node preloader, not application fallback code.
+Run `npx tsx scripts/prepare-offline-agent-review.ts` to prepare its ignored config.
+The guard requires a loopback origin, local PGlite directory prefixed
+`agent-ui-review-`, `TRAVELRELAY_OFFLINE_QA=true` and the literal fake key
+`offline-agent-qa-key`. Use it only in a separate QA server process through
+`NODE_OPTIONS=--import=./scripts/offline-agent-transport.mjs`, with the config's
+origin/signing secret/database path, blank hosted DB URLs and Gemini key. Fixture
+responses are labeled **OFFLINE QA FIXTURE**, and all other external requests
+are blocked. With that QA server running on port 3001,
+`npx tsx scripts/check-offline-agent-http.ts` exercises the real HTTP boundaries.
+Never set this preloader or QA flag in a deployed application. Real judges use
+the normal website with the maintainer's server-side credentials.
+
+Historical itinerary-generation harness:
 
 For the next controlled **one-request** Paris test, first configure `OPENAI_API_KEY`
 in ignored `.env.local`. The following preflight is offline and needs no API approval:
