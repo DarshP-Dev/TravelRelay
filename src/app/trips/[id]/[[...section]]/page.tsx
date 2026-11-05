@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
 import { ItineraryView } from "@/components/itinerary-view";
+import { ItineraryWorkspace } from "@/components/itinerary-workspace";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -81,6 +82,10 @@ export default async function TripWorkspacePage({
     saved?.data.mode === "known" ? saved.data.destination : "",
   );
   const selected = content[active as keyof typeof content];
+  const editingSnapshot =
+    saved?.itinerary && active === "itinerary"
+      ? await (await getApp()).itineraryEditor.read(user.id, id)
+      : null;
   return (
     <div className="container page-content">
       <PageHeading
@@ -112,7 +117,9 @@ export default async function TripWorkspacePage({
         </strong>
         <p>
           {saved?.itinerary
-            ? "Activities, costs and schedules are AI estimates, not verified availability or prices. No bookings, payments or spending records have been created."
+            ? saved.itinerary.manualEdit
+              ? "This itinerary combines your edits and AI estimates. Costs and schedules are planning estimates, not verified availability or prices. No bookings, payments or spending records have been created."
+              : "Activities, costs and schedules are AI estimates, not verified availability or prices. No bookings, payments or spending records have been created."
             : saved
               ? "Your dates, budget, and preferences are stored in your account. Confirm one base city to generate your personalized itinerary."
               : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
@@ -131,14 +138,22 @@ export default async function TripWorkspacePage({
       </nav>
       <div className="workspace-layout">
         <section className="panel workspace-main">
-          {saved?.itinerary && ["", "itinerary"].includes(active) && (
-            <ItineraryView
-              itinerary={saved.itinerary}
-              intent={saved.data}
-              timeline={active === "itinerary"}
-              tripId={id}
-            />
-          )}
+          {saved?.itinerary &&
+            ["", "itinerary"].includes(active) &&
+            (active === "itinerary" ? (
+              <ItineraryWorkspace
+                key={id}
+                tripId={id}
+                snapshot={editingSnapshot!}
+              />
+            ) : (
+              <ItineraryView
+                itinerary={saved.itinerary}
+                intent={saved.data}
+                timeline={active === "itinerary"}
+                tripId={id}
+              />
+            ))}
           {saved && !saved.itinerary && active === "" && (
             <>
               <div className="saved-trip-hero">

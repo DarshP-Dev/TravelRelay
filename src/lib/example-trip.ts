@@ -142,7 +142,8 @@ const checked = validateItinerary(plan, exampleIntent, base);
 export const exampleItinerary: Omit<
   Itinerary,
   "generatedAt" | "model" | "priceSource"
-> = {
+> &
+  ModelItinerary = {
   ...checked.plan,
   schemaVersion: 2,
   base,

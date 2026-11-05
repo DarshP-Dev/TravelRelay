@@ -17,7 +17,7 @@ export type PlanningExpense = {
   category: BudgetCategory;
   currency: string;
   estimatedMinor: number;
-  source: "ai-estimate" | "editorial-example";
+  source: "ai-estimate" | "editorial-example" | "manual-estimate";
 };
 export type PlanningBudget = {
   version: 1;
@@ -40,21 +40,40 @@ export type PlanningBudget = {
   reserveMinor: number;
   totalWithReserveMinor: number;
   remainingMinor: number;
-  classification: "title-location-rules-v1";
+  classification: "title-location-rules-v1" | "explicit-activity-categories-v1";
 };
 
 // Category fields are inclusive allocations, never amounts added to their own
 // itemized expenses. Missing itemization remains an explicit conservative allowance.
 export function calculatePlanningBudget(
-  plan: ModelItinerary,
+  plan: Pick<
+    ModelItinerary,
+    | "currency"
+    | "flightsMinor"
+    | "accommodationMinor"
+    | "foodMinor"
+    | "localTransportMinor"
+  > & {
+    days: {
+      activities: Pick<
+        ModelItinerary["days"][number]["activities"][number],
+        "title" | "location" | "costMinor"
+      >[];
+    }[];
+  },
   intent: TripIntent,
   selectedBudgetMinor: number,
+  resolveCategory?: (
+    dayIndex: number,
+    activityIndex: number,
+  ) => "food" | "localTransport" | "activities",
 ) {
   const expenses: PlanningExpense[] = plan.days.flatMap((day, dayIndex) =>
     day.activities.map((activity, activityIndex) => ({
       dayIndex,
       activityIndex,
-      category: expenseCategory(activity),
+      category:
+        resolveCategory?.(dayIndex, activityIndex) ?? expenseCategory(activity),
       currency: plan.currency,
       estimatedMinor: activity.costMinor,
       source: "ai-estimate" as const,
@@ -72,19 +91,20 @@ export function calculatePlanningBudget(
     activities: itemized("activities"),
   };
   const issues: string[] = [];
-  for (const day of plan.days)
-    for (const activity of day.activities) {
-      if (
-        activity.costMinor > 0 &&
-        foodCue.test(activityText(activity)) &&
-        /\b(museum|musee|gallery|palace|admission|ticket|concert|theatre|theater|metro|taxi)\b/.test(
-          normalized(activity.title),
+  if (!resolveCategory)
+    for (const day of plan.days)
+      for (const activity of day.activities) {
+        if (
+          activity.costMinor > 0 &&
+          foodCue.test(activityText(activity)) &&
+          /\b(museum|musee|gallery|palace|admission|ticket|concert|theatre|theater|metro|taxi)\b/.test(
+            normalized(activity.title),
+          )
         )
-      )
-        issues.push(
-          `${activity.title} mixes food and another expense category. Separate the estimates into distinct activities; the server cannot invent a cost split.`,
-        );
-    }
+          issues.push(
+            `${activity.title} mixes food and another expense category. Separate the estimates into distinct activities; the server cannot invent a cost split.`,
+          );
+      }
   const allocations = (Object.keys(amounts) as BudgetCategory[]).map(
     (category) => {
       const allocatedMinor = amounts[category],
@@ -134,7 +154,9 @@ export function calculatePlanningBudget(
     ),
     totalWithReserveMinor: allocatedMinor + reserveMinor,
     remainingMinor: selectedBudgetMinor - allocatedMinor - reserveMinor,
-    classification: "title-location-rules-v1",
+    classification: resolveCategory
+      ? "explicit-activity-categories-v1"
+      : "title-location-rules-v1",
   };
   return { budget, issues };
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { completeIntentSchema, type TripIntent } from "./trip-intent";
 import type { ItineraryQuality } from "./itinerary-quality";
 import type { ItineraryNormalization } from "./itinerary-normalization";
+import type { ActivityMetadata } from "./activity-metadata";
 import {
   calculatePlanningBudget,
   type PlanningBudget,
@@ -62,6 +63,15 @@ export const itineraryOutputSchema = z
   })
   .strict();
 export type ModelItinerary = z.infer<typeof itineraryOutputSchema>;
+export type SavedActivity = Omit<
+  z.infer<typeof activitySchema>,
+  "latitude" | "longitude"
+> &
+  ActivityMetadata & {
+    id: string;
+    latitude: number | null;
+    longitude: number | null;
+  };
 export type Itinerary = Omit<ModelItinerary, "days"> & {
   schemaVersion: 1 | 2;
   base: CityProposal;
@@ -69,13 +79,14 @@ export type Itinerary = Omit<ModelItinerary, "days"> & {
   totalMinor: number;
   generatedAt: string;
   model: string;
-  priceSource: "ai-estimate";
+  priceSource: "ai-estimate" | "mixed-estimate";
   quality?: ItineraryQuality;
   budget?: PlanningBudget;
   normalization?: ItineraryNormalization;
+  manualEdit?: { revision: number; updatedAt: string; warnings: string[] };
   days: (Omit<ModelItinerary["days"][number], "activities"> & {
     id: string;
-    activities: (z.infer<typeof activitySchema> & { id: string })[];
+    activities: SavedActivity[];
   })[];
 };
 export function tripDays(intent: TripIntent) {

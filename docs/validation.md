@@ -1,4 +1,30 @@
-# Milestone 2B — completed offline validation
+# Milestone 3A — interactive itinerary acceptance
+
+Activity CRUD, same-day reorder/cross-day movement, server-validated proposals,
+atomic revisioned persistence/audited undo, real Bryntum Community drag/resize,
+optional Leaflet/OSM maps and safe social references are implemented. Generation
+schemas/acceptance, budgets, ownership and original audit history are preserved.
+No live model request, push, deployment or Milestone 3B work was performed.
+
+| Final check                              | Result                                                                                                                                |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm test`                               | **81 passed**, zero failures (69 retained + 12 new)                                                                                   |
+| Lint / type-check / format / diff checks | Passed                                                                                                                                |
+| Production build                         | Passed, including new authenticated editor endpoints and lazy scheduler/map                                                           |
+| Production HTTP                          | **46 assertions passed**, including real authenticated saves/undo, conflict/ownership rejection and pages                             |
+| Credential boundary                      | 38 public assets, three configured private values, zero leaks/frontend model transports                                               |
+| Responsive UI                            | 360/390/768/1440px without page overflow; real desktop drag/resize, mobile edit/move/save/delete/undo and conflict rejection verified |
+| Migration                                | `0004` applied to local development and isolated fresh/reopened PGlite; hosted PostgreSQL remains unprovisioned                       |
+| Dependencies                             | Actual Bryntum Scheduler Community 8.0.0 MIT and Leaflet 1.9.4 BSD; 12 moderate existing tooling advisories, zero high/critical       |
+
+See [the full 3A implementation, screenshots, checks and limitations](milestone-3a-validation.md).
+The existing [generation hosting contract](generation-hosting.md) remains a
+deployment prerequisite. Completed changes are committed locally under DarshP-Dev;
+no push or deployment is included. Historical reports follow unchanged.
+
+---
+
+## Milestone 2B — completed offline validation
 
 Custom trip creation and all six curated-template paths are connected to the
 approved persistent generation engine. No live model calls, deployment or push

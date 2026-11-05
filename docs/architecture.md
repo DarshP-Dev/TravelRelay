@@ -1,4 +1,90 @@
-# Architecture — Milestone 2B
+# Architecture — Milestone 3A
+
+## Interactive itinerary boundary
+
+The existing authenticated Next.js/Drizzle/PostgreSQL architecture is retained.
+The generated plan remains in `trip.itinerary` JSONB, with stable UUID day/activity
+identifiers. `trip.itinerary_version` provides optimistic concurrency. Migration
+`0004_overjoyed_infant_terrible.sql` also adds `itinerary_edit`, with owner/trip
+foreign keys, unique `(trip_id, version)` / `(trip_id, mutation_id)` indexes and
+before/after snapshots, operation, assessment and timestamps. Existing trips start
+at revision zero; their JSON and original generation-attempt audits are untouched.
+History is append-only through this service, not a database tamper-proof ledger.
+
+- `activity-metadata.ts`: explicit planning categories, safe public HTTPS source
+  links, monetary input parsing and estimate/coordinate provenance.
+- `itinerary-editing.ts`: strict bounded mutation DTOs, stable-ID activity
+  transformations, schedule assessment, transparent reorder changes and shared
+  budget reconciliation. Generated response schemas and generation validators are
+  unchanged. Nullable coordinates apply only to stored/manually edited activities;
+  model output still requires its original location fields and strict checks.
+- `itinerary-edits.ts`: owner-scoped read/preview/commit/undo service. Every
+  commit repeats validation, atomically compares owner+trip+version and writes the
+  updated plan and audit in one transaction. Lost races return 409; repeated
+  identical mutation IDs are idempotent, reused IDs with different edits fail.
+  All reads, previews and history use the verified session's owner ID. No client
+  supplied owner, version override, expense total, source-checked metadata or
+  itinerary replacement is accepted. Auth/origin/body-size/no-store conventions
+  are shared with existing APIs.
+- `GET /api/trips/{id}/itinerary` returns the plan, revision, intent, latest 20
+  history metadata rows and current assessment. `POST .../preview` accepts
+  `{version, mutationId, operation}` without persistence. `POST .../itinerary`
+  rechecks and commits. Operations are add/update/delete/reorder/restore-latest;
+  updates can change a date only by selecting an existing server-owned trip day.
+  Overruns require `acknowledgeOverBudget`; reserve is not converted to spending.
+- `itinerary-workspace.tsx`: server-supplied initial snapshot, chronological
+  cards, inline full activity form, proposals, save/discard, conflict reload,
+  audit/undo, day deep links and lazy schedule/map. No model request is made.
+  Dashboard, My Trips and Overview read the same updated stored plan. The existing
+  workspace tabs/assistant dock are retained; AI editing stays explicitly unavailable.
+- `schedule-adapter.ts` / `visual-schedule.tsx`: actual Bryntum Scheduler
+  Community 8.0.0, MIT, managed through a client-only create/destroy lifecycle.
+  Resource rows use stable trip day IDs/dates; a shared display-only clock axis
+  avoids browser-timezone conversions. Drag/resize is rolled back inside Bryntum
+  and translated into the same server preview/commit path as the accessible form.
+  Zoom changes scale only, never saved dates/times. Local Font Awesome assets and
+  license notices avoid the package's automatic external CDN fallback.
+- `itinerary-map.tsx`: client-only Leaflet 1.9.4 map of the selected day's stored
+  coordinates. Click markers or accessible location buttons to highlight a card.
+  Missing coordinates remain null and listed; no geocoding/routing is requested.
+  OSM raster tiles load only in map view with visible attribution and normal browser
+  caching/referrers. No API credentials, tracking embeds or backend proxy are added.
+
+Hard edit checks reject overlaps, insufficient actual or declared travel buffers,
+calendar-day/trip bounds, invalid amounts/currency/coordinates, duplicate IDs,
+off-base known coordinates and conflicts with dated published venue references.
+The existing geographic transfer estimator and accessibility increment are reused.
+Missing coordinates produce an uncertainty warning and retain the minimum buffer;
+the app cannot verify their transfer geography. Unknown indoor venues/shopping
+retain conservative visiting windows. Reordering explicitly proposes all affected
+times and buffers before saving; ordinary edits never move other activities.
+Arrival/departure windows remain unverified travel assumptions, so edits outside
+them show warnings rather than claiming knowledge of actual flights. Pace, short
+duration and missing food stops are suggestions for traveler-authored plans.
+This manual-edit policy does not relax any AI-generation acceptance threshold.
+
+Budget reconciliation calls the existing `calculatePlanningBudget`, with explicit
+manual activity categories. Existing additional unitemized allowances are retained;
+food/transport itemized estimates plus allowance form each inclusive allocation
+exactly once. Group costs remain integer minor units in the original trip currency;
+expense references retain stable day/activity UUIDs and per-estimate provenance.
+Reserve stays at 10% of selected budget and is separate from remaining funds.
+No FX, payment, actual-spending ledger or TripWallet transaction is introduced.
+
+Undo restores the latest edit's before snapshot through a newly validated/audited
+revision, including its prior allowances. Full audit snapshots remain in SQL while
+the UI lists the latest 20 revisions. The current edited plan is labeled as mixed
+manual/AI estimates; its old index-based generation-quality metadata is removed
+from the current presentation, with the exact original retained in audit snapshots
+and unchanged generation records. This boundary is reusable by a future 3B proposal
+agent; it grants that agent no direct write/payment authority.
+
+See [3A acceptance and operating limits](milestone-3a-validation.md). Hosted
+PostgreSQL migration verification and the existing
+[240-second generation hosting contract](generation-hosting.md) remain deployment
+requirements. The original architecture below describes the retained foundation.
+
+## Milestone 2B foundation
 
 Milestone 2B connects the existing generation engine to public curated previews,
 personalized wizard drafts and navigable generated-trip overviews. It adds no

@@ -68,6 +68,28 @@ export default function CreditsPage() {
           under the ISC License. License texts for the fonts are included with
           the source assets.
         </p>
+        <h2>Scheduling & maps</h2>
+        <p>
+          Bryntum Scheduler Community 8.0.0 and its community dependencies are
+          distributed under the{" "}
+          <a href="/licenses/bryntum-community.txt">MIT License</a>. The
+          optional map uses{" "}
+          <a href="/licenses/leaflet.txt">Leaflet 1.9.4 (BSD 2-Clause)</a> and ©{" "}
+          <a href="https://www.openstreetmap.org/copyright">
+            OpenStreetMap contributors
+          </a>
+          . Map locations remain unverified itinerary estimates; no routes or
+          live availability are supplied.
+        </p>
+        <p>
+          The scheduler&apos;s locally served Font Awesome Free icons/fonts
+          retain their{" "}
+          <a href="/licenses/bryntum-third-party.md">third-party notices</a> and{" "}
+          <a href="https://fontawesome.com/license/free">
+            Font Awesome Free licenses
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

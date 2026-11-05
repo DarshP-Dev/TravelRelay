@@ -5,6 +5,7 @@ import type { Database } from "./db/connection";
 import { createGenerationStore } from "./generation";
 import { createTripModel, type TripModel } from "./model";
 import type { GenerationLimits } from "./generation-quota";
+import { createItineraryEditor } from "./itinerary-edits";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -67,6 +68,7 @@ export function createApplication(
 ) {
   const auth = createAuth(db, config);
   const trips = createTripStore(db);
+  const itineraryEditor = createItineraryEditor(db);
   const generations = createGenerationStore(
     db,
     config.model ?? createTripModel({}),
@@ -75,6 +77,30 @@ export function createApplication(
   return {
     auth,
     trips,
+    itineraryEditor,
+    async itineraryHandler(request: Request, id: string, preview = false) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to edit your itinerary.");
+        checkOrigin(request, config.origin);
+        const data =
+          request.method === "GET" && !preview
+            ? await itineraryEditor.read(session.user.id, id)
+            : request.method === "POST"
+              ? await (
+                  preview ? itineraryEditor.preview : itineraryEditor.commit
+                )(session.user.id, id, await readJson(request))
+              : (() => {
+                  throw new RequestError(405, "Method not allowed.");
+                })();
+        return Response.json(data, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     generations,
     async generationHandler(
       request: Request,

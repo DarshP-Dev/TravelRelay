@@ -34,7 +34,9 @@ const exterior = /\b(exterior|outside|past|near|around|view from|walk by)\b/;
 
 // Remove address clauses before activity-type inference. A location such as
 // "Museum Street" is an address, not evidence of visiting a museum.
-export function activityContext(activity: Activity) {
+export function activityContext(
+  activity: Pick<Activity, "title" | "location">,
+) {
   const title = normalized(activity.title);
   const beforeAddress = title.replace(
     /\b(?:on|at|along|near|around|by|off)\s+(?=[^,]*\b(?:rue|quai|avenue|boulevard|street|road|lane|drive|way|calle|via)\b).*$/,

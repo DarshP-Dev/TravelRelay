@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+/* Vendor visuals are loaded only by optional schedule/map client chunks. */
+
 @theme inline {
   --color-background: #fafaf7;
   --color-surface: #ffffff;
@@ -3199,6 +3201,306 @@ legend {
   display: block;
   margin-top: 0.45rem;
   line-height: 1.6;
+}
+
+.interactive-itinerary {
+  padding: 30px 32px;
+  min-width: 0;
+}
+.editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+.editor-toolbar h2 {
+  font-size: clamp(24px, 3vw, 32px);
+  margin: 10px 0;
+}
+.editor-toolbar p:not(.eyebrow),
+.activity-edit-panel > form > p,
+.edit-preview > p {
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.7;
+}
+.editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block: 18px;
+}
+.editor-actions .button {
+  min-height: 44px;
+  max-width: 100%;
+  white-space: normal;
+  text-align: center;
+  font-size: 14px;
+}
+.editor-view-switch {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--line);
+  padding-block: 18px;
+}
+.editor-view-switch button {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 18px;
+  min-height: 46px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+}
+.editor-view-switch button[aria-pressed="true"] {
+  color: white;
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.interactive-itinerary .itinerary-day-nav {
+  padding: 22px 0;
+}
+.itinerary-day-nav button {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  min-height: 48px;
+}
+.itinerary-day-nav button[aria-pressed="true"] {
+  background: var(--soft);
+  border-color: var(--primary);
+  color: var(--primary-dark);
+}
+.activity-edit-panel {
+  margin-block: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 30px;
+  background: var(--soft);
+  scroll-margin-top: 110px;
+}
+.activity-edit-panel h3 {
+  font-size: 26px;
+  margin-bottom: 16px;
+}
+.editor-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-block: 24px;
+}
+.editor-wide {
+  grid-column: 1 / -1;
+}
+.activity-references {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin: 24px 0;
+  padding: 20px;
+  min-width: 0;
+}
+.activity-references legend {
+  font-weight: 600;
+  padding: 6px;
+}
+.activity-references p {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.reference-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+  gap: 16px;
+  border-block: 1px solid var(--line);
+  padding-block: 20px;
+  margin-bottom: 20px;
+}
+.reference-fields button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+.edit-change-list {
+  padding: 0;
+  list-style: none;
+  margin-block: 20px;
+}
+.edit-change-list li {
+  display: block;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.edit-change-list span {
+  display: block;
+  margin-top: 7px;
+  font-size: 14px;
+  color: var(--muted);
+}
+.edit-preview .notice {
+  margin-block: 20px;
+}
+.edit-preview li {
+  overflow-wrap: anywhere;
+}
+.editable-day {
+  margin-top: 24px;
+}
+.editable-day > ol > li {
+  scroll-margin-top: 110px;
+}
+.editable-day .editor-actions {
+  margin-bottom: 0;
+}
+.editable-day .eyebrow {
+  margin-bottom: 10px;
+  font-size: 11px;
+}
+.selected-activity {
+  box-shadow: inset 4px 0 var(--primary);
+  background: #f0f7f2;
+}
+.activity-conflict {
+  box-shadow: inset 4px 0 #a33a2b;
+  background: #fff3ed;
+}
+.editor-empty {
+  padding: 28px;
+}
+.editor-empty h4 {
+  font-size: 23px;
+  margin-bottom: 14px;
+}
+.editor-empty p {
+  font-size: 15px;
+  color: var(--muted);
+  margin-bottom: 18px;
+}
+.activity-social-links {
+  list-style: none;
+  padding: 0;
+  margin-block: 18px;
+}
+.activity-social-links li {
+  padding-block: 6px;
+}
+.activity-social-links a {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.activity-social-links small {
+  display: block;
+  color: var(--muted);
+}
+.edit-history {
+  margin-top: 30px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.edit-history summary {
+  min-height: 30px;
+  font-weight: 600;
+}
+.edit-history li {
+  font-size: 14px;
+  padding-block: 8px;
+  overflow-wrap: anywhere;
+}
+.visual-schedule,
+.activity-map-section {
+  margin-block: 24px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  min-width: 0;
+}
+.visual-schedule > p,
+.activity-map-section > p {
+  color: var(--muted);
+  font-size: 15px;
+  margin-bottom: 14px;
+}
+.scheduler-host {
+  min-height: 500px;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+}
+.travel-scheduler {
+  font-family: var(--font-body), Arial, sans-serif;
+}
+.activity-map {
+  height: 380px;
+  position: relative;
+  isolation: isolate;
+  z-index: 0;
+  border-radius: 12px;
+  background: var(--soft);
+}
+.map-location-list {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 20px;
+}
+.map-location-list li {
+  min-width: 0;
+}
+.map-location-list button {
+  min-height: 44px;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  color: var(--primary-dark);
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: left;
+  width: 100%;
+}
+.map-location-list small {
+  display: block;
+  color: var(--muted);
+  margin-top: 7px;
+  font-size: 13px;
+}
+@media (max-width: 768px) {
+  .interactive-itinerary {
+    padding: 24px 18px;
+  }
+  .editor-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .activity-edit-panel {
+    padding: 22px 16px;
+  }
+  .editor-field-grid,
+  .reference-fields {
+    grid-template-columns: 1fr;
+  }
+  .editor-wide {
+    grid-column: auto;
+  }
+  .visual-schedule,
+  .activity-map-section {
+    padding: 16px 12px;
+  }
+  .map-location-list {
+    grid-template-columns: 1fr;
+  }
+  .editor-view-switch button {
+    padding: 12px;
+    font-size: 14px;
+  }
 }
 @media (max-width: 540px) {
   .budget-allocations dd {

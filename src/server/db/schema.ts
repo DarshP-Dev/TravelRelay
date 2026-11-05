@@ -16,6 +16,10 @@ import type { CityProposal, Itinerary } from "../../lib/itinerary";
 import type { ModelUsage } from "../ai/contracts";
 import type { ValidationChecks } from "../ai/audit";
 import type { ItineraryNormalization } from "../../lib/itinerary-normalization";
+import type {
+  EditRequest,
+  ScheduleAssessment,
+} from "../../lib/itinerary-editing";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -127,6 +131,7 @@ export const trip = pgTable(
       .unique(),
     data: jsonb("data").$type<TripIntent>().notNull(),
     itinerary: jsonb("itinerary").$type<Itinerary>(),
+    itineraryVersion: integer("itinerary_version").default(0).notNull(),
     ...timestamps(),
   },
   (table) => [index("trip_owner_idx").on(table.userId)],
@@ -150,6 +155,31 @@ export const generation = pgTable(
     ...timestamps(),
   },
   (table) => [index("generation_owner_idx").on(table.userId)],
+);
+
+export const itineraryEdit = pgTable(
+  "itinerary_edit",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id")
+      .notNull()
+      .references(() => trip.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    mutationId: uuid("mutation_id").notNull(),
+    version: integer("version").notNull(),
+    operation: jsonb("operation").$type<EditRequest["operation"]>().notNull(),
+    before: jsonb("before").$type<Itinerary>().notNull(),
+    after: jsonb("after").$type<Itinerary>().notNull(),
+    assessment: jsonb("assessment").$type<ScheduleAssessment>().notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    uniqueIndex("itinerary_edit_mutation_idx").on(t.tripId, t.mutationId),
+    uniqueIndex("itinerary_edit_version_idx").on(t.tripId, t.version),
+    index("itinerary_edit_owner_idx").on(t.userId, t.tripId),
+  ],
 );
 
 export const generationAttempt = pgTable(

@@ -59,9 +59,11 @@ export function ItineraryBudgetView({ budget }: { budget: PlanningBudget }) {
       </p>
       <p className="inline-note">
         These are {budget.currency} group estimates, not actual expenses or
-        TripWallet transactions. Food and transport categories use the activity
-        title/location to classify estimates; mixed or ambiguous experiences
-        need review. No exchange rate or currency conversion is implied.
+        TripWallet transactions.{" "}
+        {budget.classification === "explicit-activity-categories-v1"
+          ? "Food and transport allocations use your selected activity categories."
+          : "Food and transport categories use the activity title/location to classify estimates; mixed or ambiguous experiences need review."}{" "}
+        No exchange rate or currency conversion is implied.
       </p>
     </div>
   );

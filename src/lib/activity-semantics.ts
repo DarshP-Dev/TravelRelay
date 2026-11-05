@@ -9,12 +9,12 @@ export function normalized(value: string) {
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
 }
-export const activityText = (activity: Activity) =>
+export const activityText = (activity: Pick<Activity, "title" | "location">) =>
   normalized(`${activity.title} ${activity.location}`);
 export const foodCue =
   /\b(cafe|coffee|bakery|patisserie|pastry|croissant|bistro|brasserie|restaurant|trattoria|pizzeria|izakaya|kaiseki|ramen|sushi|tapas|dim sum|food market|street food|food tour|culinary|cooking|tasting|brunch|lunch|dinner|supper|breakfast|tea|teahouse|tea house)\b/;
 export function expenseCategory(
-  activity: Activity,
+  activity: Pick<Activity, "title" | "location">,
 ): "food" | "localTransport" | "activities" {
   if (foodCue.test(activityText(activity))) return "food";
   if (

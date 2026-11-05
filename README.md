@@ -2,9 +2,23 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 2B — custom trip creation and curated personalization.**
-PayPal, bookings, refunds, Trip Recovery, AI editing and Bryntum are not implemented.
-No deployment or push is included; Milestone 3 requires approval.
+**Current scope: Milestone 3A — interactive itineraries and scheduling.**
+Open a saved generated trip's **Itinerary** tab to add/edit/delete activities,
+move them between trip dates, reorder, or preview an undo. Every edit uses a
+server-checked proposal and explicit save. Chronological cards remain the default;
+**Visual schedule** adds real Bryntum drag/resize, and **Location map** shows
+stored, explicitly unverified coordinates. Mobile has the same complete form
+controls, without requiring a drag gesture. Refresh/sign-in restores saved edits.
+
+Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
+trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
+no map API key. Local scheduler assets and license notices ship with the app.
+See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
+Apply migration `0004` with `npm run db:migrate` before running the updated app;
+stop any process using the same local PGlite directory first.
+
+PayPal, bookings, refunds, Trip Recovery and AI editing are not implemented.
+No live model request, push, deployment or Milestone 3B work is included.
 
 All six inspirations have public previews at `/explore/{templateId}`. Customize
 opens the persistent four-step wizard with a destination and interests, leaving
@@ -70,7 +84,8 @@ npm run db:migrate
 Tests exercise Better Auth and real disk-backed PGlite, including revocation,
 unauthorized access, user isolation, validation, stale draft conflicts, idempotent
 trip creation, generation failures, budget/timing validation, duplicate job claims,
-and closing/reopening the database. Model tests use explicitly labeled provider-boundary
+activity CRUD, concurrent edits, schedule safety, budget reconciliation,
+source-link validation and closing/reopening the database. Model tests use explicitly labeled provider-boundary
 fixtures; the application has no simulated AI fallback. No auth or database mocks are
 used. `db:generate` is for schema changes only; review and commit generated SQL.
 `db:migrate` applies committed migrations, preferring `DIRECT_URL` when supplied.

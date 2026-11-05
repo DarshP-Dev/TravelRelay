@@ -29,7 +29,9 @@ export function SavedTripCard({
         />
         <span className="photo-badge">
           {trip.itinerary
-            ? "AI itinerary · Saved"
+            ? trip.itinerary.manualEdit
+              ? "Personal itinerary · Saved"
+              : "AI itinerary · Saved"
             : trip.generationStatus === "failed"
               ? "Planning needs attention"
               : trip.generationStatus === "awaiting_confirmation"
