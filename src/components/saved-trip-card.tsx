@@ -81,7 +81,9 @@ export function SavedTripCard({
                 trip.itinerary.currency,
               )}
             </p>
-            <small>Group planning estimates · no spending recorded</small>
+            <small>
+              Group planning estimates · financial history in TripWallet
+            </small>
           </div>
         )}
         <Link

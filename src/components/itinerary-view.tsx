@@ -219,7 +219,7 @@ export function ItineraryView({
               plan.currency,
             )}
           </strong>
-          <small>Planning estimate · no spending recorded</small>
+          <small>Planning estimate · financial history in TripWallet</small>
         </div>
       </div>
       {tripId && !timeline && !example && (

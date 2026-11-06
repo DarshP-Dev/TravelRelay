@@ -1,5 +1,8 @@
 export const itineraryUpdatedEvent = "travelrelay:itinerary-updated";
-export type ItineraryUpdate = { tripId: string; source: "manual" | "agent" };
+export type ItineraryUpdate = {
+  tripId: string;
+  source: "manual" | "agent" | "wallet";
+};
 export function notifyItineraryChanged(
   tripId: string,
   source: ItineraryUpdate["source"],

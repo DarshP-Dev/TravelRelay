@@ -2,7 +2,29 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 3B — context-aware AI assistant with reviewed changes.**
+**Current scope: Milestone 4A — TripWallet and multi-currency financial foundation.**
+Open a saved trip's **TripWallet** tab for reconciled planning allocations,
+itemized estimates, additional allowances, separate reserve/unallocated funds,
+category visuals and distinct confirmed/pending/refund history. **Bookings** shows
+persisted planning references with honest unbooked status, source dates and native
+amounts. No checkout or supplier reservation is claimed.
+
+Choose an activity and enter its original group amount/currency to **Preview rate
+& budget consequences**. The server uses Frankfurter v2/ECB daily references,
+exact minor-unit rounding and the existing editor. **Save reference & activity
+estimate** atomically updates the shared plan and retains its original FX snapshot.
+Overruns and stale rates need separate acknowledgement. Closing a never-paid
+planning reference requires confirmation and does not refund or undo anything.
+Local-currency preference overrides do not change the trip currency or history.
+
+There are no real captures/refunds in this milestone. The append-only ledger's
+server-only verifier port is deliberately unconfigured, and no HTTP action can
+submit a successful payment status. **No live AI or PayPal request was made.**
+One free public Frankfurter/ECB lookup was verified. No additional API key is
+needed for FX. See [financial architecture and 4B handoff](docs/financial-architecture.md)
+and [4A validation/UI evidence](docs/milestone-4a-validation.md).
+
+**Retained Milestone 3B: context-aware AI assistant with reviewed changes.**
 Open **Ask TravelRelay** inside a saved generated trip. The docked desktop
 assistant answers questions using the saved plan and budget, and proposes typed
 activity changes. **Review itinerary proposal** opens a full before/after schedule
@@ -21,7 +43,7 @@ with unchanged budget and safe scheduling. Its exact result passes offline
 approval/rejection/stale-version regression tests; **101 tests pass**.
 See the [live acceptance report](docs/milestone-3b-live-agent-paris-result.md) and
 [original offline validation, costs and limitations](docs/milestone-3b-validation.md).
-Apply committed migrations through **`0005`** using `npm run db:migrate` before
+Apply committed migrations through **`0007`** using `npm run db:migrate` before
 starting this version; stop any process using the same PGlite directory first.
 
 **Retained Milestone 3A capabilities:**
@@ -36,8 +58,8 @@ Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
 trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
 no map API key. Local scheduler assets and license notices ship with the app.
 See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
-PayPal, bookings, refunds and Trip Recovery are not implemented.
-No push, deployment or Milestone 4 work is included.
+PayPal checkout, verified supplier reservations, refund execution and Trip Recovery
+are not implemented. No push, deployment or Milestone 4B work is included.
 
 All six inspirations have public previews at `/explore/{templateId}`. Customize
 opens the persistent four-step wizard with a destination and interests, leaving

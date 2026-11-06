@@ -14,8 +14,8 @@ export function ItineraryBudgetView({ budget }: { budget: PlanningBudget }) {
       <p>
         Allocations include the itemized estimates below. The unitemized
         allowance covers additional expected expenses; it is not added a second
-        time. All amounts are planning estimates, with no spending or payments
-        recorded.
+        time. All amounts here are planning estimates. Confirmed spending and
+        financial events have their own TripWallet ledger.
       </p>
       <dl className="budget-allocations">
         {budget.allocations.map((row) => (

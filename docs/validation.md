@@ -1,4 +1,23 @@
-# Milestone 3B — controlled live acceptance
+# Milestone 4A — TripWallet and financial foundation
+
+TripWallet and Bookings now use persistent owner-scoped planning references,
+shared itinerary estimates, original native currencies, dated Frankfurter/ECB
+snapshots and an immutable financial-event foundation. Actual payments/refunds
+cannot be created by the browser; the trusted verifier is unconfigured in 4A.
+The original Paris case still gives €369 itemized + €1,655 additional allowances,
+€2,024 planned + separate €250 reserve, €226 unallocated and zero actual spending.
+
+Final checks: **129 tests**, **74 production HTTP assertions**, lint, type-check,
+formatting, production build, migrations, public-asset credential scan and
+360/390/768/1440px responsive review passed. One free ECB lookup returned
+USD→EUR 0.89095 dated November 5; **no AI or PayPal request** was made.
+
+See [the full 4A validation and screenshots](milestone-4a-validation.md) and
+[financial architecture / 4B handoff](financial-architecture.md). Migrations `0006`/`0007`
+were applied locally and in isolated tests. No push, deployment or 4B work occurred.
+Earlier approved reports follow.
+
+## Milestone 3B — controlled live acceptance
 
 One authorized Sol/medium request passed with the exact Day 2 Paris message.
 It proposed shortening the saved 14:00 culture walk from 90 to 45 minutes, with

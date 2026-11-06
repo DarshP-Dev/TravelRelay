@@ -9,6 +9,8 @@ import {
   jsonb,
   uniqueIndex,
   index,
+  check,
+  foreignKey,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { TripIntent } from "../../lib/trip-intent";
@@ -25,6 +27,13 @@ import type {
   AgentResponse,
   AgentPreview,
 } from "../../lib/agent-contracts";
+import type {
+  FxSnapshot,
+  FinancialEventKind,
+  ProviderOutcome,
+} from "../../lib/finance-contracts";
+import type { Currency } from "../../lib/money";
+import type { BudgetCategory } from "../../lib/itinerary-budget";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -139,7 +148,201 @@ export const trip = pgTable(
     itineraryVersion: integer("itinerary_version").default(0).notNull(),
     ...timestamps(),
   },
-  (table) => [index("trip_owner_idx").on(table.userId)],
+  (table) => [
+    index("trip_owner_idx").on(table.userId),
+    uniqueIndex("trip_id_owner_idx").on(table.id, table.userId),
+  ],
+);
+
+export const fxSnapshot = pgTable(
+  "fx_snapshot",
+  {
+    id: uuid("id").primaryKey(),
+    base: text("base").$type<Currency>().notNull(),
+    quote: text("quote").$type<Currency>().notNull(),
+    rate: text("rate").notNull(),
+    provider: text("provider").notNull(),
+    data: jsonb("data").$type<FxSnapshot>().notNull(),
+    retrievedAt: timestamp("retrieved_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("fx_pair_date_idx").on(t.base, t.quote, t.retrievedAt)],
+);
+export const fxCache = pgTable("fx_cache", {
+  key: text("key").primaryKey(),
+  snapshotId: uuid("snapshot_id").references(() => fxSnapshot.id),
+  retryAfter: timestamp("retry_after", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  leaseUntil: timestamp("lease_until", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+export const tripWallet = pgTable(
+  "trip_wallet",
+  {
+    tripId: uuid("trip_id").primaryKey(),
+    userId: text("user_id").notNull(),
+    version: integer("version").notNull().default(0),
+    localCurrency: text("local_currency").$type<Currency>().notNull(),
+    ...timestamps(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.tripId, t.userId],
+      foreignColumns: [trip.id, trip.userId],
+    }),
+    uniqueIndex("wallet_owner_pair_idx").on(t.tripId, t.userId),
+    check("wallet_version_valid", sql`${t.version} >= 0`),
+    check(
+      "wallet_currency_valid",
+      sql`${t.localCurrency} in ('CAD','USD','EUR','GBP','JPY','AUD')`,
+    ),
+  ],
+);
+export const walletIntent = pgTable(
+  "wallet_intent",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id").notNull(),
+    userId: text("user_id").notNull(),
+    activityId: uuid("activity_id").notNull(),
+    category: text("category").$type<BudgetCategory>().notNull(),
+    title: text("title").notNull(),
+    supplier: text("supplier").notNull(),
+    originalCurrency: text("original_currency").$type<Currency>().notNull(),
+    originalMinor: bigint("original_minor", { mode: "number" }).notNull(),
+    displayCurrency: text("display_currency").$type<Currency>().notNull(),
+    estimatedDisplayMinor: bigint("estimated_display_minor", {
+      mode: "number",
+    }).notNull(),
+    fxSnapshotId: uuid("fx_snapshot_id")
+      .notNull()
+      .references(() => fxSnapshot.id),
+    fx: jsonb("fx").$type<FxSnapshot>().notNull(),
+    acceptedStaleRate: boolean("accepted_stale_rate").notNull().default(false),
+    itineraryVersion: integer("itinerary_version").notNull(),
+    activitySnapshot: jsonb("activity_snapshot")
+      .$type<{
+        title: string;
+        location: string;
+        date: string;
+        startMinute: number;
+        durationMinutes: number;
+      }>()
+      .notNull(),
+    status: text("status")
+      .$type<"planned" | "canceled">()
+      .notNull()
+      .default("planned"),
+    ...timestamps(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.tripId, t.userId],
+      foreignColumns: [tripWallet.tripId, tripWallet.userId],
+    }),
+    uniqueIndex("wallet_intent_owner_idx").on(t.id, t.tripId, t.userId),
+    uniqueIndex("wallet_active_activity_idx")
+      .on(t.tripId, t.activityId)
+      .where(sql`${t.status} = 'planned'`),
+    check(
+      "wallet_intent_amounts_valid",
+      sql`${t.originalMinor} >= 0 and ${t.originalMinor} <= 1000000000000 and ${t.estimatedDisplayMinor} >= 0 and ${t.estimatedDisplayMinor} <= 1000000000000`,
+    ),
+    check(
+      "wallet_intent_status_valid",
+      sql`${t.status} in ('planned','canceled')`,
+    ),
+    check(
+      "wallet_intent_currency_valid",
+      sql`${t.originalCurrency} in ('CAD','USD','EUR','GBP','JPY','AUD') and ${t.displayCurrency} in ('CAD','USD','EUR','GBP','JPY','AUD')`,
+    ),
+  ],
+);
+export const walletMutation = pgTable(
+  "wallet_mutation",
+  {
+    id: uuid("id").primaryKey(),
+    tripId: uuid("trip_id").notNull(),
+    userId: text("user_id").notNull(),
+    request: jsonb("request").$type<Record<string, unknown>>().notNull(),
+    version: integer("version").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.tripId, t.userId],
+      foreignColumns: [tripWallet.tripId, tripWallet.userId],
+    }),
+    uniqueIndex("wallet_mutation_version_idx").on(t.tripId, t.version),
+  ],
+);
+export const financialEvent = pgTable(
+  "financial_event",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id").notNull(),
+    userId: text("user_id").notNull(),
+    intentId: uuid("intent_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    kind: text("kind").$type<FinancialEventKind>().notNull(),
+    provider: text("provider").notNull(),
+    verification: text("verification").notNull(),
+    providerEventId: text("provider_event_id").notNull(),
+    operationKey: text("operation_key").notNull(),
+    reconciliationRef: text("reconciliation_ref").notNull(),
+    originalCurrency: text("original_currency").$type<Currency>().notNull(),
+    amountMinor: bigint("amount_minor", { mode: "number" }).notNull(),
+    feeMinor: bigint("fee_minor", { mode: "number" }).notNull().default(0),
+    displayCurrency: text("display_currency").$type<Currency>().notNull(),
+    estimatedDisplayMinor: bigint("estimated_display_minor", {
+      mode: "number",
+    }).notNull(),
+    estimatedFeeMinor: bigint("estimated_fee_minor", {
+      mode: "number",
+    }).notNull(),
+    orderId: text("order_id"),
+    captureId: text("capture_id"),
+    refundId: text("refund_id"),
+    outcome: jsonb("outcome").$type<ProviderOutcome>(),
+    fx: jsonb("fx").$type<FxSnapshot>().notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    recordedAt: timestamp("recorded_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.intentId, t.tripId, t.userId],
+      foreignColumns: [
+        walletIntent.id,
+        walletIntent.tripId,
+        walletIntent.userId,
+      ],
+    }),
+    uniqueIndex("financial_event_sequence_idx").on(t.tripId, t.sequence),
+    uniqueIndex("financial_provider_event_idx").on(
+      t.provider,
+      t.providerEventId,
+    ),
+    uniqueIndex("financial_operation_idx").on(t.provider, t.operationKey),
+    index("financial_owner_idx").on(t.userId, t.tripId, t.intentId),
+    check(
+      "financial_event_amount_valid",
+      sql`${t.amountMinor} >= 0 and ${t.amountMinor} <= 1000000000000 and ${t.feeMinor} >= 0 and ${t.feeMinor} <= 1000000000000`,
+    ),
+    check(
+      "financial_event_proof_valid",
+      sql`(${t.kind} in ('intent_created','intent_canceled') and ${t.provider} = 'planning' and ${t.verification} = 'user-planning') or (${t.kind} not in ('intent_created','intent_canceled') and ${t.provider} = 'paypal-sandbox' and ${t.verification} in ('provider-api','verified-webhook') and ${t.orderId} is not null)`,
+    ),
+    check(
+      "financial_event_kind_valid",
+      sql`${t.kind} in ('intent_created','intent_canceled','checkout_pending','authorized','payment_pending','captured','payment_failed','payment_canceled','refund_pending','refund_completed','refund_failed','reversal_completed')`,
+    ),
+  ],
 );
 export const generation = pgTable(
   "trip_generation",

@@ -11,6 +11,7 @@ import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
 import { ItineraryView } from "@/components/itinerary-view";
 import { ItineraryWorkspace } from "@/components/itinerary-workspace";
 import { TripWorkspaceShell } from "@/components/trip-workspace-shell";
+import { TripWallet, WalletPreview } from "@/components/trip-wallet";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -84,6 +85,10 @@ export default async function TripWorkspacePage({
   const assistantSnapshot = saved?.itinerary
     ? await (await getApp()).travelAgent.read(user.id, id)
     : null;
+  const walletSnapshot =
+    saved && ["", "wallet", "bookings"].includes(active)
+      ? await (await getApp()).wallet.read(user.id, id)
+      : null;
   return (
     <div className="container page-content trip-workspace-container">
       <PageHeading
@@ -116,8 +121,8 @@ export default async function TripWorkspacePage({
         <p>
           {saved?.itinerary
             ? saved.itinerary.manualEdit
-              ? "This itinerary combines your edits and AI estimates. Costs and schedules are planning estimates, not verified availability or prices. No bookings, payments or spending records have been created."
-              : "Activities, costs and schedules are AI estimates, not verified availability or prices. No bookings, payments or spending records have been created."
+              ? "This itinerary combines your edits and AI estimates. Costs and schedules are planning estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
+              : "Activities, costs and schedules are AI estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
             : saved
               ? "Your dates, budget, and preferences are stored in your account. Confirm one base city to generate your personalized itinerary."
               : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
@@ -226,38 +231,49 @@ export default async function TripWorkspacePage({
               </div>
             </>
           )}
-          {!(saved?.itinerary && ["", "itinerary"].includes(active)) && (
-            <EmptyState
-              icon={<selected.icon size={30} aria-hidden="true" />}
-              title={selected.title}
-              description={
-                saved && ["", "itinerary"].includes(active)
-                  ? "Your planning intent is stored. Continue to destination confirmation and real AI generation. Your input remains saved throughout."
-                  : selected.description
-              }
-              action={
-                <ButtonLink
-                  href={
-                    saved &&
-                    !saved.itinerary &&
-                    ["", "itinerary"].includes(active)
-                      ? `/trips/${id}/generate`
-                      : active === "explore"
-                        ? "/explore"
-                        : "/trips/new"
-                  }
-                >
-                  {saved &&
-                  !saved.itinerary &&
-                  ["", "itinerary"].includes(active)
-                    ? "Create my itinerary"
-                    : active === "explore"
-                      ? "Browse inspirations"
-                      : "Explore the planning form"}
-                </ButtonLink>
-              }
+          {walletSnapshot && active === "" && (
+            <WalletPreview state={walletSnapshot} />
+          )}
+          {walletSnapshot && ["wallet", "bookings"].includes(active) && (
+            <TripWallet
+              key={`${id}:${active}`}
+              initial={walletSnapshot}
+              bookings={active === "bookings"}
             />
           )}
+          {!(saved?.itinerary && ["", "itinerary"].includes(active)) &&
+            !(walletSnapshot && ["wallet", "bookings"].includes(active)) && (
+              <EmptyState
+                icon={<selected.icon size={30} aria-hidden="true" />}
+                title={selected.title}
+                description={
+                  saved && ["", "itinerary"].includes(active)
+                    ? "Your planning intent is stored. Continue to destination confirmation and real AI generation. Your input remains saved throughout."
+                    : selected.description
+                }
+                action={
+                  <ButtonLink
+                    href={
+                      saved &&
+                      !saved.itinerary &&
+                      ["", "itinerary"].includes(active)
+                        ? `/trips/${id}/generate`
+                        : active === "explore"
+                          ? "/explore"
+                          : "/trips/new"
+                    }
+                  >
+                    {saved &&
+                    !saved.itinerary &&
+                    ["", "itinerary"].includes(active)
+                      ? "Create my itinerary"
+                      : active === "explore"
+                        ? "Browse inspirations"
+                        : "Explore the planning form"}
+                  </ButtonLink>
+                }
+              />
+            )}
         </section>
       </TripWorkspaceShell>
     </div>

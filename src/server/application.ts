@@ -7,6 +7,7 @@ import { createTripModel, type TripModel } from "./model";
 import type { GenerationLimits } from "./generation-quota";
 import { createItineraryEditor } from "./itinerary-edits";
 import { createTravelAgent } from "./agent";
+import { createWallet, type FinancialVerifier } from "./wallet";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -65,6 +66,8 @@ export function createApplication(
     origin: string;
     model?: TripModel;
     generationLimits?: GenerationLimits;
+    fxFetch?: typeof fetch;
+    financialVerifier?: FinancialVerifier;
   },
 ) {
   const auth = createAuth(db, config);
@@ -73,11 +76,41 @@ export function createApplication(
   const model = config.model ?? createTripModel({});
   const travelAgent = createTravelAgent(db, model, config.generationLimits);
   const generations = createGenerationStore(db, model, config.generationLimits);
+  const wallet = createWallet(db, {
+    fxFetch: config.fxFetch,
+    verifier: config.financialVerifier,
+  });
   return {
     auth,
     trips,
     itineraryEditor,
     travelAgent,
+    wallet,
+    async walletHandler(request: Request, id: string) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to view your TripWallet.");
+        checkOrigin(request, config.origin);
+        const data =
+          request.method === "GET"
+            ? await wallet.read(session.user.id, id)
+            : request.method === "POST"
+              ? await wallet.action(
+                  session.user.id,
+                  id,
+                  await readJson(request),
+                )
+              : (() => {
+                  throw new RequestError(405, "Method not allowed.");
+                })();
+        return Response.json(data, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async agentHandler(
       request: Request,
       id: string,

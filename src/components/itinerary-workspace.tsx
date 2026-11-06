@@ -170,7 +170,11 @@ export function ItineraryWorkspace({
   useEffect(() => {
     const sync = (event: Event) => {
       const change = (event as CustomEvent<ItineraryUpdate>).detail;
-      if (change.tripId !== tripId || change.source !== "agent") return;
+      if (
+        change.tripId !== tripId ||
+        !["agent", "wallet"].includes(change.source)
+      )
+        return;
       if (form || preview) {
         setConflict(true);
         setError(

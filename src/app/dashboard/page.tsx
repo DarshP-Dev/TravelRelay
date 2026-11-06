@@ -42,7 +42,7 @@ export default async function DashboardPage() {
         </strong>
         <p>
           {trips.length
-            ? "Your plans and completed AI itineraries are saved to your account. All costs are estimates; bookings and financial services aren’t connected."
+            ? "Your plans and completed AI itineraries are saved to your account. TripWallet separates planning estimates from financial history; checkout and supplier reservations aren’t connected yet."
             : "No saved trips yet. Start a plan or explore a little inspiration. No bookings or spending records have been created."}
         </p>
       </div>

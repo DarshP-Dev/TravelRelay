@@ -1,4 +1,40 @@
-# Architecture — Milestone 3B
+# Architecture — Milestone 4A
+
+## TripWallet and financial foundation
+
+The existing itinerary budget remains the planning source of truth. New
+`server/wallet.ts`, `server/fx.ts`, `lib/money.ts`, `lib/financial-ledger.ts` and
+`lib/finance-contracts.ts` add authenticated native-currency planning quotes,
+exact decimal conversion, saved FX evidence and an append-only financial ledger.
+`GET/POST /api/trips/{id}/wallet` has strict owner/origin/input checks. Browser
+actions cannot establish a capture, refund or other successful payment status.
+
+Migrations `0006`/`0007` add six wallet/FX/intent/mutation/event tables, composite
+owner FKs, immutable-evidence guards and per-event converted/fee estimate metadata.
+Saving a reviewed quote reuses the editor's
+preview/commit and transaction hook to update one activity estimate, insert the
+original native-currency intent and append its planning audit atomically. Existing
+assistant/manual edits and undo never alter payment history; linked quote changes
+are flagged. Overview/Itinerary/Bookings/Dashboard all use the same saved plan.
+
+Frankfurter v2 pinned to ECB uses a one-hour persistent cache, pair SQL lease,
+eight-second bounded fixed-endpoint fetch and labeled stale fallback. No FX secret
+or browser provider request is needed. Home/local display preferences never
+rewrite original amounts or rates. Budget scope/reserve and inclusive food/
+transport allowances are preserved. Foreign payment equivalents are indicative;
+original/provider-reported charged amounts and fees stay separate.
+
+Provider-confirmed events can only enter through a future server verifier,
+unconfigured in runtime. The domain reducer enforces original amount/currency,
+order/capture/refund references, pending/refund limits, fee payer semantics and
+idempotency. SQL wallet-row locks serialize financial events; unique provider/
+operation references prevent duplicate money counting. No PayPal SDK or calls,
+checkout, live model requests, 4B or Trip Recovery were added.
+
+See [financial architecture, exact arithmetic, event policy and 4B requirements](financial-architecture.md)
+and [Milestone 4A validation](milestone-4a-validation.md). Retained architecture follows.
+
+## Retained Milestone 3B
 
 ## Context-aware assistant and approval boundary
 
