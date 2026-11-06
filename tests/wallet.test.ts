@@ -13,6 +13,7 @@ import {
   financialEvent,
   walletIntent,
   tripWallet,
+  paypalBooking,
 } from "../src/server/db/schema";
 import {
   providerOutcomeSchema,
@@ -390,6 +391,109 @@ function next(
   });
   return outcome;
 }
+
+test("a fresh rate preserves the original quote and ledger, updates the estimate once, and freezes at checkout", async () => {
+  const id = await fresh();
+  const original = await savedIntent(id, "5.00", "AUD");
+  const owner = state.userId;
+  const db = state.connection.db;
+  const [immutableQuote] = await db
+    .select()
+    .from(walletIntent)
+    .where(eq(walletIntent.id, original.id));
+  const before = await app.wallet.read(owner, id);
+  const clock = Date.parse(original.fx.expiresAt) + 60_000;
+  const wallet = createWallet(db, {
+    clock: () => clock,
+    fxFetch: async () =>
+      Response.json({
+        base: "AUD",
+        quote: "EUR",
+        date: new Date(clock).toISOString().slice(0, 10),
+        rate: 0.9,
+      }),
+  });
+  const data = {
+    refreshIntentId: original.id,
+    activityId: original.activityId,
+    amount: "5.00",
+    currency: "AUD",
+    supplier: original.supplier,
+    itineraryVersion: before.itineraryVersion,
+    walletVersion: before.version,
+  };
+  const refreshPreview = { action: "preview_quote", ...data };
+  assert.equal((await api(id, refreshPreview, otherCookie)).status, 404);
+  await assert.rejects(
+    wallet.action(owner, id, { ...refreshPreview, amount: "5.01" }),
+    { status: 422 },
+  );
+  const { preview } = await wallet.action(owner, id, refreshPreview);
+  assert.ok(preview?.canSave && !preview.fx.stale);
+  assert.equal(preview.convertedMinor, 450);
+  const save = {
+    action: "save_quote",
+    ...data,
+    fxSnapshotId: preview.fx.snapshot.id,
+    mutationId: randomUUID(),
+  };
+  await wallet.action(owner, id, save);
+  await wallet.action(owner, id, save);
+  const refreshed = await wallet.read(owner, id);
+  assert.equal(refreshed.intents.length, 1);
+  assert.equal(refreshed.intents[0].id, original.id);
+  assert.equal(refreshed.intents[0].estimatedDisplayMinor, 450);
+  assert.equal(refreshed.intents[0].fx.id, preview.fx.snapshot.id);
+  assert.ok(
+    !refreshed.intents[0].fxStale && !refreshed.intents[0].staleActivity,
+  );
+  assert.equal(refreshed.summary.actualHomeMinor, 0);
+  assert.equal(refreshed.budget.reserveMinor, before.budget.reserveMinor);
+  assert.equal(
+    refreshed.budget.remainingMinor,
+    before.budget.remainingMinor - 50,
+  );
+  assert.deepEqual(
+    refreshed.events.map((e) => e.kind),
+    ["intent_created", "intent_fx_refreshed"],
+  );
+  assert.deepEqual(refreshed.events[0], before.events[0]);
+  assert.equal(refreshed.events[1].amountMinor, 0);
+  assert.deepEqual(
+    (
+      await db
+        .select()
+        .from(walletIntent)
+        .where(eq(walletIntent.id, original.id))
+    )[0],
+    immutableQuote,
+  );
+  await db.insert(paypalBooking).values({
+    intentId: original.id,
+    tripId: id,
+    userId: owner,
+    activityId: original.activityId,
+    merchantId: "OFFLINE-MERCHANT",
+  });
+  await assert.rejects(
+    wallet.action(owner, id, {
+      ...refreshPreview,
+      itineraryVersion: refreshed.itineraryVersion,
+      walletVersion: refreshed.version,
+    }),
+    { status: 409 },
+  );
+  await wallet.recordVerified(
+    owner,
+    id,
+    original.id,
+    next("captured", { currency: "AUD", amountMinor: 500, feeCurrency: "AUD" }),
+  );
+  const paid = await wallet.read(owner, id);
+  assert.equal(paid.summary.actualHomeMinor, 450);
+  assert.equal(paid.events.at(-1)?.estimatedDisplayMinor, 450);
+  assert.equal(paid.events.at(-1)?.fx.id, preview.fx.snapshot.id);
+});
 test("OFFLINE verifier fixture captures are distinct from estimates; refund pending never releases money", async () => {
   const id = await fresh(),
     i = await savedIntent(id),

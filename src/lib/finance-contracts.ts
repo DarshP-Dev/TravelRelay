@@ -23,6 +23,7 @@ export const providerEventKinds = [
 export const eventKinds = [
   "intent_created",
   "intent_canceled",
+  "intent_fx_refreshed",
   ...providerEventKinds,
 ] as const;
 export type FinancialEventKind = (typeof eventKinds)[number];
@@ -48,6 +49,7 @@ export type FxQuote = {
 };
 const quoteInput = {
   activityId: z.uuid(),
+  refreshIntentId: z.uuid().optional(),
   amount: z.string().max(30),
   currency: currencySchema,
   supplier: z.string().trim().max(160),

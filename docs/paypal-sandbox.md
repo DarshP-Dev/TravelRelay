@@ -7,6 +7,11 @@ match the activity. Changing the quote updates the planning estimate only after
 review. Checkout, capture and refunds never edit an itinerary or reserve real
 supplier inventory.
 
+If an unpaid quote's FX reference expires, use **Review fresh reference rate**
+and **Save refreshed reference rate**. The same quote keeps its original amount,
+activity and audit record. The newer estimate is recorded as a planning event
+with zero money movement. Once checkout starts, its reference rate is frozen.
+
 ## Local or hosted configuration
 
 1. Use a PayPal Sandbox **business** account and its Sandbox REST app. Configure
@@ -39,7 +44,7 @@ and [event names](https://developer.paypal.com/api/rest/webhooks/event-names/).
 
 ## Recovery and deployment
 
-- Apply migration `0008` and earlier migrations. Use hosted PostgreSQL with
+- Apply migration `0009` and earlier migrations. Use hosted PostgreSQL with
   backups and tested restore for deployment; PGlite is local/single-process only.
 - Commerce routes run in the Node runtime with a 60-second duration hint and
   individually bounded 7.5-second provider calls. No PayPal operation depends

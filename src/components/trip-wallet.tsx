@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDownUp, ReceiptText, Wallet } from "lucide-react";
 import { money } from "@/lib/itinerary";
-import { currencies, type Currency } from "@/lib/money";
+import { amountText, currencies, type Currency } from "@/lib/money";
 import { WalletFinancialSummary } from "./wallet-summary";
 export { WalletPreview } from "./wallet-summary";
 import {
@@ -166,13 +166,16 @@ export function TripWallet({
     setAckOver(false);
     setAckStale(false);
   }
-  async function getPreview() {
+  async function getPreview(reference?: WalletState["intents"][number]) {
     const revision = formRevision.current;
     const data = {
-      activityId,
-      amount,
-      currency,
-      supplier,
+      activityId: reference?.activityId ?? activityId,
+      amount: reference
+        ? amountText(reference.originalMinor, reference.originalCurrency)
+        : amount,
+      currency: reference?.originalCurrency ?? currency,
+      supplier: reference?.supplier ?? supplier,
+      ...(reference && { refreshIntentId: reference.id }),
       itineraryVersion: state.itineraryVersion,
       walletVersion: state.version,
     };
@@ -192,6 +195,7 @@ export function TripWallet({
       });
       setAckStale(false);
       setAckOver(false);
+      if (reference) document.getElementById("wallet-quote")?.scrollIntoView();
     }
   }
   async function save() {
@@ -207,7 +211,9 @@ export function TripWallet({
       setActivityId("");
       setSupplier("");
       setNotice(
-        "Planning reference saved and activity estimate updated. No checkout, booking or payment occurred.",
+        request.refreshIntentId
+          ? "Reference rate refreshed on the same quote. The activity estimate and planning history are saved."
+          : "Planning reference saved and activity estimate updated. No checkout, booking or payment occurred.",
       );
     }
   }
@@ -334,10 +340,27 @@ export function TripWallet({
                 <p className="inline-note">
                   {i.fx.provider === "identity"
                     ? "Same currency · no exchange rate needed"
-                    : `Frankfurter / ECB rate ${i.fx.rate} ${i.fx.quote} per ${i.fx.base}; rate date ${i.fx.sourceDate}; retrieved ${dateTime(i.fx.retrievedAt)}. ${i.fxStale ? "Dated/stale saved estimate; not current." : "Cached daily reference, not a live quote."}`}{" "}
+                    : `Frankfurter / ECB rate ${i.fx.rate} ${i.fx.quote} per ${i.fx.base}; rate date ${i.fx.sourceDate}; retrieved ${dateTime(i.fx.retrievedAt)}. ${i.fxStale ? "Dated/stale saved estimate; not current." : `Reference expires ${dateTime(i.fx.expiresAt)}. Cached daily estimate.`}`}{" "}
                   Original currency and amount are retained. No PayPal FX or
                   fees are implied.
                 </p>
+                {i.fxStale &&
+                  i.status === "planned" &&
+                  !i.staleActivity &&
+                  i.state.status === "unpaid" &&
+                  !commerce.bookings.some((b) => b.intentId === i.id) && (
+                    <button
+                      type="button"
+                      className="button button-secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        change();
+                        void getPreview(i);
+                      }}
+                    >
+                      Review fresh reference rate
+                    </button>
+                  )}
                 {i.staleActivity && (
                   <p className="notice">
                     Activity edited or removed since this quote. Its historical
@@ -559,10 +582,14 @@ export function TripWallet({
                 className="wallet-quote-preview"
                 aria-label="Planning quote preview"
               >
-                <h4>Review before saving</h4>
+                <h4>
+                  {request?.refreshIntentId
+                    ? "Review refreshed reference rate"
+                    : "Review before saving"}
+                </h4>
                 <p>
-                  {money(preview.originalMinor, currency)} {currency} →
-                  approximately{" "}
+                  {money(preview.originalMinor, preview.fx.snapshot.base)}{" "}
+                  {preview.fx.snapshot.base} → approximately{" "}
                   <strong>
                     {money(preview.convertedMinor, state.currency)}{" "}
                     {state.currency}
@@ -571,7 +598,7 @@ export function TripWallet({
                 <p>
                   {preview.fx.snapshot.provider === "identity"
                     ? "Same currency; no external conversion."
-                    : `Frankfurter / ECB · ${preview.fx.snapshot.rate} ${state.currency} per ${currency} · reference date ${preview.fx.snapshot.sourceDate} · retrieved ${dateTime(preview.fx.snapshot.retrievedAt)}`}
+                    : `Frankfurter / ECB · ${preview.fx.snapshot.rate} ${state.currency} per ${preview.fx.snapshot.base} · reference date ${preview.fx.snapshot.sourceDate} · retrieved ${dateTime(preview.fx.snapshot.retrievedAt)}`}
                 </p>
                 <p>
                   Planned allocations{" "}
@@ -636,7 +663,9 @@ export function TripWallet({
                     }
                     onClick={() => void save()}
                   >
-                    Save reference & activity estimate
+                    {request?.refreshIntentId
+                      ? "Save refreshed reference rate"
+                      : "Save reference & activity estimate"}
                   </button>
                   <button
                     className="button button-secondary"

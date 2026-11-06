@@ -398,11 +398,15 @@ export const financialEvent = pgTable(
     ),
     check(
       "financial_event_proof_valid",
-      sql`(${t.kind} in ('intent_created','intent_canceled') and ${t.provider} = 'planning' and ${t.verification} = 'user-planning') or (${t.kind} not in ('intent_created','intent_canceled') and ${t.provider} = 'paypal-sandbox' and ${t.verification} in ('provider-api','verified-webhook') and ${t.orderId} is not null)`,
+      sql`(${t.kind} in ('intent_created','intent_canceled','intent_fx_refreshed') and ${t.provider} = 'planning' and ${t.verification} = 'user-planning') or (${t.kind} not in ('intent_created','intent_canceled','intent_fx_refreshed') and ${t.provider} = 'paypal-sandbox' and ${t.verification} in ('provider-api','verified-webhook') and ${t.orderId} is not null)`,
     ),
     check(
       "financial_event_kind_valid",
-      sql`${t.kind} in ('intent_created','intent_canceled','checkout_pending','authorized','payment_pending','captured','payment_failed','payment_canceled','refund_pending','refund_completed','refund_failed','reversal_completed')`,
+      sql`${t.kind} in ('intent_created','intent_canceled','intent_fx_refreshed','checkout_pending','authorized','payment_pending','captured','payment_failed','payment_canceled','refund_pending','refund_completed','refund_failed','reversal_completed')`,
+    ),
+    check(
+      "financial_event_fx_refresh_valid",
+      sql`${t.kind} <> 'intent_fx_refreshed' or (${t.amountMinor} = 0 and ${t.feeMinor} = 0 and ${t.estimatedFeeMinor} = 0 and ${t.estimatedDisplayMinor} between 0 and 1000000000000 and ${t.orderId} is null and ${t.captureId} is null and ${t.refundId} is null and ${t.outcome} is null)`,
     ),
   ],
 );

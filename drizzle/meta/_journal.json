@@ -64,6 +64,13 @@
       "when": 1793940293330,
       "tag": "0008_workable_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793986912898,
+      "tag": "0009_serious_metal_master",
+      "breakpoints": true
     }
   ]
 }

@@ -121,7 +121,7 @@ export function createCommerce(
             i.originalMinor === demoPriceMinor &&
             !i.fxStale &&
             !i.staleActivity &&
-            freshQuote(i.createdAt) &&
+            freshQuote(i.fxRefreshedAt ?? i.createdAt) &&
             !bookings.some((b) => b.intentId === i.id),
         )
         .map((i) => ({
@@ -524,7 +524,7 @@ export function createCommerce(
         quote.status !== "planned" ||
         quote.staleActivity ||
         quote.fxStale ||
-        !freshQuote(quote.createdAt) ||
+        !freshQuote(quote.fxRefreshedAt ?? quote.createdAt) ||
         state.events.some(
           (e) => e.intentId === quote.id && !e.kind.startsWith("intent_"),
         )

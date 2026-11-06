@@ -40,6 +40,22 @@ import {
 
 type StoredIntent = typeof walletIntent.$inferSelect;
 type StoredEvent = typeof financialEvent.$inferSelect;
+function resolveIntentFx(intent: StoredIntent, events: StoredEvent[]) {
+  const refresh = events.findLast(
+    (event) =>
+      event.intentId === intent.id && event.kind === "intent_fx_refreshed",
+  );
+  return refresh
+    ? {
+        ...intent,
+        fx: refresh.fx,
+        fxSnapshotId: refresh.fx.id,
+        estimatedDisplayMinor: refresh.estimatedDisplayMinor,
+        acceptedStaleRate: false,
+        fxRefreshedAt: refresh.recordedAt.toISOString(),
+      }
+    : { ...intent, fxRefreshedAt: null };
+}
 // This port must be implemented from verified API/webhook evidence in 4B.
 // Runtime never supplies it in 4A; no HTTP route can supply outcomes or statuses.
 export type FinancialVerifier = (
@@ -215,8 +231,9 @@ export function createWallet(
     let actualHomeMinor = 0,
       feesHomeMinor = 0,
       indicativeActual = false;
-    const withState = intents.map((i) => {
-      const owned = events.filter((e) => e.intentId === i.id),
+    const withState = intents.map((stored) => {
+      const owned = events.filter((e) => e.intentId === stored.id),
+        i = resolveIntentFx(stored, owned),
         state = ledgerState(owned.map(asLedger));
       const pending = [
         "checkout_pending",
@@ -505,21 +522,49 @@ export function createWallet(
         422,
         "Choose an existing activity in this saved itinerary.",
       );
-    if (
-      current.intents.some(
-        (i) => i.activityId === target.id && i.status === "planned",
+    const active = current.intents.find(
+      (i) => i.activityId === target.id && i.status === "planned",
+    );
+    const originalMinor = inputMoney(data.amount, data.currency);
+    const refresh = data.refreshIntentId ? active : undefined;
+    if (data.refreshIntentId) {
+      if (
+        !refresh ||
+        refresh.id !== data.refreshIntentId ||
+        refresh.staleActivity ||
+        refresh.originalMinor !== originalMinor ||
+        refresh.originalCurrency !== data.currency ||
+        refresh.supplier !== data.supplier
       )
-    )
+        throw new RequestError(
+          422,
+          "Only the exchange rate of the original, unchanged planning reference can be refreshed.",
+        );
+      const [booking] = await db
+        .select({ id: paypalBooking.id })
+        .from(paypalBooking)
+        .where(eq(paypalBooking.intentId, refresh.id));
+      if (
+        booking ||
+        current.events.some(
+          (e) => e.intentId === refresh.id && e.provider !== "planning",
+        )
+      )
+        throw new RequestError(
+          409,
+          "A planning reference with checkout history keeps its recorded exchange rate.",
+        );
+    } else if (active) {
       throw new RequestError(
         409,
         "This activity already has an active planning reference. Close it explicitly before recording another quote.",
       );
-    if (current.intents.length >= 500)
+    }
+    if (!refresh && current.intents.length >= 500)
       throw new RequestError(
         422,
         "This trip has reached its 500-reference limit.",
       );
-    const originalMinor = inputMoney(data.amount, data.currency);
     const reference =
       data.action === "save_quote"
         ? {
@@ -537,6 +582,17 @@ export function createWallet(
         "This rate belongs to different currencies. Get a new estimate.",
       );
     reference.stale = isStaleRate(reference.snapshot, clock());
+    if (
+      refresh &&
+      (reference.stale ||
+        reference.snapshot.id === refresh.fx.id ||
+        Date.parse(reference.snapshot.retrievedAt) <=
+          Date.parse(refresh.fx.retrievedAt))
+    )
+      throw new RequestError(
+        422,
+        "A newer, current reference rate is required to refresh this quote.",
+      );
     if (
       reference.stale &&
       data.action === "save_quote" &&
@@ -603,6 +659,7 @@ export function createWallet(
       originalMinor,
       convertedMinor,
       reference,
+      refresh,
       request,
       preview,
     };
@@ -657,6 +714,7 @@ export function createWallet(
           current,
           target,
           reference,
+          refresh,
           originalMinor,
           convertedMinor,
           preview,
@@ -676,7 +734,7 @@ export function createWallet(
             changes: preview.changes,
           },
         };
-      const intentId = randomUUID();
+      const intentId = refresh?.id ?? randomUUID();
       await editor.commit(userId, tripId, request, {
         onRecorded: async (tx) => {
           const [updated] = await tx
@@ -698,30 +756,42 @@ export function createWallet(
               409,
               "TripWallet changed before saving. Nothing was committed; reload the current version.",
             );
-          await tx.insert(walletIntent).values({
-            id: intentId,
-            tripId,
-            userId,
-            activityId: target.id,
-            category: target.category,
-            title: target.title,
-            supplier: data.supplier,
-            originalCurrency: data.currency,
-            originalMinor,
-            displayCurrency: current.currency,
-            estimatedDisplayMinor: convertedMinor,
-            fxSnapshotId: reference.snapshot.id,
-            fx: reference.snapshot,
-            acceptedStaleRate: reference.stale,
-            itineraryVersion: data.itineraryVersion + 1,
-            activitySnapshot: {
+          if (refresh) {
+            // The wallet row serializes this refresh with checkout claims.
+            const [booking] = await tx
+              .select({ id: paypalBooking.id })
+              .from(paypalBooking)
+              .where(eq(paypalBooking.intentId, intentId));
+            if (booking)
+              throw new RequestError(
+                409,
+                "Checkout started before the refresh was saved. The recorded quote was retained.",
+              );
+          } else
+            await tx.insert(walletIntent).values({
+              id: intentId,
+              tripId,
+              userId,
+              activityId: target.id,
+              category: target.category,
               title: target.title,
-              location: target.location,
-              date: target.date,
-              startMinute: target.startMinute,
-              durationMinutes: target.durationMinutes,
-            },
-          });
+              supplier: data.supplier,
+              originalCurrency: data.currency,
+              originalMinor,
+              displayCurrency: current.currency,
+              estimatedDisplayMinor: convertedMinor,
+              fxSnapshotId: reference.snapshot.id,
+              fx: reference.snapshot,
+              acceptedStaleRate: reference.stale,
+              itineraryVersion: data.itineraryVersion + 1,
+              activitySnapshot: {
+                title: target.title,
+                location: target.location,
+                date: target.date,
+                startMinute: target.startMinute,
+                durationMinutes: target.durationMinutes,
+              },
+            });
           await tx.insert(walletMutation).values({
             id: data.mutationId,
             tripId,
@@ -734,17 +804,19 @@ export function createWallet(
             userId,
             intentId,
             sequence: data.walletVersion + 1,
-            kind: "intent_created",
+            kind: refresh ? "intent_fx_refreshed" : "intent_created",
             provider: "planning",
             verification: "user-planning",
             providerEventId: data.mutationId,
-            operationKey: `intent_created:${intentId}`,
+            operationKey: refresh
+              ? `intent_fx_refreshed:${data.mutationId}`
+              : `intent_created:${intentId}`,
             reconciliationRef: data.mutationId,
             originalCurrency: data.currency,
             amountMinor: 0,
             feeMinor: 0,
             displayCurrency: current.currency,
-            estimatedDisplayMinor: 0,
+            estimatedDisplayMinor: refresh ? convertedMinor : 0,
             estimatedFeeMinor: 0,
             fx: reference.snapshot,
             occurredAt: new Date(clock()),
@@ -889,7 +961,7 @@ export function createWallet(
     intentId: string,
     verified: ProviderOutcome,
   ) {
-    const intent = await ownedIntent(userId, tripId, intentId);
+    await ownedIntent(userId, tripId, intentId);
     const outcome = providerOutcomeSchema.parse(verified);
     await db.transaction(async (tx) => {
       // All writers lock the wallet row before reading ledger history. Database
@@ -951,6 +1023,7 @@ export function createWallet(
         .select()
         .from(walletIntent)
         .where(eq(walletIntent.id, intentId));
+      const intent = resolveIntentFx(latest, events);
       try {
         validateFinancialTransition(
           events.map(asLedger),
