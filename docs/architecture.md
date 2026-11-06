@@ -1,6 +1,25 @@
-# Architecture — Milestone 4A
+# Architecture — Milestone 4B
 
-## TripWallet and financial foundation
+## PayPal Sandbox commerce
+
+`server/paypal-client.ts` wraps the official Sandbox Orders v2, Payments v2,
+OAuth and webhook verification APIs on one fixed host. PayPal JavaScript SDK v6
+opens buyer approval with the public client ID. `GET/POST /api/trips/{id}/commerce`
+uses the same authenticated ownership and mutation-origin checks as TripWallet.
+`POST /api/paypal/webhook` instead authenticates provider signatures and
+retrieves provider resources before accepting financial changes.
+
+Migration `0008` adds owner-bound booking references, durable outbound operation
+claims and webhook receipts. The booking locks a single USD 5.00 demo quote
+and has no supplier fulfillment. An order, capture or refund claim is committed
+before the external write, with a stable PayPal idempotency key. No ambiguous
+operation is automatically submitted again. Captures and refunds reuse the
+existing append-only TripWallet ledger, with provider data and separate
+reference FX estimates. UI and assistant edits cannot submit financial outcomes.
+
+See [Sandbox configuration, limits and acceptance plan](paypal-sandbox.md).
+
+## Retained TripWallet and financial foundation
 
 The existing itinerary budget remains the planning source of truth. New
 `server/wallet.ts`, `server/fx.ts`, `lib/money.ts`, `lib/financial-ledger.ts` and
@@ -24,12 +43,11 @@ rewrite original amounts or rates. Budget scope/reserve and inclusive food/
 transport allowances are preserved. Foreign payment equivalents are indicative;
 original/provider-reported charged amounts and fees stay separate.
 
-Provider-confirmed events can only enter through a future server verifier,
-unconfigured in runtime. The domain reducer enforces original amount/currency,
+Provider-confirmed events can only enter through the server's verified path.
+The domain reducer enforces original amount/currency,
 order/capture/refund references, pending/refund limits, fee payer semantics and
 idempotency. SQL wallet-row locks serialize financial events; unique provider/
-operation references prevent duplicate money counting. No PayPal SDK or calls,
-checkout, live model requests, 4B or Trip Recovery were added.
+operation references prevent duplicate money counting.
 
 See [financial architecture, exact arithmetic, event policy and 4B requirements](financial-architecture.md)
 and [Milestone 4A validation](milestone-4a-validation.md). Retained architecture follows.

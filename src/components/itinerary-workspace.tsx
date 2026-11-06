@@ -10,6 +10,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ItineraryView } from "./itinerary-view";
+import { bookingPaymentLabel } from "@/lib/paypal-status";
 import {
   activityCategories,
   clock,
@@ -92,9 +93,11 @@ function ActivityVenueSource({ reference }: { reference?: ScheduleReference }) {
 export function ItineraryWorkspace({
   tripId,
   snapshot,
+  sandboxBookings,
 }: {
   tripId: string;
   snapshot: State;
+  sandboxBookings?: import("@/server/paypal-commerce").CommerceState["bookings"];
 }) {
   const { intent } = snapshot;
   const router = useRouter(),
@@ -891,6 +894,17 @@ export function ItineraryWorkspace({
                     <p className="activity-place">
                       {a.location} · {plan.base.city}
                     </p>
+                    {sandboxBookings
+                      ?.filter((b) => b.activityId === a.id)
+                      .map((b) => (
+                        <Link
+                          key={b.id}
+                          className="text-link"
+                          href={`/trips/${tripId}/bookings`}
+                        >
+                          Sandbox demo · {bookingPaymentLabel(b)}
+                        </Link>
+                      ))}
                     <p className="inline-note">
                       {a.bufferBeforeMinutes} min buffer ·{" "}
                       {money(a.costMinor, plan.currency)} {plan.currency} group

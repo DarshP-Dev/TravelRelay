@@ -131,7 +131,9 @@ reversals. Pending refunds never reduce spending. Home equivalents of foreign
 events use the intent's immutable indicative rate and are labeled accordingly;
 provider-reported charged values are preserved/displayed separately. They are not
 silently substituted for that planning reference rate or claimed as settlement FX.
-Actual cross-currency invoice reconciliation is part of 4B's provider adapter.
+Milestone 4B preserves capture and refund settlement metadata separately. The
+demo uses a USD capture and indicative trip FX; it does not infer the buyer's
+bank or card conversion from the merchant's reported settlement.
 
 Financial projections replace covered itemized estimates, instead of adding both:
 for each current item take the greater of its estimate and net confirmed plus
@@ -172,25 +174,32 @@ discarding quote input. Unsaved manual forms keep the existing stale-save protec
 Overview, cards, Bookings and Itinerary use the same saved planning amounts. Native
 quote history and source metadata remain distinct from current projections.
 
-## Milestone 4B handoff
+## Milestone 4B Sandbox adapter
 
 All nine installed APIMatic TypeScript skills are readable under local
 `.agents/skills/`: integrate-paypal, getting-started, authentication,
 client-initialization, calling-endpoints, models, configuration-resilience,
 error-handling and testing. Their installed skill names have the `typescript-`
-prefix. No `paypal` runtime package or PayPal contract implementation was added.
-This milestone uses their boundary/idempotency/unknown-outcome guidance, without
-claiming a working sponsor API integration.
+prefix. The generated `paypal` package is not installed. Milestone 4B uses
+the authorized fixed-host REST alternative and official browser SDK v6.
 
-Before implementing SDK code, 4B must follow the integration skill's package/map
-verification and root `paypal-plan.md` contract gate, verify the actual installed
-SDK contracts/Sandbox host, and bind approved demo merchant inventory to immutable
-intents. It must add durable outgoing operation claims **before** provider writes,
-explicit checkout/refund approvals, safe unknown-outcome re-reads, signature/status
-verification, and trusted reconciliation mapping. Never infer buyer charges from
-seller fees or claim Sandbox payment proves an external travel reservation.
-Checkout and refunds remain separate approvals; no AI money tool is registered.
+Migration `0008` adds `paypal_booking`, `paypal_operation` and
+`paypal_webhook_receipt`. The booking's composite FK binds it to one immutable
+owner/trip/activity quote. A short transaction records an outgoing operation
+and stable request UUID before its external write. Refund claims serialize on
+the booking row and reserve against the verified capture in native currency.
+Refund authorization remains separate from capture; no AI money tool is registered.
 
-This is a ready financial foundation for that work, not a claim that 4B's PayPal
-integration or live refund handling has been completed. Hosted PostgreSQL/backups,
-HTTPS/secrets and existing long-running AI hosting remain deployment prerequisites.
+The adapter verifies order ownership references, merchant, currency and exact
+amount, then verifies the associated capture/refund by provider retrieval.
+Only then does it call the wallet's server-side verified append path.
+Append and wallet version advance in one transaction. A duplicate or a later
+notification cannot count the same capture/refund again. If interrupted before
+booking or operation metadata is updated, a new retrieval can finish linking
+the already recorded immutable event. Signed webhook receipts deduplicate
+notifications; history uses stable provider-operation keys independent of delivery.
+
+Milestone 5 can use the same owner-bound booking/capture and refundable balance,
+call the reviewed refund operation after explicit approval, and wait for a
+verified immutable outcome. It must not treat an outgoing claim or pending
+refund as returned funds. See [Sandbox setup and acceptance](paypal-sandbox.md).

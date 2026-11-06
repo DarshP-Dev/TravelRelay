@@ -6,6 +6,7 @@ import {
   trip,
   tripWallet,
   walletIntent,
+  paypalBooking,
   walletMutation,
   financialEvent,
 } from "./db/schema";
@@ -792,7 +793,12 @@ export function createWallet(
           .select()
           .from(financialEvent)
           .where(eq(financialEvent.intentId, intent.id));
+        const [booking] = await tx
+          .select({ id: paypalBooking.id })
+          .from(paypalBooking)
+          .where(eq(paypalBooking.intentId, intent.id));
         if (
+          booking ||
           intent.status !== "planned" ||
           events.some((e) => !e.kind.startsWith("intent_"))
         )
@@ -849,6 +855,20 @@ export function createWallet(
       );
     if (!reference || reference.length > 160)
       throw new RequestError(400, "Invalid reconciliation reference.");
+    const intent = await ownedIntent(userId, tripId, intentId);
+    const outcome = await options.verifier(
+      Object.freeze({ ...intent }),
+      reference,
+    );
+    if (outcome.reconciliationRef !== reference)
+      throw new RequestError(
+        422,
+        "Provider reconciliation reference does not match the verified request.",
+      );
+    await recordVerified(userId, tripId, intentId, outcome);
+    return read(userId, tripId);
+  }
+  async function ownedIntent(userId: string, tripId: string, intentId: string) {
     const [intent] = await db
       .select()
       .from(walletIntent)
@@ -860,14 +880,17 @@ export function createWallet(
         ),
       );
     if (!intent) throw new RequestError(404, "Financial reference not found.");
-    const outcome = providerOutcomeSchema.parse(
-      await options.verifier(Object.freeze({ ...intent }), reference),
-    );
-    if (outcome.reconciliationRef !== reference)
-      throw new RequestError(
-        422,
-        "Provider reconciliation reference does not match the verified request.",
-      );
+    return intent;
+  }
+  // Server-only seam for a verified provider outcome. No HTTP handler accepts it.
+  async function recordVerified(
+    userId: string,
+    tripId: string,
+    intentId: string,
+    verified: ProviderOutcome,
+  ) {
+    const intent = await ownedIntent(userId, tripId, intentId);
+    const outcome = providerOutcomeSchema.parse(verified);
     await db.transaction(async (tx) => {
       // All writers lock the wallet row before reading ledger history. Database
       // serialization, not a process-local mutex, protects cumulative refunds.
@@ -954,7 +977,7 @@ export function createWallet(
         verification: outcome.verification,
         providerEventId: outcome.eventId,
         operationKey: financialOperationKey(outcome),
-        reconciliationRef: reference,
+        reconciliationRef: outcome.reconciliationRef,
         originalCurrency: outcome.currency,
         amountMinor: outcome.amountMinor,
         feeMinor: outcome.feeMinor,
@@ -983,9 +1006,8 @@ export function createWallet(
         .set({ version: wallet.version + 1, updatedAt: new Date(clock()) })
         .where(eq(tripWallet.tripId, tripId));
     });
-    return read(userId, tripId);
   }
-  return { read, action, reconcile };
+  return { read, action, reconcile, recordVerified };
 }
 export type WalletState = Awaited<
   ReturnType<ReturnType<typeof createWallet>["read"]>

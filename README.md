@@ -2,12 +2,13 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 4A — TripWallet and multi-currency financial foundation.**
+**Current scope: Milestone 4B — PayPal Sandbox checkout, verified payments, and refunds.**
 Open a saved trip's **TripWallet** tab for reconciled planning allocations,
 itemized estimates, additional allowances, separate reserve/unallocated funds,
 category visuals and distinct confirmed/pending/refund history. **Bookings** shows
 persisted planning references with honest unbooked status, source dates and native
-amounts. No checkout or supplier reservation is claimed.
+amounts, plus verified Sandbox checkout and refund history. A Sandbox payment
+never represents a real supplier reservation.
 
 Choose an activity and enter its original group amount/currency to **Preview rate
 & budget consequences**. The server uses Frankfurter v2/ECB daily references,
@@ -17,12 +18,24 @@ Overruns and stale rates need separate acknowledgement. Closing a never-paid
 planning reference requires confirmation and does not refund or undo anything.
 Local-currency preference overrides do not change the trip currency or history.
 
-There are no real captures/refunds in this milestone. The append-only ledger's
-server-only verifier port is deliberately unconfigured, and no HTTP action can
-submit a successful payment status. **No live AI or PayPal request was made.**
-One free public Frankfurter/ECB lookup was verified. No additional API key is
-needed for FX. See [financial architecture and 4B handoff](docs/financial-architecture.md)
-and [4A validation/UI evidence](docs/milestone-4a-validation.md).
+To try the Sandbox flow after configuration, save a fresh **USD 5.00** planning
+quote on an itinerary activity. Open **Bookings** or **TripWallet**, review the
+Sandbox demonstration price, and explicitly continue to PayPal. Use a Sandbox
+buyer account. Back in TravelRelay, check the verified status and original
+charge. From that record, review and confirm a full or partial Sandbox refund.
+If checkout is interrupted, use **Check PayPal status** to reconcile without
+sending another financial write. Saving a quote affects the planning estimate;
+capturing or refunding a payment does not.
+
+Set `PAYPAL_ENVIRONMENT=sandbox`, `ENABLE_DEMO_MERCHANT=true`, and the Sandbox
+app's `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, and `PAYPAL_MERCHANT_ID` in
+ignored `.env.local` or hosted server-side settings. `PAYPAL_WEBHOOK_ID` enables
+signed notifications for the configured Sandbox app. Only the public client ID
+is passed to the browser. Deployed judges use the site's configured app; they
+need a Sandbox **buyer login** to approve a demo, never API keys.
+See the [Sandbox setup and controlled acceptance plan](docs/paypal-sandbox.md),
+[financial architecture](docs/financial-architecture.md), and
+[Milestone 4B validation](docs/milestone-4b-validation.md).
 
 **Retained Milestone 3B: context-aware AI assistant with reviewed changes.**
 Open **Ask TravelRelay** inside a saved generated trip. The docked desktop
@@ -43,7 +56,7 @@ with unchanged budget and safe scheduling. Its exact result passes offline
 approval/rejection/stale-version regression tests; **101 tests pass**.
 See the [live acceptance report](docs/milestone-3b-live-agent-paris-result.md) and
 [original offline validation, costs and limitations](docs/milestone-3b-validation.md).
-Apply committed migrations through **`0007`** using `npm run db:migrate` before
+Apply committed migrations through **`0008`** using `npm run db:migrate` before
 starting this version; stop any process using the same PGlite directory first.
 
 **Retained Milestone 3A capabilities:**
@@ -58,8 +71,7 @@ Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
 trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
 no map API key. Local scheduler assets and license notices ship with the app.
 See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
-PayPal checkout, verified supplier reservations, refund execution and Trip Recovery
-are not implemented. No push, deployment or Milestone 4B work is included.
+Real supplier reservations and Trip Recovery are outside the current scope.
 
 All six inspirations have public previews at `/explore/{templateId}`. Customize
 opens the persistent four-step wizard with a destination and interests, leaving
@@ -235,9 +247,9 @@ provider defaults are included. Use secure server environment variables in produ
 | `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH` | Explicit local PGlite selection and persistent directory                    |
 | `ALLOW_LOCAL_DATABASE`                   | Local production-preview override only, not a serverless deployment option  |
 
-OAuth, PayPal Sandbox, FX and demo merchant names remain reserved
-for future milestones. They are not working integrations. Only the future PayPal
-public client identifier may use `NEXT_PUBLIC_`; secrets must remain server-only.
+Social OAuth remains reserved. FX and PayPal Sandbox configuration are explained
+above. No PayPal credential uses a `NEXT_PUBLIC_` variable; the server passes
+the intended public client ID to the checkout SDK when Sandbox is enabled.
 
 ## Architecture
 
@@ -358,9 +370,8 @@ or redeploy to load changed secrets. Use hosted PostgreSQL; local PGlite is not 
 shared/serverless production database. No credentials belong in Git, frontend
 forms, public build variables, screenshots or the browser bundle.
 
-Milestone 2A makes OpenAI/Gemini calls exclusively on the server. PayPal transactions
-are not implemented; no PayPal secret or merchant request is sent by the browser.
-When the later approved PayPal milestone is implemented, the organizer's Sandbox
+Milestone 2A makes OpenAI/Gemini calls exclusively on the server. PayPal merchant
+requests also stay server-side. With Milestone 4B, the organizer's Sandbox
 credentials must remain in server-side secrets and judges will not supply their
 own API credentials. This documentation does not enable payments or deploy anything.
 
@@ -495,7 +506,9 @@ Overview/Itinerary tabs. Ask TravelRelay is visible with editing clearly disable
 Nine APIMatic PayPal TypeScript skills are available under `.agents/skills`.
 Installation is not an integration or sponsor-award claim. Before PayPal work,
 load `typescript-integrate-paypal`, follow its SDK map/contract-sheet gates and
-companion skills. No PayPal SDK, Bryntum, or AG Grid is installed. The model APIs use the official server-side OpenAI and Google GenAI SDKs.
+companion skills. 4B uses PayPal's REST APIs and browser JavaScript SDK v6 instead
+of the generated server SDK. The model APIs use the official server-side OpenAI
+and Google GenAI SDKs.
 
 Existing project MIT license preserved. Unsplash photography sources are in
 `docs/image-credits.md` and `/credits`; fonts include SIL Open Font License texts;

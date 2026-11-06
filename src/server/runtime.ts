@@ -3,6 +3,7 @@ import { openDatabase } from "./db/connection";
 import { createApplication } from "./application";
 import { createTripModel, providerConfigFromEnv } from "./model";
 import { generationLimitsFromEnv } from "./generation-quota";
+import { createPayPalClient, sandboxConfig } from "./paypal-client";
 
 // Reuse the connection across dev reloads, while rebuilding application code
 // with each module revision. PGlite must never open the same directory twice.
@@ -40,11 +41,13 @@ async function connect() {
       globalDatabase.travelRelayConnection = undefined;
       throw error;
     }));
+  const paypal = sandboxConfig(process.env);
   return createApplication(connection.db, {
     secret,
     origin,
     generationLimits: generationLimitsFromEnv(process.env),
     model: createTripModel(providerConfigFromEnv(process.env)),
+    paypal: paypal ? createPayPalClient(paypal) : undefined,
   });
 }
 export function getApp() {

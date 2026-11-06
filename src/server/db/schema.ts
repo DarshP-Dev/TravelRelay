@@ -260,6 +260,68 @@ export const walletIntent = pgTable(
     ),
   ],
 );
+export const paypalBooking = pgTable(
+  "paypal_booking",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    intentId: uuid("intent_id").notNull().unique(),
+    tripId: uuid("trip_id").notNull(),
+    userId: text("user_id").notNull(),
+    activityId: uuid("activity_id").notNull(),
+    merchantId: text("merchant_id").notNull(),
+    orderId: text("order_id").unique(),
+    captureId: text("capture_id").unique(),
+    lastReconciledAt: timestamp("last_reconciled_at", { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.intentId, t.tripId, t.userId],
+      foreignColumns: [
+        walletIntent.id,
+        walletIntent.tripId,
+        walletIntent.userId,
+      ],
+    }),
+    index("paypal_booking_owner_idx").on(t.tripId, t.userId),
+  ],
+);
+export const paypalOperation = pgTable(
+  "paypal_operation",
+  {
+    id: uuid("id").primaryKey(),
+    bookingId: uuid("booking_id")
+      .notNull()
+      .references(() => paypalBooking.id),
+    kind: text("kind").$type<"order" | "capture" | "refund">().notNull(),
+    status: text("status")
+      .$type<"sending" | "uncertain" | "pending" | "verified" | "failed">()
+      .notNull(),
+    requestedMinor: bigint("requested_minor", { mode: "number" }).notNull(),
+    providerId: text("provider_id"),
+    providerStatus: text("provider_status"),
+    issue: text("issue"),
+    settlement: jsonb("settlement").$type<Record<string, string>>(),
+    ...timestamps(),
+  },
+  (t) => [
+    index("paypal_operation_booking_idx").on(t.bookingId),
+    uniqueIndex("paypal_operation_single_idx")
+      .on(t.bookingId, t.kind)
+      .where(sql`${t.kind} <> 'refund'`),
+    uniqueIndex("paypal_operation_provider_idx").on(t.kind, t.providerId),
+    check(
+      "paypal_operation_valid",
+      sql`${t.kind} in ('order', 'capture', 'refund') and ${t.status} in ('sending', 'uncertain', 'pending', 'verified', 'failed') and ${t.requestedMinor} between 1 and 500`,
+    ),
+  ],
+);
+export const paypalWebhookReceipt = pgTable("paypal_webhook_receipt", {
+  id: text("id").primaryKey(),
+  processedAt: timestamp("processed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
 export const walletMutation = pgTable(
   "wallet_mutation",
   {

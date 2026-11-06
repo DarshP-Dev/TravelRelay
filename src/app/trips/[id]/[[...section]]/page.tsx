@@ -89,6 +89,10 @@ export default async function TripWorkspacePage({
     saved && ["", "wallet", "bookings"].includes(active)
       ? await (await getApp()).wallet.read(user.id, id)
       : null;
+  const commerceSnapshot =
+    saved && ["itinerary", "wallet", "bookings"].includes(active)
+      ? await (await getApp()).commerce.read(user.id, id)
+      : null;
   return (
     <div className="container page-content trip-workspace-container">
       <PageHeading
@@ -153,6 +157,7 @@ export default async function TripWorkspacePage({
                 key={id}
                 tripId={id}
                 snapshot={editingSnapshot!}
+                sandboxBookings={commerceSnapshot?.bookings}
               />
             ) : (
               <ItineraryView
@@ -239,6 +244,7 @@ export default async function TripWorkspacePage({
               key={`${id}:${active}`}
               initial={walletSnapshot}
               bookings={active === "bookings"}
+              commerce={commerceSnapshot!}
             />
           )}
           {!(saved?.itinerary && ["", "itinerary"].includes(active)) &&

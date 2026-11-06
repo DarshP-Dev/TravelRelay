@@ -8,6 +8,8 @@ import type { GenerationLimits } from "./generation-quota";
 import { createItineraryEditor } from "./itinerary-edits";
 import { createTravelAgent } from "./agent";
 import { createWallet, type FinancialVerifier } from "./wallet";
+import { createCommerce } from "./paypal-commerce";
+import type { PayPalClient } from "./paypal-client";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -68,6 +70,7 @@ export function createApplication(
     generationLimits?: GenerationLimits;
     fxFetch?: typeof fetch;
     financialVerifier?: FinancialVerifier;
+    paypal?: PayPalClient;
   },
 ) {
   const auth = createAuth(db, config);
@@ -80,12 +83,35 @@ export function createApplication(
     fxFetch: config.fxFetch,
     verifier: config.financialVerifier,
   });
+  const commerce = createCommerce(db, wallet, config.paypal);
   return {
     auth,
     trips,
     itineraryEditor,
     travelAgent,
     wallet,
+    commerce,
+    async commerceHandler(request: Request, id: string) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to manage Sandbox bookings.");
+        checkOrigin(request, config.origin);
+        const data =
+          request.method === "GET"
+            ? await commerce.read(session.user.id, id)
+            : await commerce.action(
+                session.user.id,
+                id,
+                await readJson(request),
+              );
+        return Response.json(data, {
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async walletHandler(request: Request, id: string) {
       try {
         const session = await auth.api.getSession({ headers: request.headers });

@@ -13,6 +13,8 @@ import {
   type ItineraryUpdate,
 } from "@/lib/workspace-events";
 import type { WalletActionResult, WalletState } from "@/server/wallet";
+import type { CommerceState } from "@/server/paypal-commerce";
+import { PayPalBookings } from "./paypal-bookings";
 type QuotePreview = Extract<
   WalletActionResult,
   { preview: unknown }
@@ -51,9 +53,11 @@ function CurrencySelect({
 export function TripWallet({
   initial,
   bookings = false,
+  commerce,
 }: {
   initial: WalletState;
   bookings?: boolean;
+  commerce: CommerceState;
 }) {
   const [state, setState] = useState(initial),
     [busy, setBusy] = useState(false),
@@ -226,7 +230,7 @@ export function TripWallet({
         <div>
           <span className="eyebrow">
             {bookings
-              ? "BOOKINGS · SAVED PLANNING REFERENCES"
+              ? "BOOKINGS · SANDBOX PAYMENTS & PLANNING"
               : "TRIPWALLET · YOUR FINANCIAL PICTURE"}
           </span>
           <h2>
@@ -274,6 +278,7 @@ export function TripWallet({
         </p>
       ))}
       {!bookings && <WalletFinancialSummary state={state} />}
+      <PayPalBookings tripId={state.tripId} initial={commerce} />
       <section className="wallet-section">
         <h3>
           {bookings
@@ -283,8 +288,8 @@ export function TripWallet({
         <p>
           These are saved estimates for existing activities. Supplier notes are
           unverified. Saving a quote updates its activity estimate; it does not
-          place an order or confirm any reservation. Checkout and verified
-          supplier booking actions are not available yet.
+          place an order or confirm any reservation. The separate Sandbox
+          checkout above is for demonstration only.
         </p>
         {!state.intents.length ? (
           <div className="wallet-empty">
@@ -452,7 +457,7 @@ export function TripWallet({
           </div>
         )}
       </section>
-      <section className="wallet-section">
+      <section className="wallet-section" id="wallet-quote">
         <h3>Record a native-currency planning quote</h3>
         <p>
           Choose an existing activity. Review the conversion and whole-trip
@@ -747,9 +752,8 @@ export function TripWallet({
       <section className="wallet-section">
         <h3>Financial & planning history</h3>
         <p>
-          Append-only event records. Planning actions are not payments.
-          Provider-confirmed financial events will appear only after the
-          separate verified integration.
+          Append-only event records. Planning actions are not payments. Verified
+          PayPal Sandbox events appear here after confirmation by PayPal.
         </p>
         {!state.events.length ? (
           <p className="wallet-empty">

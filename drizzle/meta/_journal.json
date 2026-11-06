@@ -57,6 +57,13 @@
       "when": 1793904982681,
       "tag": "0007_pretty_namorita",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793940293330,
+      "tag": "0008_workable_johnny_blaze",
+      "breakpoints": true
     }
   ]
 }
