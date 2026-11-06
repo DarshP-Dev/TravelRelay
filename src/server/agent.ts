@@ -39,6 +39,10 @@ export function createTravelAgent(
   model: TripModel,
   limits?: GenerationLimits,
   clock: () => number = Date.now,
+  recoveryContext?: (
+    userId: string,
+    tripId: string,
+  ) => Promise<object | undefined>,
 ) {
   const editor = createItineraryEditor(db),
     quota = createGenerationQuota(db, limits, clock);
@@ -316,7 +320,12 @@ export function createTravelAgent(
         )
         .orderBy(desc(turn.ordinal))
         .limit(8);
-      const context = buildAgentContext(saved, claimed.text, history.reverse());
+      const context = buildAgentContext(
+        saved,
+        claimed.text,
+        history.reverse(),
+        await recoveryContext?.(userId, tripId),
+      );
       phase = "quota";
       release = await quota.acquire(userId);
       auditId = randomUUID();

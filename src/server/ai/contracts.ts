@@ -40,6 +40,7 @@ export interface TripModel {
   name: string;
   provider?: AIProvider;
   respond?(input: unknown, context?: ModelCallContext): Promise<unknown>;
+  recover?(input: unknown, context?: ModelCallContext): Promise<unknown>;
   propose(intent: TripIntent, context?: ModelCallContext): Promise<unknown>;
   generate(
     intent: TripIntent,

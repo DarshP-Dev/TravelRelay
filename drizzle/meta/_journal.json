@@ -71,6 +71,13 @@
       "when": 1793986912898,
       "tag": "0009_serious_metal_master",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793989178796,
+      "tag": "0010_sad_malice",
+      "breakpoints": true
     }
   ]
 }

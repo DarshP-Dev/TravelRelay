@@ -60,9 +60,14 @@ const time = (value: string) =>
 export function PayPalBookings({
   tripId,
   initial,
+  recoveryLinks,
 }: {
   tripId: string;
   initial: CommerceState;
+  recoveryLinks?: Record<
+    string,
+    { id: string; role: "original" | "replacement" }
+  >;
 }) {
   const [state, setState] = useState(initial);
   const [ready, setReady] = useState(false),
@@ -293,6 +298,11 @@ export function PayPalBookings({
           reserve travel inventory, confirm supplier availability, or charge
           real money.
         </p>
+        {recoveryLinks && (
+          <Link className="text-link" href={`/trips/${tripId}/recovery`}>
+            Open Trip Recovery
+          </Link>
+        )}
       </div>
       {!state.clientId && (
         <p className="notice">
@@ -329,7 +339,11 @@ export function PayPalBookings({
       )}
       {state.clientId &&
         state.quotes.map((quote) => (
-          <article className="sandbox-record" key={quote.id}>
+          <article
+            className="sandbox-record"
+            key={quote.id}
+            id={`quote-${quote.id}`}
+          >
             <h4>{quote.title}</h4>
             <p>
               {demoName} · {dollars(demoPriceMinor)}
@@ -386,7 +400,7 @@ export function PayPalBookings({
           !b.payment.capturedMinor &&
           order?.providerStatus !== "VOIDED";
         return (
-          <article className="sandbox-record" key={b.id}>
+          <article className="sandbox-record" key={b.id} id={`booking-${b.id}`}>
             <div>
               <p className="eyebrow">DEMO BOOKING · NO SUPPLIER RESERVATION</p>
               <h4>{b.title}</h4>
@@ -395,6 +409,18 @@ export function PayPalBookings({
                 {dollars(demoPriceMinor)}
               </p>
             </div>
+            {recoveryLinks?.[b.id] && (
+              <p>
+                <Link
+                  className="text-link"
+                  href={`/trips/${tripId}/recovery#case-${recoveryLinks[b.id].id}`}
+                >
+                  {recoveryLinks[b.id].role === "original"
+                    ? "Simulated cancellation · open recovery"
+                    : "Replacement payment · open recovery"}
+                </Link>
+              </p>
+            )}
             {b.paidAt && (
               <p className="inline-note">
                 Verified {time(b.paidAt)} · Original charge{" "}

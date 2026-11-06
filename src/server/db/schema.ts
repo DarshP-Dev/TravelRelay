@@ -34,6 +34,10 @@ import type {
 } from "../../lib/finance-contracts";
 import type { Currency } from "../../lib/money";
 import type { BudgetCategory } from "../../lib/itinerary-budget";
+import type {
+  CancellationSnapshot,
+  RecoveryOption,
+} from "../../lib/recovery-contracts";
 
 const timestamps = () => ({
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -284,6 +288,12 @@ export const paypalBooking = pgTable(
       ],
     }),
     index("paypal_booking_owner_idx").on(t.tripId, t.userId),
+    uniqueIndex("paypal_booking_owner_identity_idx").on(
+      t.id,
+      t.tripId,
+      t.userId,
+      t.activityId,
+    ),
   ],
 );
 export const paypalOperation = pgTable(
@@ -322,6 +332,88 @@ export const paypalWebhookReceipt = pgTable("paypal_webhook_receipt", {
     .notNull()
     .defaultNow(),
 });
+
+export const recoveryCase = pgTable(
+  "recovery_case",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    tripId: uuid("trip_id").notNull(),
+    userId: text("user_id").notNull(),
+    bookingId: uuid("booking_id").notNull().unique(),
+    activityId: uuid("activity_id").notNull(),
+    provenance: text("provenance").$type<"sandbox-simulation">().notNull(),
+    reason: text("reason").notNull(),
+    original: jsonb("original").$type<CancellationSnapshot>().notNull(),
+    replacementActivityId: uuid("replacement_activity_id").unique(),
+    editId: uuid("edit_id").references(() => itineraryEdit.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    ...timestamps(),
+  },
+  (t) => [
+    foreignKey({
+      columns: [t.bookingId, t.tripId, t.userId, t.activityId],
+      foreignColumns: [
+        paypalBooking.id,
+        paypalBooking.tripId,
+        paypalBooking.userId,
+        paypalBooking.activityId,
+      ],
+    }),
+    index("recovery_case_owner_idx").on(t.tripId, t.userId),
+    check(
+      "recovery_case_provenance_check",
+      sql`${t.provenance} = 'sandbox-simulation'`,
+    ),
+  ],
+);
+
+export const recoveryAttempt = pgTable(
+  "recovery_attempt",
+  {
+    id: uuid("id").primaryKey(),
+    caseId: uuid("case_id")
+      .notNull()
+      .references(() => recoveryCase.id),
+    mode: text("mode").$type<"ai" | "rest" | "refund_only">().notNull(),
+    preferences: text("preferences").notNull(),
+    status: text("status")
+      .$type<
+        | "queued"
+        | "generating"
+        | "ready"
+        | "failed"
+        | "interrupted"
+        | "rejected"
+        | "applied"
+      >()
+      .notNull(),
+    itineraryVersion: integer("itinerary_version").notNull(),
+    walletVersion: integer("wallet_version").notNull(),
+    options: jsonb("options").$type<RecoveryOption[]>().default([]).notNull(),
+    appliedOptionId: uuid("applied_option_id"),
+    provider: text("provider"),
+    model: text("model"),
+    usage: jsonb("usage").$type<ModelUsage>(),
+    latencyMs: integer("latency_ms"),
+    findings: jsonb("findings").$type<string[]>().default([]).notNull(),
+    error: text("error"),
+    ...timestamps(),
+  },
+  (t) => [
+    index("recovery_attempt_case_idx").on(t.caseId, t.createdAt),
+    uniqueIndex("recovery_attempt_active_idx")
+      .on(t.caseId)
+      .where(sql`${t.status} in ('queued','generating')`),
+    check(
+      "recovery_attempt_status_check",
+      sql`${t.status} in ('queued','generating','ready','failed','interrupted','rejected','applied')`,
+    ),
+    check(
+      "recovery_attempt_mode_check",
+      sql`${t.mode} in ('ai','rest','refund_only')`,
+    ),
+  ],
+);
 export const walletMutation = pgTable(
   "wallet_mutation",
   {

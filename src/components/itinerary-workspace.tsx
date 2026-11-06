@@ -94,10 +94,12 @@ export function ItineraryWorkspace({
   tripId,
   snapshot,
   sandboxBookings,
+  recoveryCases,
 }: {
   tripId: string;
   snapshot: State;
   sandboxBookings?: import("@/server/paypal-commerce").CommerceState["bookings"];
+  recoveryCases?: Record<string, string>;
 }) {
   const { intent } = snapshot;
   const router = useRouter(),
@@ -196,9 +198,19 @@ export function ItineraryWorkspace({
     return () => window.removeEventListener("beforeunload", protect);
   }, [form, preview]);
   const plan = preview?.candidate ?? state.itinerary;
+  const linkedActivity = hash.startsWith("#activity-")
+    ? hash.slice("#activity-".length)
+    : "";
+  const linkedDay = linkedActivity
+    ? plan.days.find((d) => d.activities.some((a) => a.id === linkedActivity))
+        ?.id
+    : hash.replace("#day-", "");
   const day =
-    plan.days.find((d) => d.id === (dayId || hash.replace("#day-", ""))) ??
-    plan.days[0];
+    plan.days.find((d) => d.id === (dayId || linkedDay)) ?? plan.days[0];
+  useEffect(() => {
+    if (linkedActivity && linkedDay === day.id)
+      document.getElementById(`activity-${linkedActivity}`)?.scrollIntoView();
+  }, [day.id, linkedActivity, linkedDay]);
   const locked = busy || !ready || conflict || signedOut;
   function selectActivity(id: string) {
     setSelected(id);
@@ -869,7 +881,7 @@ export function ItineraryWorkspace({
                 <li
                   id={`activity-${a.id}`}
                   key={a.id}
-                  className={`${selected === a.id ? "selected-activity " : ""}${preview?.assessment.errors.some((e) => e.activityId === a.id) ? "activity-conflict" : ""}`}
+                  className={`${(selected || linkedActivity) === a.id ? "selected-activity " : ""}${preview?.assessment.errors.some((e) => e.activityId === a.id) ? "activity-conflict" : ""}`}
                 >
                   <div className="activity-time">
                     {clock(a.startMinute)}
@@ -894,6 +906,14 @@ export function ItineraryWorkspace({
                     <p className="activity-place">
                       {a.location} · {plan.base.city}
                     </p>
+                    {a.id && recoveryCases?.[a.id] && (
+                      <Link
+                        className="text-link recovery-status-link"
+                        href={`/trips/${tripId}/recovery#case-${recoveryCases[a.id]}`}
+                      >
+                        Simulated cancellation · resolve with TravelRelay
+                      </Link>
+                    )}
                     {sandboxBookings
                       ?.filter((b) => b.activityId === a.id)
                       .map((b) => (

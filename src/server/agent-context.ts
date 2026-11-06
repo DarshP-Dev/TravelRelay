@@ -32,6 +32,7 @@ export function buildAgentContext(
   state: EditorState,
   text: string,
   history: HistoryItem[],
+  recovery?: object,
 ) {
   const plan = materializeActivities(state.itinerary);
   const input = {
@@ -84,8 +85,9 @@ export function buildAgentContext(
       proposalStatus: t.proposalStatus ?? null,
       previousProposal: t.response?.proposal ?? null,
     })),
+    ...(recovery && { recovery }),
     uncertainty:
-      "No bookings or payments exist in this milestone. Costs, coordinates, travel times, arrival/departure windows and unsourced hours are estimates. Published references are dated snapshots, not future availability guarantees. Saved proposals/history are not proof that an action was applied; current saved trip data is authoritative.",
+      "Only explicitly supplied financial facts are known to the assistant. Costs, coordinates, travel times, arrival/departure windows and unsourced hours are estimates. Published references are dated snapshots, not future availability guarantees. Saved proposals/history are not proof that an action was applied; current saved trip data is authoritative.",
     omitted: {
       activityDescriptionsTruncated: true,
       olderConversationTurns: Math.max(0, history.length - 8),
@@ -118,7 +120,7 @@ export function agentOperations(
   plan: Itinerary,
   actions: AgentAction[],
   assignedIds: string[],
-): EditRequest["operation"] {
+): Extract<EditRequest["operation"], { action: "batch" }> {
   const saved = materializeActivities(plan),
     seen = new Set<string>();
   const operations = actions.map((action, index) => {

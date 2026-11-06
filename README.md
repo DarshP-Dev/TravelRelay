@@ -2,7 +2,15 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Current scope: Milestone 4B — PayPal Sandbox checkout, verified payments, and refunds.**
+**Current scope: Milestone 5 — Trip Recovery.** Open **Recovery** from a saved
+trip, Bookings, or Ask TravelRelay. With the Sandbox simulation flag enabled,
+record a clearly labeled cancellation on a demo booking with a verified
+capture. Compare AI alternatives and their schedule and budget impact, then
+approve an itinerary edit. Refunds and optional replacement demo checkout
+each have their own review in Bookings. See the
+[recovery architecture and acceptance plan](docs/trip-recovery.md).
+
+**Retained Milestone 4B: PayPal Sandbox checkout, verified payments, and refunds.**
 Open a saved trip's **TripWallet** tab for reconciled planning allocations,
 itemized estimates, additional allowances, separate reserve/unallocated funds,
 category visuals and distinct confirmed/pending/refund history. **Bookings** shows
@@ -56,7 +64,7 @@ with unchanged budget and safe scheduling. Its exact result passes offline
 approval/rejection/stale-version regression tests; **101 tests pass**.
 See the [live acceptance report](docs/milestone-3b-live-agent-paris-result.md) and
 [original offline validation, costs and limitations](docs/milestone-3b-validation.md).
-Apply committed migrations through **`0008`** using `npm run db:migrate` before
+Apply committed migrations through **`0010`** using `npm run db:migrate` before
 starting this version; stop any process using the same PGlite directory first.
 
 **Retained Milestone 3A capabilities:**
@@ -71,7 +79,8 @@ Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
 trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
 no map API key. Local scheduler assets and license notices ship with the app.
 See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
-Real supplier reservations and Trip Recovery are outside the current scope.
+Real supplier reservations and supplier cancellation notifications require a
+future verified integration.
 
 All six inspirations have public previews at `/explore/{templateId}`. Customize
 opens the persistent four-step wizard with a destination and interests, leaving

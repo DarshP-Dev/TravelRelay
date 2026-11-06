@@ -182,9 +182,9 @@ export function createWallet(
       return { saved, wallet, intents, events };
     });
   }
-  async function read(userId: string, tripId: string) {
+  async function read(userId: string, tripId: string, candidate?: Itinerary) {
     const { saved, wallet, intents, events } = await rows(userId, tripId),
-      plan = saved.itinerary;
+      plan = candidate ?? saved.itinerary;
     const currency = currencySchema.parse(saved.data.currency);
     const budget =
       plan?.budget ??

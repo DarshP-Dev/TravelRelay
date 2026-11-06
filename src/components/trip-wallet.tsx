@@ -54,10 +54,17 @@ export function TripWallet({
   initial,
   bookings = false,
   commerce,
+  recoveryLinks,
+  replacementActivityId,
 }: {
   initial: WalletState;
   bookings?: boolean;
   commerce: CommerceState;
+  recoveryLinks?: Record<
+    string,
+    { id: string; role: "original" | "replacement" }
+  >;
+  replacementActivityId?: string;
 }) {
   const [state, setState] = useState(initial),
     [busy, setBusy] = useState(false),
@@ -66,10 +73,16 @@ export function TripWallet({
     [loading, setLoading] = useState(false);
   const router = useRouter(),
     url = `/api/trips/${initial.tripId}/wallet`;
-  const [activityId, setActivityId] = useState(""),
-    [amount, setAmount] = useState(""),
-    [currency, setCurrency] = useState<Currency>(initial.localCurrency),
-    [supplier, setSupplier] = useState("");
+  const [activityId, setActivityId] = useState(replacementActivityId ?? ""),
+    [amount, setAmount] = useState(replacementActivityId ? "5.00" : ""),
+    [currency, setCurrency] = useState<Currency>(
+      replacementActivityId ? "USD" : initial.localCurrency,
+    ),
+    [supplier, setSupplier] = useState(
+      replacementActivityId
+        ? "TravelRelay Sandbox replacement demonstration"
+        : "",
+    );
   const [preview, setPreview] = useState<QuotePreview | null>(null),
     [ackStale, setAckStale] = useState(false),
     [ackOver, setAckOver] = useState(false),
@@ -284,7 +297,11 @@ export function TripWallet({
         </p>
       ))}
       {!bookings && <WalletFinancialSummary state={state} />}
-      <PayPalBookings tripId={state.tripId} initial={commerce} />
+      <PayPalBookings
+        tripId={state.tripId}
+        initial={commerce}
+        recoveryLinks={recoveryLinks}
+      />
       <section className="wallet-section">
         <h3>
           {bookings
@@ -482,6 +499,13 @@ export function TripWallet({
       </section>
       <section className="wallet-section" id="wallet-quote">
         <h3>Record a native-currency planning quote</h3>
+        {replacementActivityId && (
+          <p className="notice">
+            The prefilled USD 5.00 quote is for the Sandbox replacement
+            demonstration. Review its effect on the activity estimate before
+            saving. It does not purchase access to the suggested venue.
+          </p>
+        )}
         <p>
           Choose an existing activity. Review the conversion and whole-trip
           budget before saving its new group estimate. Any real payment would

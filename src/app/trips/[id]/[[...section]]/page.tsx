@@ -12,6 +12,7 @@ import { ItineraryView } from "@/components/itinerary-view";
 import { ItineraryWorkspace } from "@/components/itinerary-workspace";
 import { TripWorkspaceShell } from "@/components/trip-workspace-shell";
 import { TripWallet, WalletPreview } from "@/components/trip-wallet";
+import { TripRecovery } from "@/components/trip-recovery";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -20,6 +21,7 @@ const tabs = [
   { path: "/itinerary", label: "Itinerary" },
   { path: "/wallet", label: "TripWallet" },
   { path: "/bookings", label: "Bookings" },
+  { path: "/recovery", label: "Recovery" },
   { path: "/explore", label: "Explore" },
 ];
 
@@ -48,6 +50,11 @@ const content = {
       "There are no reservations or payments here. Supported demo merchant experiences and server-verified PayPal Sandbox checkout will be introduced later.",
     icon: BookOpen,
   },
+  recovery: {
+    title: "Keep your trip moving when plans change.",
+    description: "Trip Recovery opens once you have a saved itinerary.",
+    icon: Compass,
+  },
   explore: {
     title: "Find something that fits your trip.",
     description:
@@ -58,8 +65,10 @@ const content = {
 
 export default async function TripWorkspacePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string; section?: string[] }>;
+  searchParams: Promise<{ recovery?: string | string[] }>;
 }) {
   const { id, section } = await params;
   const active = section?.[0] ?? "";
@@ -93,6 +102,42 @@ export default async function TripWorkspacePage({
     saved && ["itinerary", "wallet", "bookings"].includes(active)
       ? await (await getApp()).commerce.read(user.id, id)
       : null;
+  const recoverySnapshot =
+    saved?.itinerary && active === "recovery"
+      ? await (await getApp()).recovery.read(user.id, id)
+      : null;
+  const recoveryLinks =
+    saved?.itinerary && ["itinerary", "wallet", "bookings"].includes(active)
+      ? await (await getApp()).recovery.links(user.id, id)
+      : null;
+  const recoveryId =
+    active === "bookings" ? (await searchParams).recovery : undefined;
+  const requestedReplacement = recoveryLinks?.find(
+    (entry) => entry.id === recoveryId,
+  )?.replacementActivityId;
+  const replacementActivityId =
+    requestedReplacement &&
+    walletSnapshot?.activities.some(
+      (activity) => activity.id === requestedReplacement,
+    ) &&
+    !walletSnapshot.intents.some(
+      (intent) =>
+        intent.activityId === requestedReplacement &&
+        intent.status === "planned",
+    )
+      ? requestedReplacement
+      : undefined;
+  const recoveryBookings: Record<
+    string,
+    { id: string; role: "original" | "replacement" }
+  > = {};
+  for (const entry of recoveryLinks ?? []) {
+    recoveryBookings[entry.bookingId] = { id: entry.id, role: "original" };
+    for (const booking of commerceSnapshot?.bookings ?? []) {
+      if (booking.activityId === entry.replacementActivityId)
+        recoveryBookings[booking.id] ??= { id: entry.id, role: "replacement" };
+    }
+  }
   return (
     <div className="container page-content trip-workspace-container">
       <PageHeading
@@ -158,6 +203,12 @@ export default async function TripWorkspacePage({
                 tripId={id}
                 snapshot={editingSnapshot!}
                 sandboxBookings={commerceSnapshot?.bookings}
+                recoveryCases={Object.fromEntries(
+                  (recoveryLinks ?? []).map((entry) => [
+                    entry.activityId,
+                    entry.id,
+                  ]),
+                )}
               />
             ) : (
               <ItineraryView
@@ -241,13 +292,19 @@ export default async function TripWorkspacePage({
           )}
           {walletSnapshot && ["wallet", "bookings"].includes(active) && (
             <TripWallet
-              key={`${id}:${active}`}
+              key={`${id}:${active}:${recoveryId ?? ""}`}
               initial={walletSnapshot}
               bookings={active === "bookings"}
               commerce={commerceSnapshot!}
+              recoveryLinks={recoveryLinks ? recoveryBookings : undefined}
+              replacementActivityId={replacementActivityId}
             />
           )}
+          {recoverySnapshot && (
+            <TripRecovery key={id} tripId={id} initial={recoverySnapshot} />
+          )}
           {!(saved?.itinerary && ["", "itinerary"].includes(active)) &&
+            !recoverySnapshot &&
             !(walletSnapshot && ["wallet", "bookings"].includes(active)) && (
               <EmptyState
                 icon={<selected.icon size={30} aria-hidden="true" />}

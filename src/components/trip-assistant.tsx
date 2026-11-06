@@ -79,7 +79,10 @@ export function TripAssistant({
                 </strong>
               </span>
             </div>
-            <small>Planning estimates · no bookings or payments</small>
+            <small>Planning estimates · payment history is in TripWallet</small>
+            <Link className="text-link" href={`/trips/${tripId}/recovery`}>
+              Open Trip Recovery
+            </Link>
           </div>
           <div
             ref={feed}

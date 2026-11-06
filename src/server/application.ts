@@ -10,6 +10,7 @@ import { createTravelAgent } from "./agent";
 import { createWallet, type FinancialVerifier } from "./wallet";
 import { createCommerce } from "./paypal-commerce";
 import type { PayPalClient } from "./paypal-client";
+import { createRecovery } from "./recovery";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -71,19 +72,35 @@ export function createApplication(
     fxFetch?: typeof fetch;
     financialVerifier?: FinancialVerifier;
     paypal?: PayPalClient;
+    recoverySimulation?: boolean;
   },
 ) {
   const auth = createAuth(db, config);
   const trips = createTripStore(db);
   const itineraryEditor = createItineraryEditor(db);
   const model = config.model ?? createTripModel({});
-  const travelAgent = createTravelAgent(db, model, config.generationLimits);
   const generations = createGenerationStore(db, model, config.generationLimits);
   const wallet = createWallet(db, {
     fxFetch: config.fxFetch,
     verifier: config.financialVerifier,
   });
   const commerce = createCommerce(db, wallet, config.paypal);
+  const recovery = createRecovery(
+    db,
+    itineraryEditor,
+    wallet,
+    commerce,
+    model,
+    config.recoverySimulation ?? false,
+    config.generationLimits,
+  );
+  const travelAgent = createTravelAgent(
+    db,
+    model,
+    config.generationLimits,
+    undefined,
+    recovery.assistantContext,
+  );
   return {
     auth,
     trips,
@@ -91,6 +108,44 @@ export function createApplication(
     travelAgent,
     wallet,
     commerce,
+    recovery,
+    async recoveryHandler(
+      request: Request,
+      id: string,
+      schedule: (work: () => Promise<void>) => void,
+    ) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to use Trip Recovery.");
+        checkOrigin(request, config.origin);
+        if (request.method === "GET")
+          return Response.json(await recovery.read(session.user.id, id), {
+            headers: { "Cache-Control": "no-store" },
+          });
+        if (request.method !== "POST")
+          throw new RequestError(405, "Method not allowed.");
+        const result = await recovery.action(
+          session.user.id,
+          id,
+          await readJson(request),
+        );
+        const queued = result.queued;
+        if (queued)
+          schedule(() =>
+            recovery.run(session.user.id, id, queued.caseId, queued.attemptId),
+          );
+        return Response.json(
+          { ...result.state, itineraryChanged: result.itineraryChanged },
+          {
+            status: queued ? 202 : 200,
+            headers: { "Cache-Control": "no-store" },
+          },
+        );
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async commerceHandler(request: Request, id: string) {
       try {
         const session = await auth.api.getSession({ headers: request.headers });

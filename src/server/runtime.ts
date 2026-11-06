@@ -48,6 +48,8 @@ async function connect() {
     generationLimits: generationLimitsFromEnv(process.env),
     model: createTripModel(providerConfigFromEnv(process.env)),
     paypal: paypal ? createPayPalClient(paypal) : undefined,
+    recoverySimulation:
+      !!paypal && process.env.ENABLE_RECOVERY_SIMULATION === "true",
   });
 }
 export function getApp() {
