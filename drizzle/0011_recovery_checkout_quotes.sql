@@ -1,0 +1,7 @@
+ALTER TABLE "wallet_intent" ADD COLUMN "purpose" text DEFAULT 'planning' NOT NULL;--> statement-breakpoint
+ALTER TABLE "wallet_intent" ADD COLUMN "recovery_case_id" uuid;--> statement-breakpoint
+ALTER TABLE "wallet_intent" ADD COLUMN "planning_estimate_minor" bigint;--> statement-breakpoint
+CREATE UNIQUE INDEX "recovery_case_replacement_owner_idx" ON "recovery_case" USING btree ("id","trip_id","user_id","replacement_activity_id");--> statement-breakpoint
+ALTER TABLE "wallet_intent" ADD CONSTRAINT "wallet_intent_recovery_case_id_trip_id_user_id_activity_id_recovery_case_id_trip_id_user_id_replacement_activity_id_fk" FOREIGN KEY ("recovery_case_id","trip_id","user_id","activity_id") REFERENCES "public"."recovery_case"("id","trip_id","user_id","replacement_activity_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "wallet_recovery_checkout_idx" ON "wallet_intent" USING btree ("recovery_case_id");--> statement-breakpoint
+ALTER TABLE "wallet_intent" ADD CONSTRAINT "wallet_recovery_checkout_valid" CHECK (("wallet_intent"."purpose" = 'planning' and "wallet_intent"."recovery_case_id" is null and "wallet_intent"."planning_estimate_minor" is null) or ("wallet_intent"."purpose" = 'recovery-checkout' and "wallet_intent"."recovery_case_id" is not null and "wallet_intent"."planning_estimate_minor" is not null and "wallet_intent"."planning_estimate_minor" between 0 and 1000000000000 and "wallet_intent"."original_currency" = 'USD' and "wallet_intent"."original_minor" = 500));

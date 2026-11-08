@@ -298,6 +298,11 @@ export default async function TripWorkspacePage({
               commerce={commerceSnapshot!}
               recoveryLinks={recoveryLinks ? recoveryBookings : undefined}
               replacementActivityId={replacementActivityId}
+              replacementCaseId={
+                replacementActivityId && typeof recoveryId === "string"
+                  ? recoveryId
+                  : undefined
+              }
             />
           )}
           {recoverySnapshot && (

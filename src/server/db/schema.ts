@@ -11,6 +11,7 @@ import {
   index,
   check,
   foreignKey,
+  type AnyPgColumn,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import type { TripIntent } from "../../lib/trip-intent";
@@ -204,6 +205,19 @@ export const tripWallet = pgTable(
     ),
   ],
 );
+function recoveryCheckoutColumns(): [
+  AnyPgColumn,
+  AnyPgColumn,
+  AnyPgColumn,
+  AnyPgColumn,
+] {
+  return [
+    recoveryCase.id,
+    recoveryCase.tripId,
+    recoveryCase.userId,
+    recoveryCase.replacementActivityId,
+  ];
+}
 export const walletIntent = pgTable(
   "wallet_intent",
   {
@@ -211,6 +225,14 @@ export const walletIntent = pgTable(
     tripId: uuid("trip_id").notNull(),
     userId: text("user_id").notNull(),
     activityId: uuid("activity_id").notNull(),
+    purpose: text("purpose")
+      .$type<"planning" | "recovery-checkout">()
+      .notNull()
+      .default("planning"),
+    recoveryCaseId: uuid("recovery_case_id"),
+    planningEstimateMinor: bigint("planning_estimate_minor", {
+      mode: "number",
+    }),
     category: text("category").$type<BudgetCategory>().notNull(),
     title: text("title").notNull(),
     supplier: text("supplier").notNull(),
@@ -247,6 +269,15 @@ export const walletIntent = pgTable(
       foreignColumns: [tripWallet.tripId, tripWallet.userId],
     }),
     uniqueIndex("wallet_intent_owner_idx").on(t.id, t.tripId, t.userId),
+    uniqueIndex("wallet_recovery_checkout_idx").on(t.recoveryCaseId),
+    foreignKey({
+      columns: [t.recoveryCaseId, t.tripId, t.userId, t.activityId],
+      foreignColumns: recoveryCheckoutColumns(),
+    }),
+    check(
+      "wallet_recovery_checkout_valid",
+      sql`(${t.purpose} = 'planning' and ${t.recoveryCaseId} is null and ${t.planningEstimateMinor} is null) or (${t.purpose} = 'recovery-checkout' and ${t.recoveryCaseId} is not null and ${t.planningEstimateMinor} is not null and ${t.planningEstimateMinor} between 0 and 1000000000000 and ${t.originalCurrency} = 'USD' and ${t.originalMinor} = 500)`,
+    ),
     uniqueIndex("wallet_active_activity_idx")
       .on(t.tripId, t.activityId)
       .where(sql`${t.status} = 'planned'`),
@@ -360,6 +391,12 @@ export const recoveryCase = pgTable(
       ],
     }),
     index("recovery_case_owner_idx").on(t.tripId, t.userId),
+    uniqueIndex("recovery_case_replacement_owner_idx").on(
+      t.id,
+      t.tripId,
+      t.userId,
+      t.replacementActivityId,
+    ),
     check(
       "recovery_case_provenance_check",
       sql`${t.provenance} = 'sandbox-simulation'`,

@@ -83,6 +83,7 @@ export function createApplication(
   const wallet = createWallet(db, {
     fxFetch: config.fxFetch,
     verifier: config.financialVerifier,
+    recoveryMerchantId: config.paypal?.merchantId,
   });
   const commerce = createCommerce(db, wallet, config.paypal);
   const recovery = createRecovery(

@@ -7,6 +7,18 @@ match the activity. Changing the quote updates the planning estimate only after
 review. Checkout, capture and refunds never edit an itinerary or reserve real
 supplier inventory.
 
+Approved recovery replacements use a separate **recovery checkout quote**.
+Apply migration `0011` and earlier migrations. Open the approved case's
+replacement link in Bookings, preview the fixed USD 5.00 Sandbox quote, and
+choose **Save recovery checkout quote**. Its indicative conversion is shown
+beside the unchanged itinerary estimate; saving it never changes the itinerary
+revision, planning allocations or reserve. The original payment must first have
+a verified completed full refund with the matching Sandbox merchant. A changed
+itinerary or completed case blocks replacement checkout. Each recovery case
+retains one quote identity; use its rate-refresh control before checkout if
+expired. Refresh never creates a second quote or changes the approved estimate.
+The optional demo purchase does not buy venue access or supplier inventory.
+
 If an unpaid quote's FX reference expires, use **Review fresh reference rate**
 and **Save refreshed reference rate**. The same quote keeps its original amount,
 activity and audit record. The newer estimate is recorded as a planning event

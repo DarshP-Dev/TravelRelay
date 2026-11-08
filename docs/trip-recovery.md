@@ -14,12 +14,21 @@ Existing cases and history remain readable after the simulation flag is disabled
 4. Open the original booking for a separately reviewed full or partial refund.
    Use **Check PayPal status** after an interrupted provider request.
 5. A replacement may stay unbooked. For the optional demo, follow the link to
-   review and save a USD 5.00 planning quote on its activity, then separately
+   review and save a separate USD 5.00 recovery checkout quote on its activity,
+   after the original full refund is verified, then separately
    approve checkout with a PayPal Sandbox buyer. The demonstration does not
    buy access to the venue described by the itinerary.
-6. Mark the plan complete once the itinerary choice is saved and outstanding
-   provider operations have been reconciled. A failed replacement or refund
-   remains visible even if the traveler closes the plan.
+
+Migration `0011` preserves the approved activity estimate and itinerary revision
+when preparing this quote. The quote has its own native price, FX evidence and
+expiry. Its zero-money audit is distinct from a future verified payment. For
+example, an approved EUR 4.00 stroll and USD 5.00 quote (EUR 4.48 indicative) keep
+EUR 222 planning funds and EUR 250 reserve unchanged. After a future capture,
+actual spending is USD 5.00 and the indicative financial projection covers the
+EUR 4 estimate once; its remaining headroom may differ from planned unallocated
+funds. Changing the approved revision invalidates replacement checkout. 6. Mark the plan complete once the itinerary choice is saved and outstanding
+provider operations have been reconciled. A failed replacement or refund
+remains visible even if the traveler closes the plan.
 
 ## Data and approval boundaries
 

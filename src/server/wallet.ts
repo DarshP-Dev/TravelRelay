@@ -11,6 +11,7 @@ import {
   financialEvent,
 } from "./db/schema";
 import { createTripStore, RequestError } from "./trips";
+import { assertRecoveryCheckout } from "./recovery-checkout";
 import { createItineraryEditor } from "./itinerary-edits";
 import { createFxService, isStaleRate } from "./fx";
 import { budgetMinor, type Itinerary } from "../lib/itinerary";
@@ -124,6 +125,7 @@ export function createWallet(
     fxFetch?: typeof fetch;
     clock?: () => number;
     verifier?: FinancialVerifier;
+    recoveryMerchantId?: string;
   } = {},
 ) {
   const trips = createTripStore(db),
@@ -305,7 +307,12 @@ export function createWallet(
       const current = activities.find((a) => a.id === i.activityId);
       const staleActivity =
         !current ||
-        current.costMinor !== i.estimatedDisplayMinor ||
+        current.costMinor !==
+          (i.purpose === "recovery-checkout"
+            ? i.planningEstimateMinor
+            : i.estimatedDisplayMinor) ||
+        (i.purpose === "recovery-checkout" &&
+          saved.itineraryVersion !== i.itineraryVersion) ||
         current.title !== i.activitySnapshot.title ||
         current.location !== i.activitySnapshot.location ||
         current.date !== i.activitySnapshot.date ||
@@ -526,6 +533,23 @@ export function createWallet(
       (i) => i.activityId === target.id && i.status === "planned",
     );
     const originalMinor = inputMoney(data.amount, data.currency);
+    const recoveryQuote = !!data.recoveryCaseId;
+    if (recoveryQuote) {
+      if (originalMinor !== 500 || data.currency !== "USD")
+        throw new RequestError(
+          422,
+          "Sandbox recovery checkout is exactly USD 5.00.",
+        );
+      await assertRecoveryCheckout(
+        db,
+        userId,
+        tripId,
+        target.id,
+        data.recoveryCaseId!,
+        data.itineraryVersion,
+        options.recoveryMerchantId,
+      );
+    }
     const refresh = data.refreshIntentId ? active : undefined;
     if (data.refreshIntentId) {
       if (
@@ -534,7 +558,8 @@ export function createWallet(
         refresh.staleActivity ||
         refresh.originalMinor !== originalMinor ||
         refresh.originalCurrency !== data.currency ||
-        refresh.supplier !== data.supplier
+        refresh.supplier !== data.supplier ||
+        refresh.recoveryCaseId !== (data.recoveryCaseId ?? null)
       )
         throw new RequestError(
           422,
@@ -646,7 +671,7 @@ export function createWallet(
           startMinute: activity.startMinute,
           durationMinutes: activity.durationMinutes,
           bufferBeforeMinutes: activity.bufferBeforeMinutes,
-          costMinor: convertedMinor,
+          costMinor: recoveryQuote ? activity.costMinor : convertedMinor,
           currency: current.currency,
           links: activity.links ?? [],
         },
@@ -735,95 +760,145 @@ export function createWallet(
           },
         };
       const intentId = refresh?.id ?? randomUUID();
-      await editor.commit(userId, tripId, request, {
-        onRecorded: async (tx) => {
-          const [updated] = await tx
-            .update(tripWallet)
-            .set({
-              version: data.walletVersion + 1,
-              updatedAt: new Date(clock()),
-            })
-            .where(
-              and(
-                eq(tripWallet.tripId, tripId),
-                eq(tripWallet.userId, userId),
-                eq(tripWallet.version, data.walletVersion),
-              ),
-            )
-            .returning();
-          if (!updated)
+      const record = async (
+        tx: Parameters<Parameters<Database["transaction"]>[0]>[0],
+      ) => {
+        const [updated] = await tx
+          .update(tripWallet)
+          .set({
+            version: data.walletVersion + 1,
+            updatedAt: new Date(clock()),
+          })
+          .where(
+            and(
+              eq(tripWallet.tripId, tripId),
+              eq(tripWallet.userId, userId),
+              eq(tripWallet.version, data.walletVersion),
+            ),
+          )
+          .returning();
+        if (!updated)
+          throw new RequestError(
+            409,
+            "TripWallet changed before saving. Nothing was committed; reload the current version.",
+          );
+        if (refresh) {
+          // The wallet row serializes this refresh with checkout claims.
+          const [booking] = await tx
+            .select({ id: paypalBooking.id })
+            .from(paypalBooking)
+            .where(eq(paypalBooking.intentId, intentId));
+          if (booking)
             throw new RequestError(
               409,
-              "TripWallet changed before saving. Nothing was committed; reload the current version.",
+              "Checkout started before the refresh was saved. The recorded quote was retained.",
             );
-          if (refresh) {
-            // The wallet row serializes this refresh with checkout claims.
-            const [booking] = await tx
-              .select({ id: paypalBooking.id })
-              .from(paypalBooking)
-              .where(eq(paypalBooking.intentId, intentId));
-            if (booking)
+        } else
+          await tx.insert(walletIntent).values({
+            id: intentId,
+            tripId,
+            userId,
+            activityId: target.id,
+            purpose: data.recoveryCaseId ? "recovery-checkout" : "planning",
+            recoveryCaseId: data.recoveryCaseId ?? null,
+            planningEstimateMinor: data.recoveryCaseId
+              ? target.costMinor
+              : null,
+            category: target.category,
+            title: target.title,
+            supplier: data.supplier,
+            originalCurrency: data.currency,
+            originalMinor,
+            displayCurrency: current.currency,
+            estimatedDisplayMinor: convertedMinor,
+            fxSnapshotId: reference.snapshot.id,
+            fx: reference.snapshot,
+            acceptedStaleRate: reference.stale,
+            itineraryVersion:
+              data.itineraryVersion + (data.recoveryCaseId ? 0 : 1),
+            activitySnapshot: {
+              title: target.title,
+              location: target.location,
+              date: target.date,
+              startMinute: target.startMinute,
+              durationMinutes: target.durationMinutes,
+            },
+          });
+        await tx.insert(walletMutation).values({
+          id: data.mutationId,
+          tripId,
+          userId,
+          request: data,
+          version: data.walletVersion + 1,
+        });
+        await tx.insert(financialEvent).values({
+          tripId,
+          userId,
+          intentId,
+          sequence: data.walletVersion + 1,
+          kind: refresh ? "intent_fx_refreshed" : "intent_created",
+          provider: "planning",
+          verification: "user-planning",
+          providerEventId: data.mutationId,
+          operationKey: refresh
+            ? `intent_fx_refreshed:${data.mutationId}`
+            : `intent_created:${intentId}`,
+          reconciliationRef: data.mutationId,
+          originalCurrency: data.currency,
+          amountMinor: 0,
+          feeMinor: 0,
+          displayCurrency: current.currency,
+          estimatedDisplayMinor: refresh ? convertedMinor : 0,
+          estimatedFeeMinor: 0,
+          fx: reference.snapshot,
+          occurredAt: new Date(clock()),
+        });
+      };
+      if (data.recoveryCaseId) {
+        await db.transaction(async (tx) => {
+          const [saved] = await tx
+            .select()
+            .from(trip)
+            .where(and(eq(trip.id, tripId), eq(trip.userId, userId)))
+            .for("update");
+          if (saved?.itineraryVersion !== data.itineraryVersion)
+            throw new RequestError(
+              409,
+              "The itinerary changed before saving the checkout quote.",
+            );
+          await tx
+            .select()
+            .from(tripWallet)
+            .where(eq(tripWallet.tripId, tripId))
+            .for("update");
+          await assertRecoveryCheckout(
+            tx,
+            userId,
+            tripId,
+            target.id,
+            data.recoveryCaseId!,
+            data.itineraryVersion,
+            options.recoveryMerchantId,
+          );
+          if (!refresh) {
+            const [existing] = await tx
+              .select()
+              .from(walletIntent)
+              .where(eq(walletIntent.recoveryCaseId, data.recoveryCaseId!));
+            if (existing)
               throw new RequestError(
                 409,
-                "Checkout started before the refresh was saved. The recorded quote was retained.",
+                "This recovery already has a checkout quote. Refresh the existing quote instead.",
               );
-          } else
-            await tx.insert(walletIntent).values({
-              id: intentId,
-              tripId,
-              userId,
-              activityId: target.id,
-              category: target.category,
-              title: target.title,
-              supplier: data.supplier,
-              originalCurrency: data.currency,
-              originalMinor,
-              displayCurrency: current.currency,
-              estimatedDisplayMinor: convertedMinor,
-              fxSnapshotId: reference.snapshot.id,
-              fx: reference.snapshot,
-              acceptedStaleRate: reference.stale,
-              itineraryVersion: data.itineraryVersion + 1,
-              activitySnapshot: {
-                title: target.title,
-                location: target.location,
-                date: target.date,
-                startMinute: target.startMinute,
-                durationMinutes: target.durationMinutes,
-              },
-            });
-          await tx.insert(walletMutation).values({
-            id: data.mutationId,
-            tripId,
-            userId,
-            request: data,
-            version: data.walletVersion + 1,
-          });
-          await tx.insert(financialEvent).values({
-            tripId,
-            userId,
-            intentId,
-            sequence: data.walletVersion + 1,
-            kind: refresh ? "intent_fx_refreshed" : "intent_created",
-            provider: "planning",
-            verification: "user-planning",
-            providerEventId: data.mutationId,
-            operationKey: refresh
-              ? `intent_fx_refreshed:${data.mutationId}`
-              : `intent_created:${intentId}`,
-            reconciliationRef: data.mutationId,
-            originalCurrency: data.currency,
-            amountMinor: 0,
-            feeMinor: 0,
-            displayCurrency: current.currency,
-            estimatedDisplayMinor: refresh ? convertedMinor : 0,
-            estimatedFeeMinor: 0,
-            fx: reference.snapshot,
-            occurredAt: new Date(clock()),
-          });
-        },
-      });
-      return { state: await read(userId, tripId), itineraryChanged: true };
+          }
+          await record(tx);
+        });
+      } else
+        await editor.commit(userId, tripId, request, { onRecorded: record });
+      return {
+        state: await read(userId, tripId),
+        itineraryChanged: !data.recoveryCaseId,
+      };
     }
     await db.transaction(async (tx) => {
       const [updated] = await tx

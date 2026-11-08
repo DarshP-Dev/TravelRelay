@@ -13,7 +13,9 @@ import {
   trip,
   tripWallet,
   user,
+  recoveryCase,
 } from "./db/schema";
+import { assertRecoveryCheckout } from "./recovery-checkout";
 import { RequestError } from "./trips";
 import type { createWallet } from "./wallet";
 import {
@@ -87,8 +89,60 @@ export function createCommerce(
       .from(paypalOperation)
       .where(eq(paypalOperation.bookingId, bookingId))
       .orderBy(asc(paypalOperation.createdAt));
+  async function recoveryEligibility(
+    store: Pick<Database, "select">,
+    userId: string,
+    tripId: string,
+    quote: Awaited<ReturnType<typeof wallet.read>>["intents"][number],
+    version: number,
+  ) {
+    const [linked] = await store
+      .select()
+      .from(recoveryCase)
+      .where(
+        and(
+          eq(recoveryCase.tripId, tripId),
+          eq(recoveryCase.userId, userId),
+          eq(recoveryCase.replacementActivityId, quote.activityId),
+        ),
+      );
+    if (!linked && quote.purpose === "planning") return;
+    if (
+      !linked ||
+      quote.purpose !== "recovery-checkout" ||
+      quote.recoveryCaseId !== linked.id
+    )
+      throw new RequestError(
+        409,
+        "Use the separate approved recovery checkout quote for this replacement.",
+      );
+    await assertRecoveryCheckout(
+      store,
+      userId,
+      tripId,
+      quote.activityId,
+      linked.id,
+      version,
+      client?.merchantId,
+    );
+  }
   async function read(userId: string, tripId: string) {
     const state = await wallet.read(userId, tripId);
+    const eligible = new Set<string>();
+    for (const quote of state.intents) {
+      try {
+        await recoveryEligibility(
+          db,
+          userId,
+          tripId,
+          quote,
+          state.itineraryVersion,
+        );
+        eligible.add(quote.id);
+      } catch (error) {
+        if (!(error instanceof RequestError)) throw error;
+      }
+    }
     const bookings = await db
       .select()
       .from(paypalBooking)
@@ -119,6 +173,7 @@ export function createCommerce(
             i.status === "planned" &&
             i.originalCurrency === "USD" &&
             i.originalMinor === demoPriceMinor &&
+            eligible.has(i.id) &&
             !i.fxStale &&
             !i.staleActivity &&
             freshQuote(i.fxRefreshedAt ?? i.createdAt) &&
@@ -128,6 +183,9 @@ export function createCommerce(
           id: i.id,
           title: i.title,
           estimatedMinor: i.estimatedDisplayMinor,
+          planningEstimateMinor: i.planningEstimateMinor,
+          purpose: i.purpose,
+          fxExpiresAt: i.fx.expiresAt,
         })),
       bookings: bookings
         .filter((b) => state.intents.some((i) => i.id === b.intentId))
@@ -533,6 +591,13 @@ export function createCommerce(
           422,
           "Save a fresh USD 5.00 planning quote for an existing activity before checkout.",
         );
+      await recoveryEligibility(
+        tx,
+        userId,
+        tripId,
+        quote,
+        state.itineraryVersion,
+      );
       const recent = await tx
         .select({ id: paypalBooking.id })
         .from(paypalBooking)
@@ -611,17 +676,51 @@ export function createCommerce(
         409,
         "PayPal has not confirmed approval for this order.",
       );
-    const [op] = await db
-      .insert(paypalOperation)
-      .values({
-        id: randomUUID(),
-        bookingId: b.id,
-        kind: "capture",
-        status: "sending",
-        requestedMinor: demoPriceMinor,
-      })
-      .onConflictDoNothing()
-      .returning();
+    const state = await wallet.read(userId, tripId);
+    const [op] = await db.transaction(async (tx) => {
+      const [saved] = await tx
+        .select()
+        .from(trip)
+        .where(and(eq(trip.id, tripId), eq(trip.userId, userId)))
+        .for("update");
+      const [financial] = await tx
+        .select()
+        .from(tripWallet)
+        .where(eq(tripWallet.tripId, tripId))
+        .for("update");
+      if (
+        saved.itineraryVersion !== state.itineraryVersion ||
+        financial.version !== state.version
+      )
+        throw new RequestError(
+          409,
+          "The trip changed before capture. Review the saved payment status.",
+        );
+      const quote = state.intents.find((i) => i.id === b.intentId)!;
+      if (quote.purpose === "recovery-checkout" && quote.staleActivity)
+        throw new RequestError(
+          409,
+          "The recovery itinerary changed before capture. Reconcile the approved order without another payment request.",
+        );
+      await recoveryEligibility(
+        tx,
+        userId,
+        tripId,
+        quote,
+        state.itineraryVersion,
+      );
+      return tx
+        .insert(paypalOperation)
+        .values({
+          id: randomUUID(),
+          bookingId: b.id,
+          kind: "capture",
+          status: "sending",
+          requestedMinor: demoPriceMinor,
+        })
+        .onConflictDoNothing()
+        .returning();
+    });
     if (!op) return;
     try {
       const result = await provider().captureOrder(orderId, op.id);

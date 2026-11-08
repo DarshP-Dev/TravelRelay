@@ -35,6 +35,12 @@ If checkout is interrupted, use **Check PayPal status** to reconcile without
 sending another financial write. Saving a quote affects the planning estimate;
 capturing or refunding a payment does not.
 
+Approved recovery replacements use **Save recovery checkout quote** instead:
+the fixed USD 5.00 Sandbox price and dated FX conversion stay separate from the
+approved itinerary estimate. Quote preparation and safe FX refresh do not change
+the itinerary revision, planning allocations or reserve. The original full refund
+must be verified first. See [quote separation and validation](docs/recovery-checkout-validation.md).
+
 Set `PAYPAL_ENVIRONMENT=sandbox`, `ENABLE_DEMO_MERCHANT=true`, and the Sandbox
 app's `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, and `PAYPAL_MERCHANT_ID` in
 ignored `.env.local` or hosted server-side settings. `PAYPAL_WEBHOOK_ID` enables
@@ -64,7 +70,7 @@ with unchanged budget and safe scheduling. Its exact result passes offline
 approval/rejection/stale-version regression tests; **101 tests pass**.
 See the [live acceptance report](docs/milestone-3b-live-agent-paris-result.md) and
 [original offline validation, costs and limitations](docs/milestone-3b-validation.md).
-Apply committed migrations through **`0010`** using `npm run db:migrate` before
+Apply committed migrations through **`0011`** using `npm run db:migrate` before
 starting this version; stop any process using the same PGlite directory first.
 
 **Retained Milestone 3A capabilities:**

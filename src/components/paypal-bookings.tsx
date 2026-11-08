@@ -348,6 +348,16 @@ export function PayPalBookings({
             <p>
               {demoName} · {dollars(demoPriceMinor)}
             </p>
+            {quote.purpose === "recovery-checkout" && (
+              <p className="inline-note">
+                Approved planning estimate{" "}
+                {money(quote.planningEstimateMinor ?? 0, state.currency)}{" "}
+                {state.currency}, unchanged. Separate Sandbox purchase:{" "}
+                {dollars(demoPriceMinor)}; indicative equivalent{" "}
+                {money(quote.estimatedMinor, state.currency)} {state.currency}.
+                No supplier reservation.
+              </p>
+            )}
             {quoteReview === quote.id ? (
               <div className="sandbox-review">
                 <p>
@@ -355,6 +365,8 @@ export function PayPalBookings({
                   this demo. The trip equivalent is an estimate of{" "}
                   {money(quote.estimatedMinor, state.currency)} {state.currency}
                   . Payment does not change your itinerary estimate.
+                  {quote.purpose === "recovery-checkout" &&
+                    ` Quote reference expires ${time(quote.fxExpiresAt)}. The approved planning estimate stays ${money(quote.planningEstimateMinor ?? 0, state.currency)} ${state.currency}.`}
                 </p>
                 <div className="sandbox-actions">
                   <button

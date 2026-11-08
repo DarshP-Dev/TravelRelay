@@ -49,6 +49,7 @@ export type FxQuote = {
 };
 const quoteInput = {
   activityId: z.uuid(),
+  recoveryCaseId: z.uuid().optional(),
   refreshIntentId: z.uuid().optional(),
   amount: z.string().max(30),
   currency: currencySchema,

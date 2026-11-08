@@ -56,6 +56,7 @@ export function TripWallet({
   commerce,
   recoveryLinks,
   replacementActivityId,
+  replacementCaseId,
 }: {
   initial: WalletState;
   bookings?: boolean;
@@ -65,6 +66,7 @@ export function TripWallet({
     { id: string; role: "original" | "replacement" }
   >;
   replacementActivityId?: string;
+  replacementCaseId?: string;
 }) {
   const [state, setState] = useState(initial),
     [busy, setBusy] = useState(false),
@@ -157,8 +159,9 @@ export function TripWallet({
       if ("state" in result && result.state) {
         setState(result.state);
         router.refresh();
-        if (result.itineraryChanged)
-          notifyItineraryChanged(initial.tripId, "wallet");
+        // Checkout quotes and FX refreshes can change only the wallet. Other
+        // panels still need to reload their server-authoritative quote state.
+        notifyItineraryChanged(initial.tripId, "wallet");
       }
       return result;
     } catch (cause) {
@@ -189,6 +192,12 @@ export function TripWallet({
       currency: reference?.originalCurrency ?? currency,
       supplier: reference?.supplier ?? supplier,
       ...(reference && { refreshIntentId: reference.id }),
+      ...((reference?.recoveryCaseId ??
+        (activityId === replacementActivityId
+          ? replacementCaseId
+          : undefined)) && {
+        recoveryCaseId: reference?.recoveryCaseId ?? replacementCaseId,
+      }),
       itineraryVersion: state.itineraryVersion,
       walletVersion: state.version,
     };
@@ -224,9 +233,11 @@ export function TripWallet({
       setActivityId("");
       setSupplier("");
       setNotice(
-        request.refreshIntentId
-          ? "Reference rate refreshed on the same quote. The activity estimate and planning history are saved."
-          : "Planning reference saved and activity estimate updated. No checkout, booking or payment occurred.",
+        request.recoveryCaseId
+          ? "Recovery checkout reference saved. Your itinerary estimate, revision and planning budget are unchanged. No payment occurred."
+          : request.refreshIntentId
+            ? "Reference rate refreshed on the same quote. The activity estimate and planning history are saved."
+            : "Planning reference saved and activity estimate updated. No checkout, booking or payment occurred.",
       );
     }
   }
@@ -349,6 +360,14 @@ export function TripWallet({
                   {money(i.estimatedDisplayMinor, state.currency)}{" "}
                   {state.currency}
                 </p>
+                {i.purpose === "recovery-checkout" && (
+                  <p className="inline-note">
+                    Recovery checkout quote · approved planning estimate{" "}
+                    {money(i.planningEstimateMinor ?? 0, state.currency)}{" "}
+                    {state.currency}, unchanged. This quote is not an additional
+                    planning expense or a confirmed purchase.
+                  </p>
+                )}
                 <p>
                   {i.supplier
                     ? `${i.supplier} · user-provided, unverified supplier note`
@@ -502,8 +521,9 @@ export function TripWallet({
         {replacementActivityId && (
           <p className="notice">
             The prefilled USD 5.00 quote is for the Sandbox replacement
-            demonstration. Review its effect on the activity estimate before
-            saving. It does not purchase access to the suggested venue.
+            demonstration. It stays separate from the approved activity
+            estimate, itinerary revision and planning budget. It does not
+            purchase access to the suggested venue.
           </p>
         )}
         <p>
@@ -619,6 +639,20 @@ export function TripWallet({
                     {state.currency}
                   </strong>
                 </p>
+                {!!request?.recoveryCaseId && (
+                  <p>
+                    Approved itinerary estimate:{" "}
+                    {money(
+                      state.activities.find((a) => a.id === request.activityId)
+                        ?.costMinor ?? 0,
+                      state.currency,
+                    )}{" "}
+                    {state.currency}, unchanged. This separate USD 5.00 Sandbox
+                    checkout quote is not a payment or an additional planning
+                    expense. It expires{" "}
+                    {dateTime(preview.fx.snapshot.expiresAt)}.
+                  </p>
+                )}
                 <p>
                   {preview.fx.snapshot.provider === "identity"
                     ? "Same currency; no external conversion."
@@ -689,7 +723,9 @@ export function TripWallet({
                   >
                     {request?.refreshIntentId
                       ? "Save refreshed reference rate"
-                      : "Save reference & activity estimate"}
+                      : request?.recoveryCaseId
+                        ? "Save recovery checkout quote"
+                        : "Save reference & activity estimate"}
                   </button>
                   <button
                     className="button button-secondary"

@@ -263,7 +263,11 @@ try {
   equal(await page.getByLabel("Original group amount").inputValue(), "5.00");
   equal(await page.getByLabel("Original currency").inputValue(), "USD");
   await get("Preview rate & budget consequences").click();
-  await get("Save reference & activity estimate").click();
+  const beforeQuote = await read(walletEndpoint);
+  await get("Save recovery checkout quote").click();
+  const afterQuote = await read(walletEndpoint);
+  equal(afterQuote.itineraryVersion, beforeQuote.itineraryVersion);
+  equal(afterQuote.budget, beforeQuote.budget);
   await get("Review Sandbox checkout").click();
   await get("Continue to PayPal Sandbox").click();
   await see("Payment verified");

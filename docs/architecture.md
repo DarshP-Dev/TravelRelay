@@ -1,5 +1,39 @@
 # Architecture — Milestone 4B
 
+## Recovery checkout quote separation
+
+Migration `0011_recovery_checkout_quotes` adds a purpose, optional recovery case
+and immutable planning-estimate snapshot to existing wallet intents. Existing
+rows default to `planning`; the original quote/editor behavior is unchanged.
+The composite FK binds a recovery checkout quote to the exact owner, trip and
+approved replacement activity. A unique case key permits one quote identity;
+expired references refresh that same identity using the existing append-only
+`intent_fx_refreshed` event. No payment or itinerary record is rewritten.
+
+`server/recovery-checkout.ts` verifies the approved option and edit, unchanged
+itinerary revision, active case, original merchant and completed full refund.
+Wallet save and checkout repeat these checks under the trip/wallet/case locks.
+Checkout and capture retain durable single-operation claims and stable provider
+keys. A designated recovery quote must be exactly USD 5.00; currency/amount
+supplied by the browser cannot change the server price. Ordinary planning quotes
+cannot bypass these checks when attached to a recovery replacement.
+
+Recovery quote creation/refresh increments only the wallet version and appends a
+zero-money planning event. It never invokes the itinerary editor. Staleness uses
+the saved planning estimate and approved revision, rather than equating the FX
+conversion with the estimate. The approved EUR 4.00 activity can therefore have
+a distinct USD 5.00 quote (EUR 4.48 indicative) while retaining revision 3,
+EUR 222 unallocated and EUR 250 reserve. A quote alone contributes no spending
+or additional planning expense. A future verified capture covers the estimate
+once: projected spending uses the larger estimate/verified indicative payment,
+while original-currency actuals, planned unallocated funds and reserve remain
+separate. UI review displays both amounts and quote expiry explicitly.
+
+An itinerary edit after approval or a finished case invalidates checkout; no
+automatic re-approval, new case, replacement quote or provider retry occurs.
+Checkout freezes its FX reference. This correction does not add supplier
+inventory, live FX guarantees or an operator reset/re-approval workflow.
+
 ## PayPal Sandbox commerce
 
 `server/paypal-client.ts` wraps the official Sandbox Orders v2, Payments v2,

@@ -152,6 +152,13 @@ async function quote(tripId: string, activityId: string) {
   const wallet = await app.wallet.read(seed.userId, tripId);
   const data = {
     activityId,
+    ...((await app.recovery.links(seed.userId, tripId)).find(
+      (c) => c.replacementActivityId === activityId,
+    ) && {
+      recoveryCaseId: (await app.recovery.links(seed.userId, tripId)).find(
+        (c) => c.replacementActivityId === activityId,
+      )!.id,
+    }),
     currency: "USD",
     amount: "5.00",
     supplier: "Offline recovery fixture",
