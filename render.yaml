@@ -1,0 +1,57 @@
+# Preparation only. Creating this Blueprint provisions paid resources: obtain
+# approval for the account, region, plan, database and HTTPS target first.
+services:
+  - type: web
+    name: travelrelay
+    runtime: node
+    plan: 1c-2g
+    numInstances: 1
+    autoDeployTrigger: "off"
+    buildCommand: npm ci --include=dev && npm run build -- --webpack
+    preDeployCommand: npm run deploy:check && npm run db:migrate
+    startCommand: exec node node_modules/next/dist/bin/next start --hostname 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    maxShutdownDelaySeconds: 300
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: APP_URL
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_MODEL
+        value: gpt-6.1-sol
+      - key: OPENAI_REASONING_EFFORT
+        value: medium
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-3.5-flash-lite
+      - key: GENERATION_GLOBAL_RPM
+        value: "2"
+      - key: GENERATION_GLOBAL_RPD
+        value: "20"
+      - key: GENERATION_USER_HOURLY_LIMIT
+        value: "6"
+      - key: PAYPAL_ENVIRONMENT
+        value: sandbox
+      - key: PAYPAL_CLIENT_ID
+        sync: false
+      - key: PAYPAL_CLIENT_SECRET
+        sync: false
+      - key: PAYPAL_MERCHANT_ID
+        sync: false
+      - key: ENABLE_DEMO_MERCHANT
+        value: "false"
+      - key: ENABLE_RECOVERY_SIMULATION
+        value: "false"

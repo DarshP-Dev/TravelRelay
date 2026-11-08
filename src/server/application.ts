@@ -11,6 +11,7 @@ import { createWallet, type FinancialVerifier } from "./wallet";
 import { createCommerce } from "./paypal-commerce";
 import type { PayPalClient } from "./paypal-client";
 import { createRecovery } from "./recovery";
+import { assertDatabaseReady } from "./db/readiness";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -103,6 +104,7 @@ export function createApplication(
     recovery.assistantContext,
   );
   return {
+    health: () => assertDatabaseReady(db),
     auth,
     trips,
     itineraryEditor,

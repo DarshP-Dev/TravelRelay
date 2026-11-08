@@ -1,5 +1,24 @@
 # Generation hosting and recovery
 
+## Milestone 6A infrastructure preparation
+
+The prepared Render Node 24 Blueprint uses a 300-second shutdown delay, exceeding
+the unchanged 240-second route contract. It does not create a separately durable
+worker queue. Real process-kill regression now verifies persisted interruption,
+no model call on repeated reads/restart, and one owner-authorized explicit retry
+despite duplicate worker starts. A local production HTTP harness verifies 202
+before completion and drains its mocked assistant call through Next's installed
+shutdown handler. Windows uses an IPC signal bridge; full-duration Linux host
+drain, unplanned termination and instance swaps still require host acceptance.
+
+Generation, assistant and recovery keep their existing 150-second provider
+deadline, 180-second project lease and five-minute stale gate. Model providers,
+quality/schedule/budget validators and explicit retry/cost policies are unchanged.
+Polling may mark a stale job interrupted, but never invokes another provider
+request. Terminated requests may already have incurred provider cost; unknown
+usage remains unknown. No result is reported successful without validated atomic
+persistence. See [deployment.md](deployment.md) for host choice and approval gates.
+
 Milestone 3B adds the assistant route to this same execution contract. Both
 `/api/trips/{id}/generation` and `/api/trips/{id}/assistant` declare Node runtime
 and a 240-second duration. Assistant Send/Retry queue short HTTP requests; polling,

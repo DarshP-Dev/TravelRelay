@@ -1,4 +1,40 @@
-# Architecture — Milestone 4B
+# Architecture — Milestone 6A
+
+## Deployment boundary
+
+The current deployable shape remains one Next.js Node 24 process plus shared
+PostgreSQL. `render.yaml` prepares one always-on Render service, disables automatic
+deploys and permits 300 seconds to drain `after()` callbacks. It does not provision
+resources until explicitly imported/approved. No independent durable queue is
+claimed: saved jobs recover from interruptions and require explicit paid retries.
+
+`server/deployment-config.ts` shares exact-origin, HTTPS, database/TLS, local-QA,
+secret-prefix and Sandbox-only guards between runtime and provider-free preflight.
+Public production rejects PGlite even when the local override is set. Explicit
+loopback production QA is preserved. The database pool has bounded connections,
+connect/query deadlines and sanitized idle-disconnect diagnostics. Hosted
+migrations use one direct client and an advisory lock; existing SQL is unchanged.
+
+`GET /api/health` is uncached, exposes only readiness, and verifies all twelve
+migration hashes/timestamps against the release. It does not call providers or
+inspect private trip contents. The public webhook retains signature and current
+provider-resource verification, with an additional shared SQL admission bucket
+(120/minute), independent of forwarded-IP claims. Security response headers
+preserve PayPal SDK compatibility without adding a speculative CSP.
+
+Offline tests cover real worker process loss, restored interruption, explicit
+retry, duplicate claims, exact migration checkpoints, secure cookies, transaction
+rollback and immutable/owner-scoped records. A production HTTP test bridges into
+the installed Next SIGTERM handler on Windows and proves post-response work drains;
+actual Linux/Render signal delivery and 240-second host lifetime remain unverified.
+
+See [deployment and backup/rollback procedures](deployment.md),
+[the generation runbook](generation-hosting.md) and
+[Milestone 6A validation](milestone-6a-validation.md). Hosted PostgreSQL, public
+HTTPS, signed webhook delivery and host/browser acceptance require approval and
+target configuration; local success is not deployment acceptance.
+
+## Retained Milestone 4B architecture
 
 ## Recovery checkout quote separation
 

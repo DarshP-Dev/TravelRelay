@@ -13,12 +13,35 @@ export async function openDatabase(config: {
   directory?: string;
 }) {
   if (config.url) {
-    const pool = new Pool({ connectionString: config.url, max: 5 });
+    const pool = new Pool({
+      connectionString: config.url,
+      max: 5,
+      connectionTimeoutMillis: 10_000,
+      idleTimeoutMillis: 30_000,
+      query_timeout: 20_000,
+    });
+    // Idle server disconnects must not crash the process or leak connection data.
+    pool.on("error", () =>
+      console.error("An idle database connection was closed."),
+    );
     const db = postgresDrizzle(pool, { schema });
     return {
       db,
-      migrate: () =>
-        postgresMigrate(db, { migrationsFolder: path.resolve("drizzle") }),
+      migrate: async () => {
+        const client = await pool.connect();
+        try {
+          await client.query("select pg_advisory_lock(721468604)");
+          await postgresMigrate(postgresDrizzle(client, { schema }), {
+            migrationsFolder: path.resolve("drizzle"),
+          });
+        } finally {
+          try {
+            await client.query("select pg_advisory_unlock(721468604)");
+          } finally {
+            client.release();
+          }
+        }
+      },
       close: () => pool.end(),
     };
   }

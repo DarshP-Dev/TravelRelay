@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { webhookAdmission } from "./webhook-admission";
 import { and, asc, eq, gte, inArray, isNull, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { commerceRequest, demoPriceMinor } from "@/lib/paypal-contracts";
@@ -57,6 +58,7 @@ export function createCommerce(
   wallet: ReturnType<typeof createWallet>,
   client?: PayPalClient,
 ) {
+  const admitWebhook = webhookAdmission(db);
   function provider() {
     if (!client)
       throw new RequestError(503, "PayPal Sandbox checkout is not configured.");
@@ -1049,6 +1051,7 @@ export function createCommerce(
       throw new RequestError(400, "Invalid or oversized webhook.");
     }
     const parsed = webhookEvent.parse(raw);
+    await admitWebhook();
     if (!(await api.verify(request.headers, raw)))
       throw new RequestError(401, "Webhook verification failed.");
     const [receipt] = await db

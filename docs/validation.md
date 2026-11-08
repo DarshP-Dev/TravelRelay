@@ -1,3 +1,21 @@
+# Milestone 6A — infrastructure preparation
+
+Local infrastructure readiness passes with 159 regression tests, 67 retained
+production recovery/commerce HTTP assertions and 19 new production infrastructure
+HTTP assertions. Lint/type-check/format/Webpack build and credential checks pass.
+Configuration guards, migration-aware readiness and recoverable worker termination
+were verified without live provider requests. No hosted PostgreSQL, real host,
+signed webhook, purchase, push or deployment was performed.
+
+See [the full result and remaining gates](milestone-6a-validation.md) and
+[deployment, environment, costs and backup/rollback procedures](deployment.md).
+Milestone 5's real Sandbox financial outcomes remain documented separately in
+[the final recovery acceptance](milestone-5-final-acceptance.md).
+
+Earlier approved reports follow unchanged.
+
+---
+
 # Milestone 4A — TripWallet and financial foundation
 
 TripWallet and Bookings now use persistent owner-scoped planning references,

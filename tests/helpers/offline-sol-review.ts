@@ -10,8 +10,9 @@ export async function prepareOfflineSolReview(
   directory: string,
   origin: string,
   waitForRelease?: () => Promise<void>,
+  databaseUrl?: string,
 ) {
-  const connection = await openDatabase({ directory });
+  const connection = await openDatabase({ directory, url: databaseUrl });
   let closed = false;
   const close = async () => {
     if (!closed) {

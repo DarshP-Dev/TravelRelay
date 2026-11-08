@@ -56,6 +56,13 @@ and [event names](https://developer.paypal.com/api/rest/webhooks/event-names/).
 
 ## Recovery and deployment
 
+Milestone 6A adds provider-free migration/readiness checks and a shared SQL
+webhook verification admission limit of 120/minute. It does not register a
+webhook or make a PayPal request. The fixed Sandbox adapter's existing postback
+signature method requires app-owned signed events; PayPal simulator mock events
+cannot validate this method. Preserve original event semantics and transmission
+headers at the proxy. See [public deployment, signing and edge limits](deployment.md).
+
 - Apply migration `0009` and earlier migrations. Use hosted PostgreSQL with
   backups and tested restore for deployment; PGlite is local/single-process only.
 - Commerce routes run in the Node runtime with a 60-second duration hint and
