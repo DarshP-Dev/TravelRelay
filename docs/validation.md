@@ -1,3 +1,16 @@
+# Milestone 6B — Vercel Hobby preparation
+
+Local native Next.js preparation passed: 161 tests, 67 production commerce/recovery
+HTTP assertions and 19 infrastructure HTTP assertions, plus lint, type-check,
+formatting, Webpack build, release preflight, route traces and credential scans.
+The 240-second AI invocation budgets fit documented Fluid Compute limits. No
+hosted migration, deployment, push or live model/PayPal call was performed.
+See [the full validation report](milestone-6b-validation.md) and
+[the manual Vercel/Neon deployment guide](deployment.md) for pending eligibility,
+hosted function packaging, PostgreSQL and signed webhook gates.
+
+---
+
 # Milestone 6A — infrastructure preparation
 
 Local infrastructure readiness passes with 159 regression tests, 67 retained

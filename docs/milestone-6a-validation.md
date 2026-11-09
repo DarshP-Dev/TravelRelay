@@ -1,5 +1,9 @@
 # Milestone 6A — infrastructure readiness validation
 
+Historical checkpoint. The current hosting choice is documented in
+[Milestone 6B](milestone-6b-validation.md); the proposed paid Render service was
+never created and is no longer the deployment target.
+
 **Local preparation: PASS. Public deployment: NOT PERFORMED.**
 
 The implementation preserves the existing generation, itinerary editing,

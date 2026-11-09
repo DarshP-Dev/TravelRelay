@@ -14,6 +14,7 @@ import {
 import { openDatabase } from "../src/server/db/connection";
 import { webhookAdmission } from "../src/server/webhook-admission";
 import { databaseContract } from "./helpers/database-contract";
+import { session } from "../src/server/db/schema";
 
 const env = {
   NODE_ENV: "production" as const,
@@ -23,6 +24,13 @@ const env = {
     "postgresql://fixture:fixture@db.example.invalid/qa?sslmode=verify-full",
   DIRECT_URL:
     "postgresql://fixture:fixture@db.example.invalid/qa?sslmode=verify-full",
+};
+const vercelEnv = {
+  ...env,
+  VERCEL: "1",
+  DATABASE_URL:
+    "postgresql://fixture:fixture@ep-fixture-pooler.us-east-1.aws.neon.tech/qa?sslmode=verify-full",
+  DIRECT_URL: undefined,
 };
 test("hosted runtime fails closed on ephemeral storage, unsafe origins, TLS bypasses and live PayPal", () => {
   assert.equal(runtimeConfiguration(env).origin, env.APP_URL);
@@ -70,6 +78,48 @@ test("health responses are uncached and never disclose a database error or secre
   assert.deepEqual(await failed.json(), { status: "unavailable" });
 });
 
+test("Vercel runtime requires a pooled TLS Neon endpoint and excludes local and admin credentials", () => {
+  assert.equal(runtimeConfiguration(vercelEnv).vercel, true);
+  for (const override of [
+    { DATABASE_URL: env.DATABASE_URL },
+    { DATABASE_URL: vercelEnv.DATABASE_URL.replace("-pooler", "") },
+    {
+      DATABASE_URL: vercelEnv.DATABASE_URL.replace(
+        ".neon.tech",
+        ".neon.tech.example.invalid",
+      ),
+    },
+    { DIRECT_URL: env.DIRECT_URL },
+    { POSTGRES_TEST_DIRECT_URL: env.DIRECT_URL },
+    { APP_URL: "https://localhost:3000" },
+    {
+      APP_URL: "http://127.0.0.1:3003",
+      DATABASE_URL: "",
+      DATABASE_DRIVER: "pglite",
+      ALLOW_LOCAL_DATABASE: "true",
+    },
+  ])
+    assert.throws(() => runtimeConfiguration({ ...vercelEnv, ...override }));
+});
+
+test("the Vercel pool has bounded connections and short idle cleanup without opening a connection", async () => {
+  const connection = await openDatabase({
+    url: vercelEnv.DATABASE_URL,
+    fluidCompute: true,
+  });
+  try {
+    const pool = connection.db.$client;
+    assert.ok("options" in pool && "totalCount" in pool);
+    assert.equal(pool.totalCount, 0);
+    assert.equal(pool.options.max, 5);
+    assert.equal(pool.options.idleTimeoutMillis, 1000);
+    assert.equal(pool.options.connectionTimeoutMillis, 10_000);
+    assert.equal(pool.listenerCount("release"), 1);
+  } finally {
+    await connection.close();
+  }
+});
+
 test("clean release preflight checks configuration without opening a database or provider", async () => {
   await mkdir(".test-data", { recursive: true });
   const cwd = await mkdtemp(path.resolve(".test-data/deployment-preflight-"));
@@ -78,11 +128,13 @@ test("clean release preflight checks configuration without opening a database or
     "--import",
     "tsx",
     path.resolve("scripts/check-deployment.ts"),
+    "--vercel",
   ];
   const childEnv = {
     PATH: process.env.PATH,
     SystemRoot: process.env.SystemRoot,
-    ...env,
+    ...vercelEnv,
+    VERCEL: undefined,
     OPENAI_API_KEY: "offline-preflight-only",
     NEXT_TELEMETRY_DISABLED: "1",
   };
@@ -94,6 +146,7 @@ test("clean release preflight checks configuration without opening a database or
   });
   assert.equal(passed.status, 0, passed.stderr);
   assert.match(passed.stdout, /12 migrations/);
+  assert.match(passed.stdout, /No external API or database was contacted/);
   const refused = spawnSync(process.execPath, command, {
     cwd,
     env: { ...childEnv, DATABASE_DRIVER: "pglite" },
@@ -102,6 +155,18 @@ test("clean release preflight checks configuration without opening a database or
   });
   assert.equal(refused.status, 1);
   assert.ok(!refused.stderr.includes(env.DATABASE_URL));
+  const migrate = spawnSync(
+    process.execPath,
+    ["--import", "tsx", path.resolve("scripts/migrate.ts")],
+    {
+      cwd,
+      env: { ...childEnv, VERCEL: "1" },
+      encoding: "utf8",
+      windowsHide: true,
+    },
+  );
+  assert.equal(migrate.status, 1);
+  assert.match(migrate.stderr, /migrations outside Vercel/);
 });
 
 test("HTTPS authentication issues Secure HttpOnly SameSite cookies without permissive CORS", async () => {
@@ -111,6 +176,7 @@ test("HTTPS authentication issues Secure HttpOnly SameSite cookies without permi
     const app = createApplication(connection.db, {
       origin: env.APP_URL,
       secret: env.AUTH_SECRET,
+      vercel: true,
     });
     const response = await app.authHandler(
       new Request(env.APP_URL + "/api/auth/sign-up/email", {
@@ -118,7 +184,8 @@ test("HTTPS authentication issues Secure HttpOnly SameSite cookies without permi
         headers: {
           origin: env.APP_URL,
           "content-type": "application/json",
-          "x-forwarded-for": "192.0.2.1",
+          "x-forwarded-for": "192.0.2.99",
+          "x-vercel-forwarded-for": "192.0.2.1",
         },
         body: JSON.stringify({
           name: "Offline secure cookie QA",
@@ -135,6 +202,10 @@ test("HTTPS authentication issues Secure HttpOnly SameSite cookies without permi
     assert.match(cookie!, /HttpOnly/i);
     assert.match(cookie!, /SameSite=Lax/i);
     assert.equal(response.headers.get("access-control-allow-origin"), null);
+    assert.equal(
+      (await connection.db.select().from(session))[0].ipAddress,
+      "192.0.2.1",
+    );
   } finally {
     await connection.close();
   }

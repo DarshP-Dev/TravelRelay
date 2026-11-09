@@ -2,12 +2,12 @@
 
 An editorial travel planning workspace for the PayPal AI Hackathon.
 
-**Milestone 6A — deployment preparation.** The proposed hosting configuration is
-an always-on Render Node 24 service plus Neon PostgreSQL, with a 300-second
-shutdown allowance, migration-aware `/api/health`, explicit hosted configuration
-checks, and unchanged recoverable AI jobs. No host/database was provisioned and
-nothing was deployed. See [deployment setup, costs, backups and approval gates](docs/deployment.md)
-and [the infrastructure validation report](docs/milestone-6a-validation.md).
+**Milestone 6B — free-tier deployment preparation.** The preferred setup is
+Vercel Hobby with Fluid Compute, Node.js 24 and Neon PostgreSQL Free, subject to
+Hobby eligibility and hosted acceptance. The native build checks traced migration
+assets and the unchanged 240-second AI routes. No host/database was provisioned
+and nothing was deployed. See [deployment, free limits and approval gates](docs/deployment.md)
+and [the Vercel validation report](docs/milestone-6b-validation.md).
 Judges will use the approved HTTPS demo URL after deployment; no public URL or
 shared credentials are available yet. The existing `/example-trip` remains the
 clearly labeled provider-free public example.
@@ -160,9 +160,11 @@ npm run db:migrate
 npm run security:check
 ```
 
-`npm run deploy:check` is a provider-free configuration/migration-manifest check
+`npm run deploy:check -- --vercel` is a provider-free configuration/migration-manifest check
 for a **clean hosted release checkout**, not the local workspace containing
-`.env.local`/QA databases. Hosted URLs require `sslmode=verify-full`. The explicit
+`.env.local`/QA databases. The hosted app uses a pooled Neon URL with
+`sslmode=verify-full`; direct migration credentials stay outside Vercel.
+Run `npm run deploy:verify` after a local Webpack production build. The explicit
 `npm run test:postgres -- --approved-disposable-target` harness uses only an
 independently approved `POSTGRES_TEST_DIRECT_URL`; do not run it against real
 accounts/payments. Neither command makes live AI/PayPal requests. See the
@@ -213,7 +215,7 @@ not concurrently open the same directory. See `docs/validation.md` for results.
 
 ## Configuration
 
-Use Node.js **22+** (Node 24 is validated; the OpenAI SDK requires at least 22).
+Use Node.js **24.x** (pinned for local builds and Vercel Functions).
 The default server configuration is the official `openai` TypeScript SDK,
 **Responses API**, `gpt-6.1-sol`, **medium reasoning**, and standard service tier.
 Configure the key in ignored `.env.local`, then restart the server:
@@ -272,14 +274,14 @@ See [the historical live report](docs/milestone-2a-sol-paris-result.md). The his
 Secret assignments in `.env.example` are blank placeholders. Non-secret model and
 provider defaults are included. Use secure server environment variables in production.
 
-| Names                                    | Use                                                                          |
-| ---------------------------------------- | ---------------------------------------------------------------------------- |
-| `APP_URL`                                | Exact trusted origin, e.g. the local URL above or the deployed HTTPS origin  |
-| `AUTH_SECRET`                            | At least 32 random characters; `setup:local` generates it locally            |
-| `DATABASE_URL`                           | Hosted PostgreSQL runtime connection; Neon pooled URL is suitable            |
-| `DIRECT_URL`                             | Direct PostgreSQL migration connection; required by hosted release preflight |
-| `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH` | Explicit local PGlite selection and persistent directory                     |
-| `ALLOW_LOCAL_DATABASE`                   | Local production-preview override only, not a serverless deployment option   |
+| Names                                    | Use                                                                         |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| `APP_URL`                                | Exact trusted origin, e.g. the local URL above or the deployed HTTPS origin |
+| `AUTH_SECRET`                            | At least 32 random characters; `setup:local` generates it locally           |
+| `DATABASE_URL`                           | Hosted PostgreSQL runtime connection; Neon pooled URL is suitable           |
+| `DIRECT_URL`                             | Unpooled migration connection; keep it outside Vercel                       |
+| `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH` | Explicit local PGlite selection and persistent directory                    |
+| `ALLOW_LOCAL_DATABASE`                   | Local production-preview override only, not a serverless deployment option  |
 
 Social OAuth remains reserved. FX and PayPal Sandbox configuration are explained
 above. No PayPal credential uses a `NEXT_PUBLIC_` variable; the server passes

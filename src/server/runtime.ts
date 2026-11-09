@@ -13,11 +13,12 @@ const globalDatabase = globalThis as typeof globalThis & {
 };
 let application: Promise<ReturnType<typeof createApplication>> | undefined;
 async function connect() {
-  const { secret, origin } = runtimeConfiguration(process.env);
+  const { secret, origin, vercel } = runtimeConfiguration(process.env);
   const connection = await (globalDatabase.travelRelayConnection ??=
     openDatabase({
       url: process.env.DATABASE_URL,
       directory: process.env.LOCAL_DATABASE_PATH ?? ".data/travelrelay",
+      fluidCompute: vercel,
     }).catch((error) => {
       globalDatabase.travelRelayConnection = undefined;
       throw error;
@@ -26,6 +27,7 @@ async function connect() {
   return createApplication(connection.db, {
     secret,
     origin,
+    vercel,
     generationLimits: generationLimitsFromEnv(process.env),
     model: createTripModel(providerConfigFromEnv(process.env)),
     paypal: paypal ? createPayPalClient(paypal) : undefined,

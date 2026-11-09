@@ -68,6 +68,7 @@ export function createApplication(
   config: {
     secret: string;
     origin: string;
+    vercel?: boolean;
     model?: TripModel;
     generationLimits?: GenerationLimits;
     fxFetch?: typeof fetch;

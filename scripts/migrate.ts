@@ -5,6 +5,12 @@ import {
   migrationManifest,
   assertDatabaseReady,
 } from "../src/server/db/readiness";
+if (process.env.VERCEL === "1") {
+  console.error(
+    "Run approved migrations outside Vercel using the direct connection.",
+  );
+  process.exit(1);
+}
 nextEnv.loadEnvConfig(process.cwd());
 let connection: Awaited<ReturnType<typeof openDatabase>> | undefined;
 try {

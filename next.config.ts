@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   serverExternalPackages: ["@electric-sql/pglite", "pg", "drizzle-orm"],
+  outputFileTracingIncludes: {
+    "/api/health": ["./drizzle/*.sql", "./drizzle/meta/_journal.json"],
+  },
+  outputFileTracingExcludes: {
+    "/*": ["./.env*", "./.data/**/*", "./.test-data/**/*", "./.vercel/**/*"],
+  },
   async headers() {
     return [
       {

@@ -5,7 +5,7 @@ import * as schema from "./db/schema";
 
 export function createAuth(
   db: Database,
-  config: { secret: string; origin: string },
+  config: { secret: string; origin: string; vercel?: boolean },
 ) {
   if (config.secret.length < 32)
     throw new Error("Configure a strong AUTH_SECRET (at least 32 characters).");
@@ -44,6 +44,9 @@ export function createAuth(
       },
     },
     advanced: {
+      ...(config.vercel && {
+        ipAddress: { ipAddressHeaders: ["x-vercel-forwarded-for"] },
+      }),
       cookiePrefix: "travelrelay",
       useSecureCookies: origin.protocol === "https:",
       defaultCookieAttributes: { httpOnly: true, sameSite: "lax" },

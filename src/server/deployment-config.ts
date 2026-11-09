@@ -26,8 +26,9 @@ export function runtimeConfiguration(env: Environment) {
     origin.hostname,
   );
   const production = env.NODE_ENV === "production";
+  const vercel = env.VERCEL === "1";
   const localPreview =
-    production && loopback && env.ALLOW_LOCAL_DATABASE === "true";
+    production && !vercel && loopback && env.ALLOW_LOCAL_DATABASE === "true";
   if (production && !localPreview) {
     if (
       /(?:^|\s)(?:--import|--require|-r)(?:=|\s)/.test(env.NODE_OPTIONS ?? "")
@@ -59,6 +60,20 @@ export function runtimeConfiguration(env: Environment) {
     )
       throw new Error("QA transports are forbidden in hosted production.");
     validateHostedDatabaseUrl(env.DATABASE_URL, "DATABASE_URL");
+    if (vercel) {
+      if (loopback)
+        throw new Error("Set APP_URL to the public Vercel HTTPS origin.");
+      const host = new URL(env.DATABASE_URL!).hostname;
+      if (
+        !host.endsWith(".neon.tech") ||
+        !host.split(".")[0].endsWith("-pooler")
+      )
+        throw new Error("Vercel requires the pooled Neon DATABASE_URL.");
+      if (env.DIRECT_URL || env.POSTGRES_TEST_DIRECT_URL)
+        throw new Error(
+          "Keep direct migration and test credentials outside Vercel.",
+        );
+    }
     if (env.DIRECT_URL) validateHostedDatabaseUrl(env.DIRECT_URL, "DIRECT_URL");
     if (env.PAYPAL_ENVIRONMENT && env.PAYPAL_ENVIRONMENT !== "sandbox")
       throw new Error("TravelRelay permits PayPal Sandbox only.");
@@ -77,7 +92,7 @@ export function runtimeConfiguration(env: Environment) {
     );
   if (production && !env.DATABASE_URL && !localPreview)
     throw new Error("Hosted production requires PostgreSQL.");
-  return { secret, origin: origin.origin, localPreview };
+  return { secret, origin: origin.origin, localPreview, vercel };
 }
 
 export function validateHostedDatabaseUrl(

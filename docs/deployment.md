@@ -1,252 +1,224 @@
-# Milestone 6A — deployment preparation
+# Milestone 6B — Vercel Hobby deployment preparation
 
-Prepared on November 8, 2026. No resources have been purchased, provisioned,
-migrated remotely or deployed. No live AI or PayPal request is part of this work.
-See [validation and approval gates](milestone-6a-validation.md).
+**Target: Vercel Hobby + Fluid Compute + Node.js 24 + Neon Free.** This replaces
+the proposed paid Render setup. The native Next.js build is prepared locally.
+Hobby eligibility and the first hosted build remain approval gates. Nothing has
+been deployed, provisioned, pushed, or migrated on a hosted database.
 
-## Recommended architecture and cost envelope
+## Eligibility and free resource limits
 
-Use one always-on **Render Node web service**, initially **1 CPU / 2 GB RAM**
-(`1c-2g`), and **Neon PostgreSQL** in a nearby approved region. Keep the existing
-single Next.js application: no Redis, separate worker, local persistent disk or
-new service is necessary for this hackathon's recoverable execution contract.
-`render.yaml` prepares this topology, disables automatic deploys, and defaults
-merchant/simulation features to off until their Sandbox configuration is approved.
-Importing a Blueprint creates resources: do not do it before approval.
+Provider documentation checked November 9, 2026.
 
-The selected [Render compute plan](https://render.com/docs/compute-plans) provides
-more memory headroom than the 512 MB option for Next.js, authentication, scheduling
-and validation. Budget approximately **USD 25/month for the web service** as a
-planning allowance; confirm the actual account/region quote on
-[Render pricing](https://render.com/pricing) before purchase. It is not a verified
-checkout price. Neon Free currently advertises 100 CU-hours/project/month and
-1 GB storage; Launch is usage-priced, with a displayed typical USD 15/month,
-not a fixed bill. See [Neon pricing](https://neon.com/pricing).
-Plan a USD 25–40/month infrastructure envelope before tax, usage overages,
-backup storage and separately metered AI. No free-tier guarantee is made.
+Vercel [Hobby](https://vercel.com/docs/plans/hobby) restricts use to personal,
+non-commercial projects. The [Fair Use Guidelines](https://vercel.com/docs/limits/fair-use-guidelines)
+describe financial gain and requesting or processing visitor payments as commercial
+examples. TravelRelay's merchant accepts only Sandbox test funds, never real money,
+and the proposed demo has no monetization. Those facts support the non-commercial
+interpretation; the published policy does not explicitly clear this prize-bearing
+hackathon or its Sandbox checkout. Obtain a Vercel eligibility answer describing
+the competition, possible prize, team arrangement and exact Sandbox flow before
+publishing. No support request was sent and no exception is assumed. See also
+[Vercel's terms](https://vercel.com/legal/terms).
 
-Render Free sleeps after 15 minutes of inactivity and can take about a minute
-to wake; it is unsuitable for dependable judging or background execution.
-See [free-service limitations](https://render.com/docs/free). Health checks that
-query Neon keep its compute active: continuous 0.25-CU operation can consume
-about 180 CU-hours in a 30-day month, exceeding its 100-CU-hour free allowance.
-Choose the judging window and database budget explicitly; do not evade sleeping
-policies with synthetic traffic. Set provider billing alerts separately.
+Hobby cannot import a repository owned by a Git organization. The GitHub API
+returned a personal user owner for `DarshP-Dev/TravelRelay`. This satisfies that
+particular constraint; use the matching personal Vercel account and ensure commit
+author identity is linked. It does not establish eligibility for this use case.
+[Vercel account and build limits](https://vercel.com/docs/limits).
 
-Vercel Node Fluid Compute is a viable alternative: current documented default
-duration is 300 seconds, so it should not be dismissed as categorically too short.
-Its actual project settings, `after()` lifetime, shared PostgreSQL connections,
-usage billing and termination behavior still need acceptance. A static export or
-Edge-only deployment cannot run this application. Render is the simpler initial
-choice for the existing `next start` execution model.
-[Vercel limits](https://vercel.com/docs/functions/limitations).
+| Resource                   | Free allowance / relevant limit                                                                                         |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Vercel Fluid Compute       | 4 active CPU hours, 360 GB-hours memory and 1 million invocations included                                              |
+| Vercel Node function       | 2 GB RAM; 300-second Hobby ceiling with Fluid; 4.5 MB request/non-streamed response; 250 MB gzip package ceiling        |
+| Vercel transfer and images | 100 GB fast data transfer, 10 GB origin transfer, 5,000 image transformations included                                  |
+| Vercel build and grouping  | 45 minutes per build, one concurrent build; native Next.js bundles routes, with a Hobby limit of 12 resulting functions |
+| Neon Free                  | 100 CU-hours, 1 GB storage and 5 GB public transfer per project, per-month compute/transfer allowances                  |
+| Neon Free idle/restore     | Suspends after five idle minutes; six-hour restore history within its change limit; one manual snapshot                 |
 
-## Build, readiness and shutdown
+Sources: [Hobby allowances](https://vercel.com/docs/plans/hobby),
+[function limits](https://vercel.com/docs/functions/limitations),
+[native function grouping](https://vercel.com/docs/functions/runtimes),
+[Neon plan limits](https://neon.com/docs/introduction/plans). Check actual remaining
+allowances in both accounts before judging. Next routes are not one-to-one with
+Vercel Functions. The local trace check is evidence about input packages and
+duration classes; verify the final native bundle count and sizes on Vercel.
 
-The proposed service runs Node 24 and:
+Target hosting cost is **USD 0** while eligible and within included limits. Do not
+enable a trial, paid upgrade, automatic overages, extra managed service or paid
+Neon integration to keep the demo running. Free limits can pause the site/database.
+Keep polling to the existing active-job behavior. Avoid synthetic warmers or
+frequent `/api/health` monitoring: they can keep Neon active and spend free compute.
+The first request after idle can be slower. Existing model API accounts have separate
+quotas, credits and possible charges; free hosting does not make GPT-6.1 Sol free.
+Keep shared generation caps small for the judging window and monitor usage. The
+labeled `/example-trip` remains available independently of model generation.
 
-```text
-Build:      npm ci --include=dev && npm run build -- --webpack
-Pre-deploy: npm run deploy:check && npm run db:migrate
-Start:      exec node node_modules/next/dist/bin/next start --hostname 0.0.0.0 --port $PORT
-Health:     GET /api/health
-```
+## Native build and background execution
 
-The `exec` start form gives Next the platform signal directly. No QA preloader
-or live acceptance harness belongs in these commands. No migration occurs during
-the build. Render paid services support a separate pre-deploy command; migrations
-must be compatible with the old instance while it drains. The readiness endpoint
-returns only `ready` or a sanitized `503 unavailable`, is uncached, and checks
-the exact twelve migration hashes/timestamps through `0011`. It exposes no account,
-provider or database details. It never invokes a model or PayPal.
+`vercel.json` selects native Next.js, enables Fluid, installs with
+`npm ci --include=dev`, and disables automatic Git deployments. No Render start
+command, persistent disk, migration hook, static export or separate worker is
+needed. `package.json` pins `24.x`. Use the dashboard's Next.js preset and leave
+the output directory at the framework default. Do not override the checked-in
+build command or disable Fluid in the project settings.
 
-`maxShutdownDelaySeconds: 300` exceeds the 240-second route contract. Render
-normally sends SIGTERM and later SIGKILL; its default 30-second delay is too short.
-The [official deploy guide](https://render.com/docs/deploys) permits up to 300
-seconds without a persistent disk. The installed Next 16.4.5 self-hosting guide
-documents waiting for `after()` work on SIGTERM/SIGINT. The actual Render signal,
-network routing, memory consumption and full-duration drain remain host gates.
-Local Windows verification uses an explicitly labeled IPC bridge into Next's
-installed SIGTERM handler; it is not evidence of Linux signal delivery.
+The build runs the **configuration-only** `npm run deploy:check -- --vercel`,
+`npm run build -- --webpack`, and `npm run deploy:verify`. It does not connect to
+PostgreSQL, apply migrations, contact AI, or make PayPal calls. The last step checks
+Next's generated route durations, traced files, health migration assets and a
+conservative raw trace-size budget. `vercel.json` does not override `functions`
+durations: native App Router `maxDuration` exports are authoritative.
 
-See [generation-hosting.md](generation-hosting.md) for provider deadlines,
-shared leases, termination tests and explicit recovery. Crash recovery is durable
-application state, **not guaranteed completion of the provider request**.
+| Route                                                                      | Duration  |
+| -------------------------------------------------------------------------- | --------- |
+| `/api/trips/[id]/generation`, `/assistant`, `/recovery` (same trip prefix) | 240s each |
+| `/api/trips/[id]/commerce`, `/api/paypal/webhook`                          | 60s each  |
+| `/api/health`, `/api/trips/[id]/wallet`                                    | 30s each  |
 
-## PostgreSQL, migration and disposable validation
+Next `after()` registers work with Vercel's request lifetime support. The 240s
+budget covers the entire invocation including post-response work; it is not an
+extra 240s after sending the response. Keep the existing 150s provider deadline,
+180s shared SQL lease, five-minute stale recovery, explicit retries, owner checks,
+and no automatic fallback. A suspended or killed invocation can lose a provider
+result. The saved job is recoverable; this is not a durable queue or a shutdown
+grace-period guarantee. Polling never contacts a model.
+[Vercel function duration](https://vercel.com/docs/functions/configuring-functions/duration),
+[Next `after()` on Vercel](https://vercel.com/docs/functions/functions-api-reference/vercel-functions-package),
+[worker runbook](generation-hosting.md).
 
-Application `DATABASE_URL` uses Neon's pooled endpoint; migration `DIRECT_URL`
-uses its direct/unpooled endpoint. Both use `sslmode=verify-full` and trusted
-certificate roots; never disable certificate verification. Keep transaction
-pooling restrictions in mind: the migration advisory lock deliberately uses one
-dedicated direct client, not the runtime pooled endpoint.
-[Neon pooling](https://neon.com/docs/connect/connection-pooling).
+## Database and migrations
 
-The application pool is bounded to five connections per process, a 10-second
-connection deadline, 30-second idle expiry and 20-second query deadline. Idle
-disconnect diagnostics are sanitized. Account for both old/new instances during
-deploys and other database clients. The shared quota remains in PostgreSQL.
+Production requires the Neon **pooled** `DATABASE_URL` (`-pooler` host in
+`.neon.tech`) with `sslmode=verify-full`. Match Vercel's function region to Neon;
+for example, Vercel `iad1` with Neon AWS US East (N. Virginia) if both are available
+to the chosen accounts. Use a restricted runtime role and a separate migration
+role. Pool sizing is five connections **per warm instance**, not per project;
+connection and query deadlines remain 10s and 20s. Fluid uses Vercel's pool lifecycle
+hook and a 1s idle timeout so idle client sockets can close before suspension.
+Neon's pooler limits backend connections; verify actual scaling/idle behavior
+on the host. [Vercel pooling guidance](https://vercel.com/kb/guide/connection-pooling-with-functions),
+[Neon connection pooling](https://neon.com/docs/connect/connection-pooling).
 
-All twelve committed migrations `0000`–`0011` are present in order. Their SQL and
-journal are checked before applying; the PostgreSQL migrator holds a session
-advisory lock to serialize deploy migrations. A successful migration is followed
-by exact checkpoint verification. No existing migrations were edited, and no
-`0012` schema migration is required. Apply migrations from the same Linux Git
-checkout used for the release so recorded hashes use identical file bytes.
+All twelve migrations `0000`–`0011` are unchanged. Run migrations **manually**
+after separate target approval, from the same release SHA with identical SQL
+bytes. Use a Linux checkout or otherwise preserve Git's LF SQL bytes so readiness
+checks agree across environments. The existing migrator uses an unpooled
+`DIRECT_URL` with TLS verification and a session advisory lock. Never upload
+`DIRECT_URL`, `POSTGRES_TEST_DIRECT_URL` or migration/admin credentials to Vercel.
+Do not add a migration command to a build or route.
 
-Hosted testing is intentionally not automatic:
+Before migrating the demo database, approve an empty disposable Neon target and
+provide `POSTGRES_TEST_DIRECT_URL` privately to a local process. Then run
+`npm run test:postgres -- --approved-disposable-target`. This existing harness
+blocks provider fetches, refuses populated account tables and validates migrations,
+transactions, concurrent writes, owner checks and immutable history. It was not
+run against Neon during 6B. Repeat migration, restore and pooler checks on an
+approved target. Preserve the actual local `.data`/QA database and all evidence.
 
-1. Approve a specifically identified **empty disposable Neon branch/database**,
-   account, region and cost limit. Never use the historical local QA database,
-   a production branch or a database containing real accounts/payments.
-2. Configure its direct TLS URL in the private process environment variable
-   `POSTGRES_TEST_DIRECT_URL`. Do not paste it into chat or a command transcript.
-3. After target approval, run:
+The runtime role needs connection, schema usage, public table DML, sequences and
+read access to `drizzle.__drizzle_migrations`. Do not grant schema ownership,
+superuser or DDL. Preserve immutable-ledger triggers. Free uses public TLS;
+do not assume private networking, IP allowlists or a fixed Vercel egress IP.
 
-   ```text
-   npm run test:postgres -- --approved-disposable-target
-   ```
+## Protected environment checklist
 
-4. The harness never loads `.env.local` or uses `DATABASE_URL`/`DIRECT_URL` as
-   fallbacks. It refuses an existing populated account table, applies migrations,
-   imports the recorded offline Paris fixture with fresh ownership, checks
-   transactions, optimistic concurrency, owner denial, immutable/unique financial
-   events and repeat migration preservation. All API fetches are blocked. It leaves
-   explicitly test-only records in the disposable target; retire the target only
-   after review. No target was connected or migrated in Milestone 6A.
-5. Verify a fresh database connection/login and restore drill on that target
-   before approving the production database migration. PGlite contract tests are
-   useful compatibility evidence, not a substitute for real node-postgres/TLS,
-   role permissions, pooling or managed-service acceptance.
+Set these in **Project Settings → Environment Variables** for the approved target.
+Use Sensitive values for secrets. Set Production independently; an approved Preview
+needs its own database, credentials and exact origin. Do not pull production secrets
+into the existing development `.env.local`, and do not use `NEXT_PUBLIC_` for any
+secret. Enable automatic Vercel system environment variables so runtime can recognize
+`VERCEL=1` and use the Fluid pool lifecycle and trusted forwarded IP.
 
-Use distinct migration/admin and runtime roles. The runtime role needs table
-DML, schema usage, relevant sequences and SELECT on the migration checkpoint,
-not schema ownership or DDL. Preserve all immutable-history triggers and composite
-owner constraints. Restrict network access using the chosen service's available
-controls; confirm any plan-dependent IP allowlist rather than assuming one exists.
+| Variable(s)                                                                            | Value or purpose                                                                                            |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `APP_URL`                                                                              | Exact assigned canonical HTTPS origin, e.g. `https://<project>.vercel.app`; no path/query                   |
+| `AUTH_SECRET`                                                                          | Stable random server secret, at least 32 characters; do not regenerate on deploy                            |
+| `DATABASE_URL`                                                                         | Restricted Neon pooled PostgreSQL TLS URL                                                                   |
+| `AI_PROVIDER`, `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`, `OPENAI_API_KEY`             | `openai`, `gpt-6.1-sol`, `medium`, existing server key                                                      |
+| `GEMINI_MODEL`, `GEMINI_API_KEY`                                                       | `gemini-3.5-flash-lite`, optional server backup; switch explicitly to `AI_PROVIDER=gemini` only by decision |
+| `GENERATION_GLOBAL_RPM`, `GENERATION_GLOBAL_RPD`, `GENERATION_USER_HOURLY_LIMIT`       | Optional existing limits (defaults 2/minute, 20/Pacific day, 6/user/hour); choose a smaller cap if needed   |
+| `PAYPAL_ENVIRONMENT`, `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID` | `sandbox` and matching verified Business Sandbox application credentials                                    |
+| `ENABLE_DEMO_MERCHANT`, `ENABLE_RECOVERY_SIMULATION`                                   | Enable explicitly after approval for the Sandbox demo; default off                                          |
+| `PAYPAL_WEBHOOK_ID`                                                                    | Same REST app's Webhook ID after separately authorized registration                                         |
+| `NEXT_TELEMETRY_DISABLED`                                                              | `1` recommended                                                                                             |
 
-## Backups and rollback
+Leave `DIRECT_URL`, `POSTGRES_TEST_DIRECT_URL`, `DATABASE_DRIVER`,
+`LOCAL_DATABASE_PATH`, `ALLOW_LOCAL_DATABASE`, custom preloaders and QA flags
+unset on Vercel. Do not attach an integration that imports a broader admin role.
+`.env.example` has no secrets. `.vercelignore`, Git ignore and Next trace rules
+exclude local environments, databases and private test evidence. Builds must
+come from a clean release checkout without user evidence or `.env.local`.
 
-Before schema changes, take an encrypted managed backup/branch and an independent
-logical backup. Record the release SHA, migration checkpoint, backup time and
-restore target privately. Confirm the account's actual point-in-time retention;
-free plans have limited restore windows and are not a backup policy.
+## Authentication and PayPal on the canonical origin
 
-Use PostgreSQL tools with a privately configured service/password file, for example
-`pg_dump --format=custom --file=<private-backup-file> --dbname=service=travelrelay-admin`.
-Keep the service credentials, dump and evidence out of Git and public logs. Restore
-only into an approved isolated target using `pg_restore --exit-on-error`, validate
-constraints/audit counts and fresh authentication, and document measured recovery
-time. Schedule backups outside the app; none were provisioned here.
+Use one canonical host for users, callbacks and webhooks; configure `APP_URL`
+before the first build and sign-in. No broad preview-origin allowlist is used.
+Better Auth uses HTTPS Secure/HttpOnly/SameSite cookies and on Vercel reads its
+platform-forwarded client IP header. Verify header spoofing, cookie handling and
+owner-scoped reads on the actual URL. Keep previews protected or uncreated; do
+not point PayPal to a deployment that requires Vercel login. Existing email
+verification and account-recovery limitations remain.
+[Vercel request headers](https://vercel.com/docs/headers/request-headers).
 
-Disable automatic deploys. Prefer rolling back application code to the last
-schema-compatible SHA without rolling back financial data. Never drop migrations
-or rewrite ledger history to undo a release. If database restore is necessary,
-stop writes, preserve the failing database, restore to a new target, and reconcile
-all provider events since the backup before switching traffic. A backup predating
-a capture/refund cannot safely become authoritative without that reconciliation.
-Do not blindly resend unresolved financial writes or interrupted model requests.
+PayPal JS SDK v6 uses its Sandbox script and public client ID in the browser.
+The same-origin Node commerce route holds credentials and handles capture/refund.
+The public signed POST remains `https://<approved-host>/api/paypal/webhook`.
+Keep the transmission headers/body intact; do not put the route behind auth,
+redirects, a CAPTCHA or a generic HTML challenge. A 64 KiB body and shared SQL
+admission limit remain in force. Do not rely on in-process state for idempotency.
+Register the subscriptions in [paypal-sandbox.md](paypal-sandbox.md) only after
+approval. Postback verification needs app-owned signed events; PayPal's mock
+simulator is not proof of this method. Hosted SDK approval, capture/refunds and
+signed delivery remain unverified. No PayPal request was made for 6B.
+[PayPal SDK v6](https://developer.paypal.com/sdk/js/set-up/),
+[PayPal webhook signing](https://developer.paypal.com/api/rest/webhooks/rest/).
 
-## Environment checklist
+## Manual launch sequence — approval required before each external step
 
-Store real values only in Render's protected server environment. The checked-in
-example has placeholders and non-secret defaults. Build artifacts must come from
-a clean Git checkout: no `.env.local`, `.env.production.local`, `.data`, `.test-data`,
-private dumps, screenshots/evidence, `NODE_OPTIONS` QA imports or test flags.
-`deploy:check` rejects these local data/configuration directories and public QA
-configuration. Private credentials using `NEXT_PUBLIC_` are forbidden.
+1. Confirm Vercel Hobby eligibility for the actual entry. Agree to stay on Hobby
+   and Neon Free; if eligibility or quotas fail, stop. Approve the branch push
+   separately if GitHub will be used for the release. Do not import a repo in a
+   flow that automatically deploys while still preparing credentials.
+2. After approval, create/select an empty Neon Free demo target and an isolated
+   disposable test target. Run the approved test migration/contract and restore
+   drill. Back up the intended demo target and apply `npm run db:migrate` manually
+   in a clean migration checkout that preserves release SQL bytes (a `git archive`
+   export works). Supply the approved `DIRECT_URL` and matching `DATABASE_URL`
+   in the local process environment, never in arguments or committed files.
+   Grant the separate runtime role's permissions and verify all 12 hashes and
+   timestamps before release.
+3. After project-setup approval, link a clean checkout of the reviewed commit to
+   a personal Hobby project. If using the CLI, `npx vercel login` and `npx vercel
+link` are explicit setup steps; linking can create a project, so do not run it
+   before approval. This avoids the one-click import-and-deploy flow. Check the
+   assigned `.vercel.app` production domain in project settings before setting
+   `APP_URL`. Set Next.js, Node 24.x, Fluid, nearby function region and the
+   protected Production variables above. Keep automatic Git deploys off.
+4. After explicit deployment approval, run `npx vercel deploy --prod` from that
+   clean checkout (or manually deploy the exact SHA through the approved project).
+   Do not send local QA evidence; the command uploads source and creates a public
+   deployment. Validate logs for Node 24, successful preflight, 240s route limits,
+   final function count/package size and absence of private files. Verify
+   `/api/health`, public example, HTTPS login, ownership, cookies, pool cold start,
+   and non-transactional application smoke. Use an isolated hosted test with mock
+   provider transports to validate `after()` through the function window; never
+   enable QA preloaders in the public project. No live request is authorized here.
+5. Separately approve any signed Sandbox webhook registration, SDK/browser
+   network acceptance and one-use model/payment tests. Publish the canonical
+   judge URL only after required acceptance. Judges use normal TravelRelay login
+   and a Sandbox buyer login for checkout, without needing any API credentials.
 
-| Variables                                                                        | Requirement                                                                                |
-| -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `NODE_ENV`, `NODE_VERSION`                                                       | `production`, Node 24                                                                      |
-| `APP_URL`                                                                        | Exact approved HTTPS origin; no path, query or embedded credentials                        |
-| `AUTH_SECRET`                                                                    | Stable random server secret, at least 32 characters; back up securely                      |
-| `DATABASE_URL`, `DIRECT_URL`                                                     | Pooled runtime / direct migration URLs, PostgreSQL + `sslmode=verify-full`                 |
-| `DATABASE_DRIVER`, `LOCAL_DATABASE_PATH`, `ALLOW_LOCAL_DATABASE`                 | Unset in hosted production; PGlite overrides only work for explicit loopback QA            |
-| `AI_PROVIDER`, `OPENAI_MODEL`, `OPENAI_REASONING_EFFORT`                         | `openai`, `gpt-6.1-sol`, `medium`                                                          |
-| `OPENAI_API_KEY`                                                                 | Server-only primary key; no model call in build or health                                  |
-| `GEMINI_API_KEY`, `GEMINI_MODEL`                                                 | Optional manual backup, `gemini-3.5-flash-lite`; no automatic fallback                     |
-| `GENERATION_GLOBAL_RPM`, `GENERATION_GLOBAL_RPD`, `GENERATION_USER_HOURLY_LIMIT` | Shared defaults 2/minute, 20/Pacific day, 6/user/hour; set appropriate approved limits     |
-| `PAYPAL_ENVIRONMENT`                                                             | `sandbox`; Live is rejected                                                                |
-| `PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MERCHANT_ID`                 | Matching verified Business Sandbox REST app/account; only public client ID reaches browser |
-| `ENABLE_DEMO_MERCHANT`                                                           | Explicit `true` only after Sandbox setup approval                                          |
-| `ENABLE_RECOVERY_SIMULATION`                                                     | Explicit `true` only for the approved Sandbox demo; remains labeled simulated              |
-| `PAYPAL_WEBHOOK_ID`                                                              | Same app's registered webhook ID, after separate registration approval                     |
-| `NEXT_TELEMETRY_DISABLED`                                                        | `1` recommended                                                                            |
+## Backup and rollback
 
-`AUTH_GOOGLE_*` are not connected. `MODEL_NAME` is a legacy Gemini alias; prefer
-the explicit current model variables. Sandbox buyer passwords never belong in
-the app environment. Judges use the deployed site's configured APIs and normal
-TravelRelay login, with separate Sandbox buyer login inside PayPal for purchases.
+Keep an encrypted managed snapshot and independent logical backup where appropriate
+within the free plan. Use `pg_dump`/`pg_restore` with a private service/password
+file; do not include connection strings in command history. Restore only into an
+approved separate target and check ownership and ledger counts before switching.
+Record the release SHA, schema checkpoint and recovery time. Vercel Hobby permits
+rollback to the previous production deployment; use a schema-compatible release
+without undoing financial history. If restoring database state, stop writes,
+preserve the original database and reconcile provider events since backup before
+switching. Never resend uncertain writes or interrupted model requests blindly.
 
-## Public endpoint and security acceptance
-
-Set the exact public origin before authentication. Better Auth uses its existing
-HttpOnly/SameSite=Lax sessions with Secure cookies for HTTPS. Mutations require
-that origin; no permissive CORS allowlist is introduced. Verify redirects,
-cross-origin rejection, cookie flags and authenticated owner isolation on the
-real HTTPS hostname before sharing it. A stale session must not expose private data.
-
-The application adds nosniff, same-origin framing, restricted device permissions
-and strict-origin referrer headers. Keep Render TLS termination/HSTS and edge
-protection enabled. No restrictive CSP that could silently break PayPal SDK v6
-is invented here; a CSP rollout needs testing against the actual SDK resources.
-The auth library's database rate limits and user/project model/payment quotas
-remain enabled. Render documents `x-forwarded-for` for client addresses; confirm
-that spoofed forwarding headers cannot bypass auth throttles on the actual host.
-Do not rely on local proxy tests as proof of the host's header sanitization.
-
-The public webhook has a shared SQL bucket of at most 120 verification admissions
-per minute, independent of caller-supplied IPs. Existing bounded 64 KiB body,
-signature checks, provider resource reads and unique event references remain.
-429 responses leave delivery retryable. Apply edge/body/slow-client rate limits
-as well: an application bucket cannot prevent bandwidth exhaustion or deliberate
-starvation. Health is uncached and provider-free; protect it at the edge too.
-Errors do not return raw driver or provider bodies. Never log full prompts,
-session cookies, authorization headers, connection strings or private evidence.
-
-Email verification, password reset, OAuth and MFA are still absent; public
-production security is not claimed as complete just because local checks pass.
-Agree judge access, account recovery/support and abuse limits before launch.
-
-## Webhook readiness and separate live acceptance
-
-Endpoint: `POST https://<approved-origin>/api/paypal/webhook`, HTTPS port 443.
-The exact subscriptions are in [paypal-sandbox.md](paypal-sandbox.md).
-The existing adapter uses PayPal's **postback verification API**, supplying the
-unchanged parsed event, configured Webhook ID and five transmission headers to
-the fixed Sandbox verification endpoint. It does not implement local CRC32/RSA
-verification. Raw bytes would be mandatory for that alternative; no claim is
-made that parsing then reserializing reproduces a CRC32 signature.
-
-Preserve original body semantics and all `paypal-transmission-*`, `paypal-cert-url`
-and `paypal-auth-algo` headers at the proxy. The adapter validates header shapes,
-algorithm and a fixed Sandbox certificate URL before contacting PayPal. Only a
-`SUCCESS` verification proceeds. Reconciliation fetches authoritative order,
-capture and refund data; payload amounts/statuses cannot establish payments.
-Repeated events deduplicate and out-of-order events cannot downgrade completed
-financial history. Unresolved/external financial changes remain operator-review
-states, not invented traveler approvals.
-
-After separately approving one registration, subscribe the same merchant's
-Sandbox REST app, copy its returned Webhook ID into protected settings and test
-real signed delivery. PayPal's mock webhook simulator does **not** support this
-postback method; simulator success cannot substitute for an app-owned signed
-event. Live transactions and registration each need their own authorization.
-[PayPal webhook verification](https://developer.paypal.com/api/rest/webhooks/rest/).
-
-## Approval sequence to reach public deployment
-
-1. Review this local commit; approve pushing this feature branch.
-2. Approve the Render account, region, paid plan/cost cap, Neon account and an
-   isolated disposable test target; configure its credentials privately.
-3. Approve running the disposable hosted migration/contract/restore checks.
-4. Approve the intended production database/roles, HTTPS hostname, secure
-   environment and demo flags; approve migration and first deployment explicitly.
-5. On the host, use only simulated transports in an isolated acceptance environment
-   to verify >response background work, full-duration drain/restart, stale recovery,
-   quotas, HTTPS/auth, health, SDK/browser behavior and database restoration.
-6. Separately approve webhook registration and any limited signed-Sandbox or model
-   acceptance requests. Reconcile actual results before opening judge access.
-
-No approval for these future actions is inferred from preparation of this file.
+See [Milestone 6B validation](milestone-6b-validation.md) for what was verified
+locally and what remains host-dependent.

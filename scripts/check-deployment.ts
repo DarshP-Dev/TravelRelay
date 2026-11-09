@@ -9,15 +9,21 @@ import { sandboxConfig } from "../src/server/paypal-client";
 import { providerConfigFromEnv } from "../src/server/model";
 import { generationLimitsFromEnv } from "../src/server/generation-quota";
 
-nextEnv.loadEnvConfig(process.cwd());
+const vercel = process.argv.includes("--vercel") || process.env.VERCEL === "1";
 try {
+  if (!vercel) nextEnv.loadEnvConfig(process.cwd());
+  if (vercel && process.versions.node.split(".")[0] !== "24")
+    throw new Error("Vercel builds require Node.js 24.x.");
   const config = runtimeConfiguration({
     ...process.env,
     NODE_ENV: "production",
+    VERCEL: vercel ? "1" : undefined,
   });
-  validateHostedDatabaseUrl(process.env.DIRECT_URL, "DIRECT_URL");
-  if (new URL(process.env.DIRECT_URL!).hostname.includes("-pooler"))
-    throw new Error("Migration DIRECT_URL must use the unpooled endpoint.");
+  if (!config.vercel) {
+    validateHostedDatabaseUrl(process.env.DIRECT_URL, "DIRECT_URL");
+    if (new URL(process.env.DIRECT_URL!).hostname.includes("-pooler"))
+      throw new Error("Migration DIRECT_URL must use the unpooled endpoint.");
+  }
   if (config.localPreview)
     throw new Error("Deployment checks require a hosted origin, not local QA.");
   if (

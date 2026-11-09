@@ -1,0 +1,16 @@
+# CLI safety in addition to the ignored files absent from a Git checkout.
+.env
+.env.*
+.data/
+.test-data/
+.vercel/
+.next/
+*.dump
+*.db
+credentials*.json
+service-account*.json
+*.sqlite*
+*.key
+*.pem
+*.p12
+*.pfx

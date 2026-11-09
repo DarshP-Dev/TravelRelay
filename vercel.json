@@ -1,0 +1,8 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "fluid": true,
+  "git": { "deploymentEnabled": false },
+  "installCommand": "npm ci --include=dev",
+  "buildCommand": "npm run deploy:check -- --vercel && npm run build -- --webpack && npm run deploy:verify"
+}

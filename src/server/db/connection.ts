@@ -4,6 +4,7 @@ import { drizzle as postgresDrizzle } from "drizzle-orm/node-postgres";
 import { migrate as embeddedMigrate } from "drizzle-orm/pglite/migrator";
 import { migrate as postgresMigrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
+import { attachDatabasePool } from "@vercel/functions/db-connections";
 import path from "node:path";
 import { mkdir } from "node:fs/promises";
 import * as schema from "./schema";
@@ -11,15 +12,17 @@ import * as schema from "./schema";
 export async function openDatabase(config: {
   url?: string;
   directory?: string;
+  fluidCompute?: boolean;
 }) {
   if (config.url) {
     const pool = new Pool({
       connectionString: config.url,
       max: 5,
       connectionTimeoutMillis: 10_000,
-      idleTimeoutMillis: 30_000,
+      idleTimeoutMillis: config.fluidCompute ? 1_000 : 30_000,
       query_timeout: 20_000,
     });
+    if (config.fluidCompute) attachDatabasePool(pool);
     // Idle server disconnects must not crash the process or leak connection data.
     pool.on("error", () =>
       console.error("An idle database connection was closed."),
