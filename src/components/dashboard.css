@@ -1,0 +1,817 @@
+.travel-dashboard {
+  --dashboard-ink: #20332c;
+  --dashboard-muted: #506057;
+  --dashboard-line: #deded2;
+  --dashboard-accent: #a34b33;
+  --dashboard-coral: #f5d5c3;
+  --dashboard-sage: #e4ebdf;
+  --dashboard-paper: #fcfaf5;
+  background: #eee9df;
+  color: var(--dashboard-ink);
+  padding: clamp(16px, 3.4vw, 52px) clamp(14px, 4vw, 60px);
+}
+
+.travel-dashboard-canvas {
+  width: min(100%, 1630px);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(18px, 2.6vw, 42px);
+  padding: clamp(16px, 2.6vw, 40px);
+  border: 1px solid rgb(69 77 58 / 11%);
+  border-radius: 30px;
+  background: var(--dashboard-paper);
+  box-shadow: 0 18px 56px rgb(55 49 29 / 8%);
+}
+
+.travel-dashboard-main {
+  min-width: 0;
+}
+
+.travel-dashboard-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  align-items: center;
+  padding: 4px 13px 4px 0;
+  border-inline-end: 1px solid var(--dashboard-line);
+}
+
+.travel-dashboard-nav a {
+  position: relative;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 54px;
+  min-height: 55px;
+  border-radius: 16px;
+  color: var(--dashboard-muted);
+  transition:
+    background 180ms ease,
+    color 180ms ease;
+}
+
+.travel-dashboard-nav a:hover {
+  background: #efeee4;
+  color: var(--dashboard-ink);
+}
+
+.travel-dashboard-nav a[aria-current] {
+  background: var(--dashboard-coral);
+  color: #7b3829;
+}
+
+.travel-dashboard-nav a[aria-current]::before {
+  position: absolute;
+  inset-block: 16px;
+  inset-inline-start: -6px;
+  width: 3px;
+  border-radius: 4px;
+  background: var(--dashboard-accent);
+  content: "";
+}
+
+.travel-dashboard-nav a span {
+  display: none;
+}
+
+.dashboard-heading {
+  margin: 0 0 clamp(17px, 2.5vw, 30px);
+}
+
+.dashboard-heading h1 {
+  font-size: clamp(1.8rem, 3.3vw, 3.35rem);
+  font-weight: 700;
+  letter-spacing: -0.062em;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-destination {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: clamp(425px, 39vw, 615px);
+  padding: clamp(22px, 3.25vw, 54px);
+  overflow: hidden;
+  border-radius: 24px;
+  background: #234139;
+  color: #fffdf7;
+}
+
+.dashboard-destination::after,
+.dashboard-destination-media,
+.dashboard-destination-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.dashboard-destination::after {
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgb(12 28 24 / 54%), transparent 75%),
+    linear-gradient(
+      180deg,
+      rgb(12 28 24 / 31%),
+      transparent 24%,
+      rgb(9 24 21 / 83%)
+    );
+  content: "";
+}
+
+.dashboard-destination-media {
+  z-index: -2;
+}
+
+.dashboard-destination-layer {
+  background: #234139;
+}
+
+.dashboard-destination-layer[data-waiting="true"] {
+  opacity: 0;
+}
+
+.dashboard-destination-layer img {
+  object-fit: cover;
+  object-position: center 40%;
+}
+
+.dashboard-trip-switcher {
+  display: flex;
+  width: max-content;
+  max-width: 100%;
+  gap: 9px;
+  margin-inline: -4px;
+  padding: 4px 4px 8px;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #f6dfce transparent;
+}
+
+.dashboard-trip-switcher a {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: end;
+  flex: 0 0 clamp(92px, 8vw, 118px);
+  min-height: 67px;
+  padding: 6px 8px;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 10px;
+  background: #234139;
+  color: #fffdf7;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.15;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.dashboard-trip-switcher a::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(transparent 18%, rgb(12 27 23 / 89%));
+  content: "";
+}
+
+.dashboard-trip-switcher img {
+  z-index: -2;
+  object-fit: cover;
+  transition: transform 260ms ease;
+}
+
+.dashboard-trip-switcher a[aria-current],
+.dashboard-trip-switcher a:hover {
+  border-color: #f8c4a6;
+  box-shadow: 0 0 0 1px #f8c4a6;
+}
+
+.dashboard-trip-switcher a:hover img {
+  transform: scale(1.06);
+}
+
+.dashboard-trip-switcher a > span:first-of-type {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-thumb-progress {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  background: rgb(19 40 33 / 88%);
+}
+
+.dashboard-destination-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 20px 40px;
+  margin-top: auto;
+  padding-top: 48px;
+}
+
+.dashboard-destination-copy {
+  min-width: 0;
+}
+
+.dashboard-trip-status {
+  width: fit-content;
+  margin-bottom: 10px;
+  padding: 5px 10px;
+  border: 1px solid rgb(255 240 221 / 62%);
+  border-radius: 20px;
+  background: rgb(23 43 37 / 48%);
+  color: #ffe5d5;
+  font-size: 0.81rem;
+  font-weight: 700;
+}
+
+.dashboard-destination-copy h2 {
+  font-size: clamp(2.85rem, 7.4vw, 7.4rem);
+  font-weight: 770;
+  line-height: 0.91;
+  letter-spacing: -0.079em;
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  text-shadow: 0 4px 32px rgb(0 0 0 / 29%);
+}
+
+.dashboard-destination-copy h2 > span {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.25em;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.dashboard-destination-date,
+.dashboard-destination-description {
+  margin-top: 16px;
+}
+
+.dashboard-destination-copy > p:not(.dashboard-trip-status) {
+  max-width: 43ch;
+  color: #fffdf7;
+  font-size: clamp(1rem, 1.45vw, 1.25rem);
+  line-height: 1.4;
+  text-shadow: 0 1px 10px #17291d;
+}
+
+.dashboard-destination-action {
+  flex-shrink: 0;
+}
+
+.dashboard-destination-action a {
+  display: inline-flex;
+  min-height: 55px;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 19px;
+  border-radius: 10px;
+  background: #f7d1ba;
+  color: #452b23;
+  font-size: 0.98rem;
+  font-weight: 750;
+  transition: background 180ms ease;
+}
+
+.dashboard-destination-action a:hover {
+  background: #ffe1cb;
+}
+
+.dashboard-destination-action small {
+  display: block;
+  margin-top: 6px;
+  color: #fffdf7;
+}
+
+.dashboard-destination a:focus-visible {
+  outline-color: #ffe2ca;
+  outline-offset: 2px;
+}
+
+.dashboard-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: clamp(16px, 2vw, 28px);
+  margin-top: clamp(18px, 2.5vw, 35px);
+}
+
+.dashboard-widget {
+  min-width: 0;
+  padding: clamp(19px, 2.4vw, 34px);
+  border: 1px solid var(--dashboard-line);
+  border-radius: 20px;
+  background: #fffdf8;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.dashboard-widget:hover {
+  border-color: #c6c9b8;
+  box-shadow: 0 7px 23px rgb(63 57 34 / 5%);
+}
+
+.dashboard-widget > h2 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 17px;
+  font-size: clamp(1.17rem, 1.65vw, 1.55rem);
+  font-weight: 700;
+}
+
+.dashboard-widget > h2 svg {
+  color: var(--dashboard-accent);
+}
+
+.dashboard-widget h3 {
+  font-size: clamp(1.22rem, 1.8vw, 1.75rem);
+  line-height: 1.16;
+  text-wrap: pretty;
+}
+
+.dashboard-widget p {
+  color: var(--dashboard-muted);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-widget h3 + p {
+  margin-top: 9px;
+}
+
+.dashboard-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 44px;
+  align-items: center;
+  gap: 7px;
+  margin-top: 9px;
+  color: #31574a;
+  font-weight: 750;
+}
+
+.dashboard-link:hover {
+  color: var(--dashboard-accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.dashboard-next {
+  grid-column: span 4;
+  background: #f8e9dc;
+  border-color: #ead7c7;
+}
+
+.dashboard-itinerary {
+  grid-column: span 8;
+}
+
+.dashboard-wallet,
+.dashboard-bookings {
+  grid-column: span 7;
+}
+
+.dashboard-assistant,
+.dashboard-inspiration {
+  grid-column: span 5;
+}
+
+.dashboard-widget-grid[data-has-trip="false"] .dashboard-next {
+  grid-column: span 5;
+}
+
+.dashboard-widget-grid[data-has-trip="false"] .dashboard-inspiration {
+  grid-column: span 7;
+}
+
+.dashboard-drafts {
+  margin-top: 12px;
+  border-top: 1px solid #e5d4c4;
+}
+
+.dashboard-drafts summary {
+  padding-top: 12px;
+  color: var(--dashboard-muted);
+  font-weight: 600;
+}
+
+.dashboard-drafts a {
+  display: flex;
+}
+
+.dashboard-itinerary-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.87fr) minmax(0, 1.13fr);
+  align-items: stretch;
+  gap: clamp(17px, 2vw, 30px);
+}
+
+.dashboard-itinerary-photo {
+  position: relative;
+  isolation: isolate;
+  min-height: 210px;
+  overflow: hidden;
+  border-radius: 13px;
+  background: var(--dashboard-sage);
+}
+
+.dashboard-itinerary-photo img,
+.dashboard-inspiration-photo img {
+  transition: transform 400ms ease;
+}
+
+.dashboard-itinerary:hover img,
+.dashboard-inspiration:hover img {
+  transform: scale(1.035);
+}
+
+.dashboard-itinerary-photo small {
+  position: absolute;
+  inset-inline-start: 8px;
+  inset-block-end: 8px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: #243d33;
+  color: #fffdf7;
+}
+
+.dashboard-date-caption {
+  margin-bottom: 5px;
+  font-weight: 650;
+}
+
+.dashboard-activity-list,
+.dashboard-booking-list,
+.dashboard-actual ul {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-activity-list li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  padding-block: 8px;
+  border-top: 1px solid var(--dashboard-line);
+  line-height: 1.35;
+}
+
+.dashboard-activity-list time {
+  color: var(--dashboard-muted);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-wallet .dashboard-wallet-total {
+  color: var(--dashboard-ink);
+  font-size: clamp(1.65rem, 3.3vw, 2.75rem);
+  font-weight: 750;
+  letter-spacing: -0.055em;
+  line-height: 1.2;
+}
+
+.dashboard-wallet-total small {
+  color: var(--dashboard-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.dashboard-budget-bar {
+  display: flex;
+  height: 13px;
+  margin-block: 14px;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #e5e6dc;
+}
+
+.dashboard-budget-bar [data-budget="planned"] {
+  background: #557762;
+}
+
+.dashboard-budget-bar [data-budget="reserve"] {
+  background: #cf9476;
+}
+
+.dashboard-budget-bar [data-budget="remaining"] {
+  background: #d8e3d5;
+}
+
+.dashboard-budget-legend {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px 16px;
+  margin: 0;
+}
+
+.dashboard-budget-legend dt {
+  color: var(--dashboard-muted);
+  font-size: 0.85rem;
+}
+
+.dashboard-budget-legend dd {
+  margin: 0;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.dashboard-actual {
+  margin-top: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--dashboard-line);
+}
+
+.dashboard-actual ul {
+  margin-top: 4px;
+}
+
+.dashboard-assistant {
+  background: var(--dashboard-sage);
+  border-color: #d5dfd1;
+}
+
+.dashboard-assistant-links {
+  margin-top: 13px;
+}
+
+.dashboard-assistant-links a {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  margin-top: 0;
+  border-top: 1px solid #c8d5c8;
+}
+
+.dashboard-booking-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 4px 12px;
+  padding-block: 8px;
+  border-top: 1px solid var(--dashboard-line);
+  overflow-wrap: anywhere;
+}
+
+.dashboard-booking-list li > span,
+.dashboard-booking-list li > small,
+.dashboard-booking-note {
+  color: var(--dashboard-muted);
+}
+
+.dashboard-booking-list li > small {
+  grid-column: 1 / -1;
+}
+
+.dashboard-booking-note {
+  display: flex;
+  align-items: start;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: 0.84rem;
+}
+
+.dashboard-booking-note svg {
+  margin-top: 3px;
+}
+
+.dashboard-inspiration {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #f7eddd;
+}
+
+.dashboard-inspiration-photo {
+  position: relative;
+  min-height: 210px;
+  overflow: hidden;
+  background: var(--dashboard-sage);
+}
+
+.dashboard-inspiration-photo img {
+  object-position: 50% 58%;
+}
+
+.dashboard-inspiration-copy {
+  align-self: center;
+  padding: clamp(18px, 2vw, 29px);
+}
+
+.dashboard-inspiration-copy h2 {
+  margin-block: 6px;
+  font-size: clamp(1.4rem, 2.2vw, 2.1rem);
+  line-height: 1.1;
+}
+
+.dashboard-inspiration-copy .dashboard-inspiration-label {
+  color: #8d4c35;
+  font-size: 0.81rem;
+  font-weight: 750;
+}
+
+.dashboard-saved-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.dashboard-loading p,
+.dashboard-error h1 {
+  margin-bottom: 18px;
+}
+
+.dashboard-skeleton-hero,
+.dashboard-skeleton-widgets span {
+  min-height: 220px;
+  border-radius: 20px;
+  background: #e7e8dc;
+}
+
+.dashboard-skeleton-hero {
+  min-height: clamp(390px, 37vw, 560px);
+}
+
+.dashboard-skeleton-widgets {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-destination-layer[data-entering="true"] {
+    animation: dashboard-photo-arrive 510ms cubic-bezier(0.2, 0.7, 0.28, 1) both;
+  }
+
+  .dashboard-destination-copy {
+    animation: dashboard-copy-arrive 270ms ease-out both;
+  }
+
+  .travel-dashboard-nav a[aria-current]::before {
+    animation: dashboard-indicator-arrive 220ms ease-out both;
+  }
+}
+
+@keyframes dashboard-photo-arrive {
+  from {
+    opacity: 0;
+    transform: scale(1.027);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes dashboard-copy-arrive {
+  from {
+    opacity: 0.65;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes dashboard-indicator-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 1024px) {
+  .dashboard-next,
+  .dashboard-itinerary,
+  .dashboard-wallet,
+  .dashboard-assistant,
+  .dashboard-bookings,
+  .dashboard-inspiration {
+    grid-column: span 6;
+  }
+
+  .dashboard-itinerary-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-itinerary-photo {
+    min-height: 155px;
+  }
+
+  .dashboard-saved-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .travel-dashboard-canvas {
+    grid-template-columns: minmax(0, 1fr);
+    border-radius: 21px;
+  }
+
+  .travel-dashboard-nav {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 3px;
+    padding: 0 0 9px;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--dashboard-line);
+  }
+
+  .travel-dashboard-nav a {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    gap: 4px;
+    padding: 5px 2px;
+    border-radius: 9px;
+    text-align: center;
+  }
+
+  .travel-dashboard-nav a[aria-current]::before {
+    inset: auto 22% -5px;
+    width: auto;
+    height: 2px;
+  }
+
+  .travel-dashboard-nav a span {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 650;
+    line-height: 1.1;
+  }
+
+  .dashboard-destination {
+    min-height: 425px;
+    border-radius: 17px;
+  }
+
+  .dashboard-destination-content {
+    flex-direction: column;
+    align-items: start;
+    gap: 13px;
+    padding-top: 35px;
+  }
+
+  .dashboard-destination-copy h2 {
+    font-size: clamp(2.65rem, 10vw, 4.3rem);
+  }
+
+  .dashboard-widget-grid,
+  .dashboard-saved-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-widget-grid .dashboard-widget,
+  .dashboard-widget-grid[data-has-trip="false"] .dashboard-widget {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 400px) {
+  .dashboard-booking-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .travel-dashboard-nav a,
+  .dashboard-widget,
+  .dashboard-destination-action a,
+  .dashboard-trip-switcher a,
+  .dashboard-trip-switcher img,
+  .dashboard-itinerary-photo img,
+  .dashboard-inspiration-photo img {
+    transition: none;
+  }
+
+  .dashboard-trip-switcher a:hover img,
+  .dashboard-itinerary:hover img,
+  .dashboard-inspiration:hover img {
+    transform: none;
+  }
+}

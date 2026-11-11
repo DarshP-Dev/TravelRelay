@@ -13,6 +13,7 @@ import { ItineraryWorkspace } from "@/components/itinerary-workspace";
 import { TripWorkspaceShell } from "@/components/trip-workspace-shell";
 import { TripWallet, WalletPreview } from "@/components/trip-wallet";
 import { TripRecovery } from "@/components/trip-recovery";
+import { assistantSuggestions } from "@/lib/assistant-suggestions";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
@@ -68,12 +69,24 @@ export default async function TripWorkspacePage({
   searchParams,
 }: {
   params: Promise<{ id: string; section?: string[] }>;
-  searchParams: Promise<{ recovery?: string | string[] }>;
+  searchParams: Promise<{
+    recovery?: string | string[];
+    assistant?: string | string[];
+  }>;
 }) {
   const { id, section } = await params;
   const active = section?.[0] ?? "";
   if ((section?.length ?? 0) > 1 || !Object.hasOwn(content, active)) notFound();
-  const user = await requireUser(`/trips/${id}${active ? `/${active}` : ""}`);
+  const query = await searchParams;
+  const assistantKey =
+    active === "itinerary" &&
+    typeof query.assistant === "string" &&
+    Object.hasOwn(assistantSuggestions, query.assistant)
+      ? (query.assistant as keyof typeof assistantSuggestions)
+      : undefined;
+  const user = await requireUser(
+    `/trips/${id}${active ? `/${active}` : ""}${assistantKey ? `?assistant=${assistantKey}` : ""}`,
+  );
   const saved = await (async () => {
     if (id === "preview") return null;
     try {
@@ -110,8 +123,7 @@ export default async function TripWorkspacePage({
     saved?.itinerary && ["itinerary", "wallet", "bookings"].includes(active)
       ? await (await getApp()).recovery.links(user.id, id)
       : null;
-  const recoveryId =
-    active === "bookings" ? (await searchParams).recovery : undefined;
+  const recoveryId = active === "bookings" ? query.recovery : undefined;
   const requestedReplacement = recoveryLinks?.find(
     (entry) => entry.id === recoveryId,
   )?.replacementActivityId;
@@ -189,10 +201,13 @@ export default async function TripWorkspacePage({
         ))}
       </nav>
       <TripWorkspaceShell
-        key={id}
+        key={assistantKey ? `${id}:${assistantKey}` : id}
         tripId={id}
         userId={user.id}
         initial={assistantSnapshot}
+        suggestion={
+          assistantKey ? assistantSuggestions[assistantKey] : undefined
+        }
       >
         <section className="panel workspace-main">
           {saved?.itinerary &&

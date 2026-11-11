@@ -2,6 +2,7 @@
 import { useRef, useState, type ReactNode } from "react";
 import { Sparkles } from "lucide-react";
 import type { AssistantState } from "@/server/agent";
+import type { AssistantSuggestion } from "@/lib/assistant-suggestions";
 import { useTravelAgent } from "./use-travel-agent";
 import { TripAssistant } from "./trip-assistant";
 import { AgentProposalReview } from "./agent-proposal-review";
@@ -9,16 +10,20 @@ export function TripWorkspaceShell({
   tripId,
   userId,
   initial,
+  suggestion,
   children,
 }: {
   tripId: string;
   userId: string;
   initial: AssistantState | null;
+  suggestion?: AssistantSuggestion;
   children: ReactNode;
 }) {
   const agent = useTravelAgent(initial, userId, tripId),
     [open, setOpen] = useState(true),
-    [mobile, setMobile] = useState("itinerary"),
+    [mobile, setMobile] = useState(
+      suggestion && initial ? "assistant" : "itinerary",
+    ),
     [reviewId, setReviewId] = useState<string | null>(null);
   const assistant = useRef<HTMLElement>(null),
     review = useRef<HTMLDivElement>(null);
@@ -106,6 +111,7 @@ export function TripWorkspaceShell({
           <TripAssistant
             agent={agent}
             tripId={tripId}
+            suggestion={suggestion}
             onReview={reviewProposal}
             onClose={() => {
               setOpen(false);

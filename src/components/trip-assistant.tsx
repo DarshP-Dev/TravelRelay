@@ -4,15 +4,18 @@ import Link from "next/link";
 import { Sparkles, Send, LoaderCircle, ArrowLeft } from "lucide-react";
 import { agentIsActive, agentStageLabel } from "@/lib/agent-contracts";
 import { money } from "@/lib/itinerary";
+import type { AssistantSuggestion } from "@/lib/assistant-suggestions";
 import type { TravelAgentController } from "./use-travel-agent";
 export function TripAssistant({
   agent,
   tripId,
+  suggestion,
   onClose,
   onReview,
 }: {
   agent: TravelAgentController;
   tripId: string;
+  suggestion?: AssistantSuggestion;
   onClose: () => void;
   onReview: (id: string) => void;
 }) {
@@ -316,6 +319,19 @@ export function TripAssistant({
                   Keep my draft
                 </button>
               </div>
+            )}
+            {suggestion && !agent.text && (
+              <button
+                type="button"
+                className="button button-secondary"
+                disabled={!agent.ready || agent.busy || agent.unknownSend}
+                onClick={() => {
+                  agent.changeText(suggestion.prompt);
+                  composer.current?.focus();
+                }}
+              >
+                {suggestion.label}
+              </button>
             )}
             <label className="field">
               Message TravelRelay
