@@ -49,34 +49,47 @@ export const intentSchema = z
   })
   .strict();
 export type TripIntent = z.infer<typeof intentSchema>;
-export const completeIntentSchema = intentSchema.superRefine((value, ctx) => {
-  const issue = (path: keyof TripIntent, message: string) =>
-    ctx.addIssue({ code: "custom", path: [path], message });
-  if (value.mode === "known" ? !value.destination : !value.vibe)
-    issue("destination", "Enter a destination or describe your escape.");
-  if (!value.departure) issue("departure", "Enter your departure city.");
-  if (value.templateId && !value.travelersConfirmed)
-    issue(
-      "travelersConfirmed",
-      "Confirm the traveler count for your personalized trip.",
-    );
-  if (value.flexible) {
-    if (!value.month || value.duration < 1)
+export function tripDays(
+  intent: Pick<TripIntent, "flexible" | "start" | "end" | "duration">,
+) {
+  return intent.flexible
+    ? intent.duration
+    : (Date.parse(intent.end) - Date.parse(intent.start)) / 86_400_000 + 1;
+}
+export const completeIntentSchema = intentSchema
+  .superRefine((value, ctx) => {
+    const issue = (path: keyof TripIntent, message: string) =>
+      ctx.addIssue({ code: "custom", path: [path], message });
+    if (value.mode === "known" ? !value.destination : !value.vibe)
+      issue("destination", "Enter a destination or describe your escape.");
+    if (!value.departure) issue("departure", "Enter your departure city.");
+    if (value.templateId && !value.travelersConfirmed)
       issue(
-        "month",
-        "Choose an approximate month and a trip length of 1–60 days.",
+        "travelersConfirmed",
+        "Confirm the traveler count for your personalized trip.",
       );
-  } else {
-    if (!value.start || !value.end || value.end < value.start)
-      issue("end", "Choose valid start and end dates in order.");
-    else if ((Date.parse(value.end) - Date.parse(value.start)) / 86400000 >= 60)
-      issue("end", "Keep this trip to 60 days or fewer.");
-  }
-  if (!value.budget || Number(value.budget) <= 0 || Number(value.budget) > 1e9)
-    issue("budget", "Enter a budget greater than zero, up to 1 billion.");
-  if (value.currency === "JPY" && value.budget.includes("."))
-    issue("budget", "Enter a whole-yen budget for JPY.");
-});
+    if (value.flexible) {
+      if (!value.month || value.duration < 1)
+        issue(
+          "month",
+          "Choose an approximate month and a trip length of 1–60 days.",
+        );
+    } else {
+      if (!value.start || !value.end || value.end < value.start)
+        issue("end", "Choose valid start and end dates in order.");
+      else if (tripDays(value) > 60)
+        issue("end", "Keep this trip to 60 days or fewer.");
+    }
+    if (
+      !value.budget ||
+      Number(value.budget) <= 0 ||
+      Number(value.budget) > 1e9
+    )
+      issue("budget", "Enter a budget greater than zero, up to 1 billion.");
+    if (value.currency === "JPY" && value.budget.includes("."))
+      issue("budget", "Enter a whole-yen budget for JPY.");
+  })
+  .transform((value) => ({ ...value, duration: tripDays(value) }));
 
 export function initialIntent(templateId?: string): TripIntent {
   const template = getTemplate(templateId);

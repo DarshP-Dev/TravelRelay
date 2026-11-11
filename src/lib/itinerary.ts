@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { completeIntentSchema, type TripIntent } from "./trip-intent";
+import { completeIntentSchema, tripDays, type TripIntent } from "./trip-intent";
 import type { ItineraryQuality } from "./itinerary-quality";
 import type { ItineraryNormalization } from "./itinerary-normalization";
 import type { ActivityMetadata } from "./activity-metadata";
@@ -7,6 +7,8 @@ import {
   calculatePlanningBudget,
   type PlanningBudget,
 } from "./itinerary-budget";
+
+export { tripDays } from "./trip-intent";
 export class PlanningError extends Error {}
 
 const text = z.string().min(1).max(1200);
@@ -89,13 +91,6 @@ export type Itinerary = Omit<ModelItinerary, "days"> & {
     activities: SavedActivity[];
   })[];
 };
-export function tripDays(intent: TripIntent) {
-  return intent.flexible
-    ? intent.duration
-    : Math.round(
-        (Date.parse(intent.end) - Date.parse(intent.start)) / 86400000,
-      ) + 1;
-}
 export function dateAfter(start: string, days: number) {
   return new Date(Date.parse(start) + days * 86400000)
     .toISOString()

@@ -177,7 +177,7 @@ export async function verifyOfflineSolReview(
   assert.deepEqual(state.calls, { proposal: 0, itinerary: 1 });
   assert.deepEqual(
     (await state.app.trips.readDraft(state.userId, state.trip.draftId)).data,
-    solRecording.intent,
+    { ...solRecording.intent, duration: 4 },
   );
   await state.close();
   const reopened = await openDatabase({ directory: state.directory });

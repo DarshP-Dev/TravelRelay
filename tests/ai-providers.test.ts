@@ -160,7 +160,12 @@ test("Responses API sends strict structured outputs, fixed Sol/medium, server-on
       const input = JSON.parse(body.input);
       assert.equal(body.max_output_tokens, input.confirmedBase ? 32768 : 8192);
       if (input.confirmedBase) {
-        assert.deepEqual(input.intent, intent);
+        assert.deepEqual(input.intent, {
+          ...Object.fromEntries(
+            Object.entries(intent).filter(([key]) => key !== "month"),
+          ),
+          duration: 4,
+        });
         assert.deepEqual(input.confirmedBase, base);
         assert.equal(input.groupBudgetMinor, 250000);
         assert.equal(input.planningBrief.days.length, 4);

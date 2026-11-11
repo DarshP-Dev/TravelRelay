@@ -115,10 +115,10 @@ test(
         (await app.generations.read(seed.userId, seed.tripId))?.status,
         "complete",
       );
-      assert.deepEqual(
-        (await app.trips.read(seed.userId, seed.tripId)).data,
-        solRecording.intent,
-      );
+      assert.deepEqual((await app.trips.read(seed.userId, seed.tripId)).data, {
+        ...solRecording.intent,
+        duration: 4,
+      });
     } finally {
       await connection.close();
     }

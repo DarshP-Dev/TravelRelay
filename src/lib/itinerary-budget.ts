@@ -43,6 +43,10 @@ export type PlanningBudget = {
   classification: "title-location-rules-v1" | "explicit-activity-categories-v1";
 };
 
+export function planningReserveMinor(selectedBudgetMinor: number) {
+  return Math.ceil(selectedBudgetMinor * 0.1);
+}
+
 // Category fields are inclusive allocations, never amounts added to their own
 // itemized expenses. Missing itemization remains an explicit conservative allowance.
 export function calculatePlanningBudget(
@@ -133,7 +137,7 @@ export function calculatePlanningBudget(
       (sum, row) => sum + row.allocatedMinor,
       0,
     ),
-    reserveMinor = Math.ceil(selectedBudgetMinor * 0.1);
+    reserveMinor = planningReserveMinor(selectedBudgetMinor);
   const budget: PlanningBudget = {
     version: 1,
     kind: "planning-only",

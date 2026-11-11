@@ -438,7 +438,12 @@ test("both planners receive curated themes as optional context while preserving 
     intent: TripIntent;
     curatedInspiration: ReturnType<typeof curatedPlanningBrief>;
   };
-  assert.deepEqual(input.intent, intent);
+  assert.deepEqual(input.intent, {
+    ...Object.fromEntries(
+      Object.entries(intent).filter(([key]) => key !== "month"),
+    ),
+    duration: 4,
+  });
   assert.equal(input.curatedInspiration?.id, "paris");
   assert.ok(input.curatedInspiration?.themes.length);
   assert.ok(!("estimate" in input.curatedInspiration!));

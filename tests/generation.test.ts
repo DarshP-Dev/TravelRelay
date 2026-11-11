@@ -28,6 +28,7 @@ const intent = {
   departure: "Toronto",
   start: "2027-04-01",
   end: "2027-04-02",
+  duration: 2,
   budget: "5000",
   currency: "CAD" as const,
   travelers: 2,
@@ -238,7 +239,12 @@ test("Gemini SDK sends structured JSON and credentials only through the server t
         input.confirmedBase ? "MEDIUM" : "LOW",
       );
       if (input.confirmedBase) {
-        assert.deepEqual(input.intent, intent);
+        assert.deepEqual(
+          input.intent,
+          Object.fromEntries(
+            Object.entries(intent).filter(([key]) => key !== "month"),
+          ),
+        );
         assert.deepEqual(input.confirmedBase, base);
         assert.equal(input.groupBudgetMinor, 500000);
         assert.equal(input.planningBrief.days.length, 2);
@@ -821,7 +827,7 @@ test("normalization audit and reconciled expenses persist with activity IDs; raw
   assert.equal((await replay.trips.read(aliceId, rejected.id)).itinerary, null);
   assert.deepEqual(
     (await replay.trips.readDraft(aliceId, rejected.draftId)).data,
-    recorded.intent,
+    { ...recorded.intent, duration: 4 },
   );
 
   // Explicitly authored test candidate, not a repair the application performs.

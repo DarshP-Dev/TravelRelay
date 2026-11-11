@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ButtonLink } from "@/components/ui";
 import { interests, type CuratedTrip } from "@/lib/curated-trips";
+import { tripDays } from "@/lib/trip-intent";
 
 const steps = ["Destination", "Trip details", "Budget", "Preferences"];
 
@@ -352,11 +353,12 @@ export function TripWizard({
                       return;
                     }
                     if (
-                      flexible
-                        ? duration > 14
-                        : (Date.parse(nextEnd) - Date.parse(nextStart)) /
-                            86400000 >=
-                          14
+                      tripDays({
+                        flexible,
+                        duration,
+                        start: nextStart,
+                        end: nextEnd,
+                      }) > 14
                     ) {
                       setDateError(
                         "AI planning supports 1–14 days. Choose a shorter stay; your other preferences are kept.",

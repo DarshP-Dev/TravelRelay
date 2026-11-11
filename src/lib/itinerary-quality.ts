@@ -107,27 +107,21 @@ const interestCues: Record<string, RegExp> = {
 export function meaningfulActivity(activity: Activity) {
   return !logistics.test(textOf(activity)) && !rest.test(textOf(activity));
 }
-export function dayPolicies(
-  intent: TripIntent,
-  base: CityProposal,
-): DayPolicy[] {
+export function dayWindows(intent: TripIntent): Omit<DayPolicy, "date">[] {
   const count = tripDays(intent),
     pace = intent.pace;
   return Array.from({ length: count }, (_, index) => {
-    const date = dateAfter(base.startDate, index);
     if (count === 1)
       return {
-        date,
         role: "single-day",
         startMinute: 600,
-        endMinute: 1020,
+        endMinute: intent.selected.includes("Nightlife") ? 1260 : 1020,
         minActivities: { relaxed: 2, balanced: 3, packed: 4 }[pace],
         maxActivities: { relaxed: 3, balanced: 4, packed: 5 }[pace],
         maxPlannedMinutes: { relaxed: 240, balanced: 300, packed: 360 }[pace],
       };
     if (index === 0)
       return {
-        date,
         role: "arrival",
         startMinute: 840,
         endMinute: 1260,
@@ -137,7 +131,6 @@ export function dayPolicies(
       };
     if (index === count - 1)
       return {
-        date,
         role: "departure",
         startMinute: 540,
         endMinute: 720,
@@ -146,7 +139,6 @@ export function dayPolicies(
         maxPlannedMinutes: 120,
       };
     return {
-      date,
       role: "full",
       startMinute: 540,
       endMinute: intent.selected.includes("Nightlife") ? 1380 : 1320,
@@ -155,6 +147,23 @@ export function dayPolicies(
       maxPlannedMinutes: { relaxed: 360, balanced: 480, packed: 600 }[pace],
     };
   });
+}
+export function dayPolicies(
+  intent: TripIntent,
+  base: CityProposal,
+): DayPolicy[] {
+  return dayWindows(intent).map((window, index) => ({
+    date: dateAfter(base.startDate, index),
+    ...window,
+  }));
+}
+
+export function travelDayAssumption(intent: TripIntent) {
+  if (tripDays(intent) === 1)
+    return intent.selected.includes("Nightlife")
+      ? "Single-day evening plan assumes same-day travel can fit outside the 10:00–21:00 activity window. Confirm that the actual return is possible on the selected date."
+      : "Single-day local plan assumes same-day travel outside the 10:00–17:00 activity window. Confirm that the actual travel fits on the selected date.";
+  return "Arrival and departure times were not supplied: arrival activities start from 14:00 and departure activities end by 12:00. Check these assumptions against your own travel arrangements.";
 }
 export function estimatedTravelBuffer(
   previous: Activity,
@@ -292,7 +301,9 @@ export function assessItineraryQuality(
         dayIndex,
       );
     if (
-      (policy.role === "full" || policy.role === "arrival") &&
+      (policy.role === "full" ||
+        policy.role === "arrival" ||
+        (policy.role === "single-day" && policy.endMinute > 1080)) &&
       !hasMealSpace(day.activities, "dinner")
     )
       add(
@@ -481,9 +492,7 @@ export function assessItineraryQuality(
         `${item.interest} needs a concrete relevant activity; an expense allowance or introductory claim does not count.`,
       );
   const assumptions = [
-    tripDays(intent) === 1
-      ? "Single-day local plan assumes travel outside 10:00–17:00; flight feasibility is not verified."
-      : "Arrival and departure times were not supplied: arrival activities start from 14:00 and departure activities end by 12:00. Check these assumptions against your own travel arrangements.",
+    travelDayAssumption(intent),
     "Travel buffers are conservative distance-based estimates, not verified routes or journey times.",
     "Published venue references describe source-checked information, not future opening guarantees, ticket availability, verified prices or bookings.",
     "Review specific must-sees, avoidance requests, dietary needs and accessibility directly; these preferences have not been independently verified.",
@@ -536,6 +545,7 @@ export function qualityPlanningBrief(
 ) {
   return {
     days: dayPolicies(intent, base),
+    travelDayAssumption: travelDayAssumption(intent),
     meaningOfActivityCount:
       "Counts concrete experiences, including relevant food experiences; generic rest, logistics, check-in and free-time placeholders do not count.",
     interestRequirements: intent.selected.map((interest) => ({
@@ -556,7 +566,7 @@ export function qualityPlanningBrief(
       "Museums/palaces 90–240 min; walks/gardens 45–180; food 45–120 (coffee/cafe 30–120); hikes 60–360; other meaningful experiences 30–240. Describe concrete experiences in at least 60 characters, ideally two useful sentences.",
     travelGuidance: `For distances <=2km, allow max(15,ceil(km/4.5*60)+10) minutes; otherwise max(30,ceil(km/20*60)+20). ${intent.accessibility ? "Add another 10 minutes for the accessibility planning allowance, without asserting route accessibility." : ""} Arrival first activity needs at least 30 minutes of settling buffer. Place the full declared buffer between activities.`,
     mealGuidance:
-      "Full and single days need a substantial lunch lasting >=45 minutes starting 11:30–14:30 or a full 60-minute free window there excluding travel. Full and arrival days also need dinner lasting >=45 minutes starting 18:00–21:00 or a full 60-minute free window there. Named lunches/dinners must start in these windows. Coffee, pastries and tastings alone are not substantial meals. Use specific streets, neighborhoods or named venues; never Central Paris/city-centre placeholders. A named venue is a suggestion, not verified service or availability. Food activity costs are itemized estimates INCLUDED in foodMinor, which is an inclusive whole-trip allocation. Remaining allocation covers unitemized meals; never add the same food estimate twice. Local transport follows the same inclusive-allocation rule. Itemized estimates must not exceed their category allocations.",
+      "Full and single days need a substantial lunch lasting >=45 minutes starting 11:30–14:30 or a full 60-minute free window there excluding travel. Full days, arrival days and single days with an evening window also need dinner lasting >=45 minutes starting 18:00–21:00 or a full 60-minute free window there. Named lunches/dinners must start in these windows. Coffee, pastries and tastings alone are not substantial meals. Use specific streets, neighborhoods or named venues; never Central Paris/city-centre placeholders. A named venue is a suggestion, not verified service or availability. Food activity costs are itemized estimates INCLUDED in foodMinor, which is an inclusive whole-trip allocation. Remaining allocation covers unitemized meals; never add the same food estimate twice. Local transport follows the same inclusive-allocation rule. Itemized estimates must not exceed their category allocations.",
     honesty:
       "No supplied reference proves future availability, prices, accessibility or bookings. If interests, dates, pace, realistic travel assumptions and budget cannot all fit, return feasible=false with an explanation; do not pad the plan or silently drop requirements.",
   };
