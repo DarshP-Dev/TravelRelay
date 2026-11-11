@@ -13,6 +13,8 @@
 }
 
 :root {
+  --site-scale: 1;
+  --site-viewport-height: calc(100svh / var(--site-scale));
   --background: #fafaf7;
   --surface: #fff;
   --ink: #192723;
@@ -32,6 +34,12 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 105px;
+}
+@supports (zoom: 0.8) {
+  :root {
+    --site-scale: 0.8;
+    zoom: var(--site-scale);
+  }
 }
 body {
   margin: 0;

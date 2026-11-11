@@ -242,13 +242,6 @@ export function DestinationShowcase({
                 <DestinationCopy trip={active} heading={home ? "h2" : "h1"} />
               </div>
             </div>
-            <Link
-              className="destination-link"
-              href={`/explore/${active.id}`}
-              aria-label={`Explore this trip: ${destinationName(active)}`}
-            >
-              Explore this trip <ArrowUpRight size={18} aria-hidden="true" />
-            </Link>
           </div>
           <fieldset className="destination-selector">
             <legend>Choose a destination</legend>
@@ -282,6 +275,13 @@ export function DestinationShowcase({
               ))}
             </div>
           </fieldset>
+          <Link
+            className="destination-link"
+            href={`/explore/${active.id}`}
+            aria-label={`Explore this trip: ${destinationName(active)}`}
+          >
+            Explore this trip <ArrowUpRight size={18} aria-hidden="true" />
+          </Link>
         </div>
 
         <p className="sr-only" role="status">
