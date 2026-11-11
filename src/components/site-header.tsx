@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { ArrowUpRight, Menu, Plus, UserRound, X } from "lucide-react";
+import { Plus, UserRound, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
 const navigation = [
@@ -21,11 +21,13 @@ const subscribeToNothing = () => () => {};
 const atPageTop = () => true;
 const isAtPageTop = () => window.scrollY < 24;
 
-export function Brand() {
+function Brand() {
   return (
     <Link href="/" className="brand" aria-label="TravelRelay home">
-      <span className="brand-mark">
-        <ArrowUpRight size={23} strokeWidth={2.5} aria-hidden="true" />
+      <span className="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M20.9 3.1a2 2 0 0 1 0 2.8l-4.5 4.5 1.8 7.8-1.8 1.8-3.6-6-4.4 4.3.1 2.3-1.4 1.4-1.7-3.4L2 16.9l1.4-1.4 2.3.1 4.3-4.4-6-3.6 1.8-1.8 7.8 1.8 4.5-4.5a2 2 0 0 1 2.8 0Z" />
+        </svg>
       </span>
       Travel<span className="brand-light">Relay</span>
       <span className="brand-dot">.</span>
@@ -46,7 +48,8 @@ export function SiteHeader() {
     home ? isAtPageTop : atPageTop,
     atPageTop,
   );
-  const [open, setOpen] = useState(false);
+  const [openPath, setOpenPath] = useState<string | null>(null);
+  const open = openPath === pathname;
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
@@ -54,11 +57,11 @@ export function SiteHeader() {
     if (!open) return;
     const query = window.matchMedia("(min-width: 901px)");
     const closeOnDesktop = () => {
-      if (query.matches) setOpen(false);
+      if (!home && query.matches) setOpenPath(null);
     };
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpen(false);
+        setOpenPath(null);
         toggleRef.current?.focus();
       }
     };
@@ -68,7 +71,7 @@ export function SiteHeader() {
         !navRef.current?.contains(event.target) &&
         !toggleRef.current?.contains(event.target)
       )
-        setOpen(false);
+        setOpenPath(null);
     };
     query.addEventListener("change", closeOnDesktop);
     document.addEventListener("keydown", closeOnEscape);
@@ -78,7 +81,7 @@ export function SiteHeader() {
       document.removeEventListener("keydown", closeOnEscape);
       document.removeEventListener("pointerdown", closeOutside);
     };
-  }, [open]);
+  }, [home, open]);
 
   function active(href: string) {
     return (
@@ -91,7 +94,7 @@ export function SiteHeader() {
 
   return (
     <header
-      className={`site-header${home ? " site-header--cinematic" : ""}${home && overHero && !open ? " site-header--on-image" : ""}`}
+      className={`site-header${home ? " site-header--cinematic" : ""}${home && overHero ? " site-header--on-image" : ""}`}
     >
       <div className="header-inner">
         <Brand />
@@ -101,10 +104,28 @@ export function SiteHeader() {
           className="menu-toggle"
           aria-expanded={open}
           aria-controls="global-navigation"
-          aria-label={open ? "Close navigation" : "Open navigation"}
-          onClick={() => setOpen(!open)}
+          aria-label={
+            home ? "Menu" : open ? "Close navigation" : "Open navigation"
+          }
+          onClick={() => setOpenPath(open ? null : pathname)}
         >
-          {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
+          {home && <span>Menu</span>}
+          {open ? (
+            <X size={22} aria-hidden="true" />
+          ) : (
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M3 8h18M9 16h12" />
+            </svg>
+          )}
         </button>
         <nav
           ref={navRef}
@@ -112,7 +133,7 @@ export function SiteHeader() {
           className={`global-nav ${open ? "is-open" : ""}`}
           aria-label="Global navigation"
           onClick={(event) => {
-            if ((event.target as HTMLElement).closest("a")) setOpen(false);
+            if ((event.target as HTMLElement).closest("a")) setOpenPath(null);
           }}
         >
           <div className="nav-links">
