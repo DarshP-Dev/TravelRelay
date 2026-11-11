@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import "./globals.css";
+import "./editorial.css";
 
 const heading = localFont({
   src: "../../public/fonts/plus-jakarta-sans.woff2",
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
     template: "%s | TravelRelay",
   },
   description:
-    "A thoughtful home for your next adventure. Explore destination inspiration and shape a trip around what matters to you. TravelRelay is in early development.",
+    "Plan extraordinary trips with AI, stay in control of your budget, and adapt when plans change. Explore curated destinations or plan your own trip.",
 };
 
 export default function RootLayout({

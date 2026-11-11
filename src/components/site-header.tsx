@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowUpRight, Menu, Plus, UserRound, X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 
@@ -11,6 +11,15 @@ const navigation = [
   { href: "/trips", label: "My Trips" },
   { href: "/explore", label: "Explore" },
 ];
+
+function subscribeToScroll(onChange: () => void) {
+  window.addEventListener("scroll", onChange, { passive: true });
+  return () => window.removeEventListener("scroll", onChange);
+}
+
+const subscribeToNothing = () => () => {};
+const atPageTop = () => true;
+const isAtPageTop = () => window.scrollY < 24;
 
 export function Brand() {
   return (
@@ -31,6 +40,12 @@ export function SiteHeader() {
     error: sessionError,
   } = authClient.useSession();
   const pathname = usePathname();
+  const home = pathname === "/";
+  const overHero = useSyncExternalStore(
+    home ? subscribeToScroll : subscribeToNothing,
+    home ? isAtPageTop : atPageTop,
+    atPageTop,
+  );
   const [open, setOpen] = useState(false);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLElement>(null);
@@ -75,7 +90,9 @@ export function SiteHeader() {
   }
 
   return (
-    <header className="site-header">
+    <header
+      className={`site-header${home ? " site-header--cinematic" : ""}${home && overHero && !open ? " site-header--on-image" : ""}`}
+    >
       <div className="header-inner">
         <Brand />
         <button

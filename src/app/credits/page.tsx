@@ -61,6 +61,11 @@ export default function CreditsPage() {
             </li>
           ))}
         </ul>
+        <h2>Landing page artwork</h2>
+        <p>
+          The alpine hero is an original AI-generated illustration created for
+          TravelRelay. It depicts an imagined landscape inspired by the Alps.
+        </p>
         <h2>Typography & icons</h2>
         <p>
           Inter and Plus Jakarta Sans are locally served under the SIL Open Font
