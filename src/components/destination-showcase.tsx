@@ -1,10 +1,11 @@
 "use client";
 
-import Image from "next/image";
+import Image, { getImageProps } from "next/image";
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowUpRight, Mountain } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowUpRight } from "lucide-react";
 import type { CuratedTrip } from "@/lib/curated-trips";
+import "./destination-showcase.css";
 
 const destinationNames: Record<string, string> = {
   "cinque-terre": "Cinque Terre",
@@ -12,169 +13,298 @@ const destinationNames: Record<string, string> = {
   dolomites: "The Dolomites",
 };
 
+const sceneSizes = "(max-width: 700px) max(100vw, 85svh), 100vw";
+
 function destinationName(trip: CuratedTrip) {
   return destinationNames[trip.id] ?? trip.city;
 }
 
+type Selection = {
+  active: CuratedTrip;
+  outgoing: CuratedTrip | null;
+  pending: { trip: CuratedTrip; ready: boolean } | null;
+};
+
+function showReadyDestination(selection: Selection): Selection {
+  if (selection.outgoing || !selection.pending?.ready) return selection;
+  return {
+    active: selection.pending.trip,
+    outgoing: selection.active,
+    pending: null,
+  };
+}
+
 function DestinationPhoto({
   trip,
-  isReady,
-  isSelected,
   onReady,
+  eager,
 }: {
   trip: CuratedTrip;
-  isReady: boolean;
-  isSelected: boolean;
-  onReady?: () => void;
+  onReady: () => void;
+  eager: boolean;
 }) {
   const [failed, setFailed] = useState(false);
+  if (failed) return <div className="destination-photo-fallback" />;
 
   return (
-    <div
-      className={`destination-stage-photo${isReady ? " is-ready" : ""}`}
-      aria-hidden={!isSelected}
-    >
-      {failed ? (
-        <div className="destination-stage-fallback">
-          <Mountain size={36} strokeWidth={1.25} aria-hidden="true" />
-          <span>Photo unavailable</span>
-        </div>
-      ) : (
-        <Image
-          className="destination-image"
-          src={trip.image}
-          alt={trip.alt}
-          fill
-          sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1344px) 58vw, 750px"
-          onLoad={onReady}
-          onError={() => {
-            setFailed(true);
-            onReady?.();
-          }}
-        />
-      )}
-    </div>
+    <Image
+      className="destination-image"
+      src={trip.image}
+      alt=""
+      fill
+      sizes={sceneSizes}
+      loading={eager ? "eager" : "lazy"}
+      onLoad={onReady}
+      onError={() => {
+        setFailed(true);
+        onReady();
+      }}
+    />
+  );
+}
+
+function DestinationCopy({
+  trip,
+  heading: Heading,
+}: {
+  trip: CuratedTrip;
+  heading: "h1" | "h2" | "span";
+}) {
+  return (
+    <>
+      <p className="destination-category">
+        {trip.country} <span aria-hidden="true">/</span> {trip.style}
+      </p>
+      <Heading className="destination-title">{destinationName(trip)}</Heading>
+      <div className="destination-description">
+        <p className="destination-trip-title">{trip.title}</p>
+        <p>{trip.description}</p>
+      </div>
+      <p className="destination-details">
+        <span>{trip.days} days</span>
+        <span>${trip.estimate.toLocaleString("en-US")} USD / person est.</span>
+      </p>
+    </>
   );
 }
 
 export function DestinationShowcase({
   trips,
   id,
-  heading: Heading = "h2",
+  initialId,
+  home = false,
 }: {
   trips: readonly CuratedTrip[];
   id: string;
-  heading?: "h2" | "h3";
+  initialId?: string;
+  home?: boolean;
 }) {
-  const [{ selected, visible, backdrop }, setSelection] = useState<{
-    selected: CuratedTrip;
-    visible: CuratedTrip;
-    backdrop: CuratedTrip | null;
-  }>({ selected: trips[0], visible: trips[0], backdrop: null });
-  // Keep the last loaded image underneath the new image until the fade completes.
-  const photos =
-    backdrop && backdrop.id !== selected.id ? [backdrop, selected] : [selected];
+  const [selection, setSelection] = useState<Selection>(() => ({
+    active: trips.find((trip) => trip.id === initialId) ?? trips[0],
+    outgoing: null,
+    pending: null,
+  }));
+  const [photoLoaded, setPhotoLoaded] = useState(false);
+  const activePhoto = useRef<HTMLDivElement>(null);
+  const { active, outgoing, pending } = selection;
+
+  useEffect(() => {
+    if (!outgoing) return;
+
+    // Keep the outgoing scene in place until the incoming photo is opaque.
+    // New selections can load in parallel, but only the latest can take over.
+    let cancelled = false;
+    const animations = activePhoto.current?.getAnimations() ?? [];
+    void Promise.allSettled(
+      animations.map((animation) => animation.finished),
+    ).then(() => {
+      if (!cancelled) {
+        setSelection((current) =>
+          showReadyDestination({ ...current, outgoing: null }),
+        );
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [active.id, outgoing]);
+
+  useEffect(() => {
+    if (!photoLoaded || outgoing) return;
+    const next = trips[trips.findIndex((trip) => trip.id === active.id) + 1];
+    if (!next) return;
+
+    const { props } = getImageProps({
+      src: next.image,
+      alt: "",
+      fill: true,
+      sizes: sceneSizes,
+    });
+    const preload = new window.Image();
+    preload.fetchPriority = "low";
+    preload.sizes = props.sizes ?? "100vw";
+    preload.srcset = props.srcSet ?? "";
+    preload.src = props.src;
+  }, [active, outgoing, photoLoaded, trips]);
+
+  function selectTrip(trip: CuratedTrip) {
+    setSelection((current) => {
+      if (trip.id === current.active.id) return { ...current, pending: null };
+
+      return showReadyDestination({
+        ...current,
+        pending: { trip, ready: trip.id === current.outgoing?.id },
+      });
+    });
+  }
+
+  function photoReady(trip: CuratedTrip) {
+    setPhotoLoaded(true);
+    setSelection((current) => {
+      if (current.pending?.trip.id !== trip.id) return current;
+      return showReadyDestination({
+        ...current,
+        pending: { trip, ready: true },
+      });
+    });
+  }
+
+  const photos = [outgoing, active];
+  if (pending && pending.trip.id !== outgoing?.id) photos.push(pending.trip);
 
   return (
-    <div className="destination-showcase">
-      <div className="destination-stage" id={`${id}-feature`}>
-        <div className="destination-stage-media">
-          {photos.map((trip) => (
-            <DestinationPhoto
+    <section
+      className="destination-showcase"
+      id={id}
+      aria-label="Curated journeys"
+    >
+      <div className="destination-media" aria-hidden="true">
+        {photos.map((trip) => {
+          if (!trip) return null;
+          const role =
+            trip.id === active.id
+              ? "active"
+              : trip.id === outgoing?.id
+                ? "outgoing"
+                : "pending";
+
+          return (
+            <div
               key={trip.id}
-              trip={trip}
-              isReady={trip.id === visible.id || trip.id === backdrop?.id}
-              isSelected={trip.id === selected.id}
-              onReady={
-                trip.id !== visible.id && trip.id === selected.id
-                  ? () =>
-                      setSelection((current) =>
-                        current.selected.id === trip.id
-                          ? { ...current, visible: trip }
-                          : current,
-                      )
-                  : undefined
-              }
-            />
-          ))}
-        </div>
-        <div className="destination-stage-content" key={selected.id}>
-          <p className="eyebrow cinematic-reveal">
-            {selected.country} <span aria-hidden="true">/</span>{" "}
-            {selected.style}
-          </p>
-          <Heading className="destination-stage-title cinematic-reveal">
-            {destinationName(selected)}
-          </Heading>
-          <p className="destination-stage-description cinematic-reveal">
-            {selected.description}
-          </p>
-          <p className="destination-stage-interests cinematic-reveal">
-            {selected.interests.join(" · ")}
-          </p>
-          <div className="destination-stage-details cinematic-reveal">
-            <span>{selected.days} days</span>
-            <span>
-              ${selected.estimate.toLocaleString("en-US")} USD / person est.
-            </span>
-          </div>
-          <Link
-            className="editorial-button destination-stage-link cinematic-reveal"
-            href={`/explore/${selected.id}`}
-          >
-            Explore {destinationName(selected)}
-            <ArrowUpRight size={17} aria-hidden="true" />
-          </Link>
-        </div>
-      </div>
-      <fieldset className="destination-selector">
-        <legend className="sr-only">Choose a destination</legend>
-        <div className="destination-options">
-          {trips.map((trip) => (
-            <label className="destination-option" key={trip.id}>
-              <input
-                type="radio"
-                name={`${id}-destination`}
-                value={trip.id}
-                checked={selected.id === trip.id}
-                aria-controls={`${id}-feature`}
-                onChange={() =>
-                  setSelection((current) => ({
-                    ...current,
-                    selected: trip,
-                    backdrop: current.visible,
-                  }))
-                }
+              className="destination-photo"
+              data-destination={trip.id}
+              data-scene={role}
+              data-entering={role === "active" && !!outgoing}
+              ref={role === "active" ? activePhoto : undefined}
+            >
+              <DestinationPhoto
+                trip={trip}
+                eager={!home || role === "pending"}
+                onReady={() => photoReady(trip)}
               />
-              <span className="destination-thumb" aria-hidden="true">
-                <Image
-                  src={trip.image}
-                  alt=""
-                  fill
-                  sizes="120px"
-                  className="destination-image"
-                />
-              </span>
-              <span className="destination-option-title">
-                {destinationName(trip)}
-              </span>
-            </label>
-          ))}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="destination-layout">
+        <div className="destination-section-label">
+          {home ? (
+            <Link href="/explore">
+              Curated journeys <ArrowUpRight size={14} aria-hidden="true" />
+            </Link>
+          ) : (
+            <p>Curated journeys</p>
+          )}
         </div>
-      </fieldset>
-      <noscript>
-        <ul className="destination-fallback-links">
-          {trips.map((trip) => (
-            <li key={trip.id}>
-              <Link href={`/explore/${trip.id}`}>{destinationName(trip)}</Link>
-            </li>
-          ))}
-        </ul>
-      </noscript>
-      <p className="destination-estimate-note">
-        Curated trip ideas. Per-person USD estimates exclude flights and
-        accommodation. Prices and availability are unverified.
-      </p>
-    </div>
+
+        <div className="destination-body">
+          <div className="destination-stage" id={`${id}-feature`}>
+            <div className="destination-copy-stack">
+              {outgoing && (
+                <div
+                  key={outgoing.id}
+                  className="destination-copy"
+                  data-destination={outgoing.id}
+                  data-scene="outgoing"
+                  aria-hidden="true"
+                >
+                  <DestinationCopy trip={outgoing} heading="span" />
+                </div>
+              )}
+              <div
+                key={active.id}
+                className="destination-copy"
+                data-destination={active.id}
+                data-scene="active"
+                data-entering={!!outgoing}
+              >
+                <DestinationCopy trip={active} heading={home ? "h2" : "h1"} />
+              </div>
+            </div>
+            <Link
+              className="destination-link"
+              href={`/explore/${active.id}`}
+              aria-label={`Explore this trip: ${destinationName(active)}`}
+            >
+              Explore this trip <ArrowUpRight size={18} aria-hidden="true" />
+            </Link>
+          </div>
+          <fieldset className="destination-selector">
+            <legend>Choose a destination</legend>
+            <div className="destination-options">
+              {trips.map((trip) => (
+                <label
+                  className="destination-option"
+                  key={trip.id}
+                  data-destination={trip.id}
+                  data-active={active.id === trip.id}
+                  data-pending={pending?.trip.id === trip.id}
+                >
+                  <input
+                    type="radio"
+                    name={`${id}-destination`}
+                    value={trip.id}
+                    checked={(pending?.trip.id ?? active.id) === trip.id}
+                    aria-controls={`${id}-feature`}
+                    onChange={() => selectTrip(trip)}
+                  />
+                  <Image
+                    src={trip.image}
+                    alt=""
+                    fill
+                    sizes="(max-width: 700px) 160px, 240px"
+                    className="destination-image"
+                    aria-hidden="true"
+                  />
+                  <span>{destinationName(trip)}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
+
+        <p className="sr-only" role="status">
+          {pending
+            ? `Loading ${destinationName(pending.trip)}`
+            : `${destinationName(active)} is featured`}
+        </p>
+        <p className="destination-estimate-note">
+          Estimated spending per person. Flights and accommodation excluded.
+          Prices and availability are unverified.
+        </p>
+        <noscript>
+          <ul className="destination-fallback-links">
+            {trips.map((trip) => (
+              <li key={trip.id}>
+                <Link href={`/explore/${trip.id}`}>
+                  {destinationName(trip)}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </noscript>
+      </div>
+    </section>
   );
 }

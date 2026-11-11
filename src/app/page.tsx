@@ -5,10 +5,6 @@ import { MountainHero } from "@/components/mountain-hero";
 import { ButtonLink, Eyebrow, SectionLink } from "@/components/ui";
 import { curatedTrips } from "@/lib/curated-trips";
 
-const featuredTrips = curatedTrips.filter(({ id }) =>
-  ["cinque-terre", "kyoto", "paris"].includes(id),
-);
-
 const planningSteps = [
   {
     icon: Compass,
@@ -31,29 +27,13 @@ export default function HomePage() {
   return (
     <div className="editorial-home">
       <MountainHero />
-      <section
-        className="container editorial-section"
-        aria-labelledby="inspiration-title"
-      >
-        <div className="editorial-section-heading">
-          <div>
-            <Eyebrow>Curated journeys</Eyebrow>
-            <h2 id="inspiration-title">
-              Where could <em>next</em> take you?
-            </h2>
-          </div>
-          <SectionLink href="/explore">All destinations</SectionLink>
-        </div>
-        <DestinationShowcase
-          id="home-journeys"
-          trips={featuredTrips}
-          heading="h3"
-        />
-      </section>
-      <section
-        id="how-it-works"
-        className="container editorial-section editorial-process"
-      >
+      <DestinationShowcase
+        id="home-journeys"
+        trips={curatedTrips}
+        initialId="cinque-terre"
+        home
+      />
+      <section id="how-it-works" className="container editorial-section">
         <div className="editorial-section-heading">
           <div>
             <Eyebrow>How it works</Eyebrow>
