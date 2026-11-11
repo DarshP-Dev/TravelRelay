@@ -147,7 +147,6 @@ test("mocked proposal and itinerary jobs complete for fixed 1, 2, 3, 4, 5 and 7 
                 intent: Partial<TripIntent>;
                 groupBudgetMinor: number;
                 planningLimitMinor: number;
-                dayWindows?: unknown[];
                 planningBrief?: { days: unknown[] };
               };
               calls.push(full ? "itinerary" : "proposal");
@@ -166,10 +165,8 @@ test("mocked proposal and itinerary jobs complete for fixed 1, 2, 3, 4, 5 and 7 
                 assert.equal(payload.intent.end, input.end);
                 assert.ok(!("month" in payload.intent));
               }
-              assert.equal(
-                (payload.planningBrief?.days ?? payload.dayWindows)?.length,
-                days,
-              );
+              if (full) assert.equal(payload.planningBrief?.days.length, days);
+              else assert.equal(payload.planningBrief, undefined);
               return full ? shortPlan(days) : base;
             },
           );

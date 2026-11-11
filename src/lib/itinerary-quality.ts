@@ -8,6 +8,13 @@ import {
   type ModelItinerary,
 } from "./itinerary";
 import {
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+  type DayRole,
+  type TravelTiming,
+} from "./travel-days";
+import {
   activityText as textOf,
   foodCue as food,
   normalized,
@@ -22,7 +29,6 @@ import {
 export { normalized } from "./activity-semantics";
 
 type Activity = ModelItinerary["days"][number]["activities"][number];
-export type DayRole = "arrival" | "full" | "departure" | "single-day";
 export type DayPolicy = {
   date: string;
   role: DayRole;
@@ -107,31 +113,52 @@ const interestCues: Record<string, RegExp> = {
 export function meaningfulActivity(activity: Activity) {
   return !logistics.test(textOf(activity)) && !rest.test(textOf(activity));
 }
-export function dayWindows(intent: TripIntent): Omit<DayPolicy, "date">[] {
-  const count = tripDays(intent),
-    pace = intent.pace;
-  return Array.from({ length: count }, (_, index) => {
-    if (count === 1)
+export function dayPolicies(
+  intent: TripIntent,
+  base: Pick<CityProposal, "startDate" | "travelTiming">,
+): DayPolicy[] {
+  const window = travelWindow(tripDays(intent), base.travelTiming);
+  const { pace } = intent;
+  return Array.from({ length: window.totalDays }, (_, index) => {
+    const date = dateAfter(base.startDate, index);
+    const role = travelDayRole(index, window);
+    if (isTransitDay(role))
       return {
-        role: "single-day",
+        date,
+        role,
+        startMinute: 0,
+        endMinute: 0,
+        minActivities: 0,
+        maxActivities: 0,
+        maxPlannedMinutes: 0,
+      };
+    if (role === "single-day")
+      return {
+        date,
+        role,
         startMinute: 600,
         endMinute: intent.selected.includes("Nightlife") ? 1260 : 1020,
         minActivities: { relaxed: 2, balanced: 3, packed: 4 }[pace],
         maxActivities: { relaxed: 3, balanced: 4, packed: 5 }[pace],
         maxPlannedMinutes: { relaxed: 240, balanced: 300, packed: 360 }[pace],
       };
-    if (index === 0)
+    if (role === "arrival")
       return {
-        role: "arrival",
+        date,
+        role,
         startMinute: 840,
         endMinute: 1260,
-        minActivities: pace === "relaxed" ? 1 : 2,
-        maxActivities: pace === "relaxed" ? 2 : 3,
-        maxPlannedMinutes: { relaxed: 180, balanced: 240, packed: 300 }[pace],
+        minActivities: window.arrivalIndex > 0 || pace === "relaxed" ? 1 : 2,
+        maxActivities: window.arrivalIndex > 0 || pace === "relaxed" ? 2 : 3,
+        maxPlannedMinutes:
+          window.arrivalIndex > 0
+            ? 180
+            : { relaxed: 180, balanced: 240, packed: 300 }[pace],
       };
-    if (index === count - 1)
+    if (role === "departure")
       return {
-        role: "departure",
+        date,
+        role,
         startMinute: 540,
         endMinute: 720,
         minActivities: 1,
@@ -139,7 +166,8 @@ export function dayWindows(intent: TripIntent): Omit<DayPolicy, "date">[] {
         maxPlannedMinutes: 120,
       };
     return {
-      role: "full",
+      date,
+      role,
       startMinute: 540,
       endMinute: intent.selected.includes("Nightlife") ? 1380 : 1320,
       minActivities: { relaxed: 2, balanced: 3, packed: 5 }[pace],
@@ -148,22 +176,17 @@ export function dayWindows(intent: TripIntent): Omit<DayPolicy, "date">[] {
     };
   });
 }
-export function dayPolicies(
-  intent: TripIntent,
-  base: CityProposal,
-): DayPolicy[] {
-  return dayWindows(intent).map((window, index) => ({
-    date: dateAfter(base.startDate, index),
-    ...window,
-  }));
-}
 
-export function travelDayAssumption(intent: TripIntent) {
-  if (tripDays(intent) === 1)
+function travelDayAssumption(intent: TripIntent, timing?: TravelTiming) {
+  const { totalDays, destinationNights } = travelWindow(
+    tripDays(intent),
+    timing,
+  );
+  if (totalDays === 1)
     return intent.selected.includes("Nightlife")
       ? "Single-day evening plan assumes same-day travel can fit outside the 10:00–21:00 activity window. Confirm that the actual return is possible on the selected date."
       : "Single-day local plan assumes same-day travel outside the 10:00–17:00 activity window. Confirm that the actual travel fits on the selected date.";
-  return "Arrival and departure times were not supplied: arrival activities start from 14:00 and departure activities end by 12:00. Check these assumptions against your own travel arrangements.";
+  return `Transit days have no local activities. Arrival activities start from 14:00 and departure activities end by 12:00, with ${destinationNights} estimated destination ${destinationNights === 1 ? "night" : "nights"}. Check these assumptions against your actual travel arrangements.`;
 }
 export function estimatedTravelBuffer(
   previous: Activity,
@@ -271,6 +294,15 @@ export function assessItineraryQuality(
   plan.days.forEach((day, dayIndex) => {
     const policy = policies[dayIndex];
     if (!policy) return;
+    if (isTransitDay(policy.role)) {
+      if (day.activities.length)
+        add(
+          "transit-activity",
+          `Day ${dayIndex + 1} is reserved for transit.`,
+          dayIndex,
+        );
+      return;
+    }
     const meaningful = day.activities.filter(meaningfulActivity);
     if (
       meaningful.length < policy.minActivities ||
@@ -492,7 +524,7 @@ export function assessItineraryQuality(
         `${item.interest} needs a concrete relevant activity; an expense allowance or introductory claim does not count.`,
       );
   const assumptions = [
-    travelDayAssumption(intent),
+    travelDayAssumption(intent, base.travelTiming),
     "Travel buffers are conservative distance-based estimates, not verified routes or journey times.",
     "Published venue references describe source-checked information, not future opening guarantees, ticket availability, verified prices or bookings.",
     "Review specific must-sees, avoidance requests, dietary needs and accessibility directly; these preferences have not been independently verified.",
@@ -540,12 +572,12 @@ export function validateItineraryQuality(
 }
 export function qualityPlanningBrief(
   intent: TripIntent,
-  base: CityProposal,
+  base: Pick<CityProposal, "city" | "startDate" | "travelTiming">,
   references: VenueReference[] = [],
 ) {
   return {
     days: dayPolicies(intent, base),
-    travelDayAssumption: travelDayAssumption(intent),
+    travelDayAssumption: travelDayAssumption(intent, base.travelTiming),
     meaningOfActivityCount:
       "Counts concrete experiences, including relevant food experiences; generic rest, logistics, check-in and free-time placeholders do not count.",
     interestRequirements: intent.selected.map((interest) => ({

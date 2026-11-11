@@ -510,8 +510,10 @@ arrival/departure plans. Selected interests must appear in concrete activities;
 food expenses alone do not satisfy Food. Durations, meal space, travel buffers
 and supported published venue hours receive additional checks.
 
-Exact travel times are not collected, so arrival-after-14:00 and departure-before-
-12:00 activity windows are disclosed planning assumptions. Published hours are
+Trip dates include transit. The destination review shows tentative local
+arrival and departure dates, full sightseeing days, and destination nights.
+Transit-only days contain no local activities. Arrival from 14:00 and departure
+activities ending by 12:00 are planning assumptions. Published hours are
 source-checked references with dates/links, not confirmed future availability.
 Other venue hours and all prices remain unverified estimates. Older saved plans
 are labeled as predating the new checks and are not silently modified.

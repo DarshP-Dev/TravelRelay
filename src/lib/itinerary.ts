@@ -4,11 +4,21 @@ import type { ItineraryQuality } from "./itinerary-quality";
 import type { ItineraryNormalization } from "./itinerary-normalization";
 import type { ActivityMetadata } from "./activity-metadata";
 import {
+  dateAfter,
+  insufficientTravelWindow,
+  isTransitDay,
+  sameDayTravel,
+  travelDayRole,
+  travelTimingSchema,
+  travelWindow,
+} from "./travel-days";
+import {
   calculatePlanningBudget,
   type PlanningBudget,
 } from "./itinerary-budget";
 
 export { tripDays } from "./trip-intent";
+export { dateAfter } from "./travel-days";
 export class PlanningError extends Error {}
 
 const text = z.string().min(1).max(1200);
@@ -23,8 +33,12 @@ export const proposalSchema = z
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    travelTiming: travelTimingSchema.optional(),
   })
   .strict();
+export const structuredProposalSchema = proposalSchema.required({
+  travelTiming: true,
+});
 export type CityProposal = z.infer<typeof proposalSchema>;
 export const activitySchema = z
   .object({
@@ -57,7 +71,7 @@ export const itineraryOutputSchema = z
           .object({
             date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
             title: z.string().min(1).max(160),
-            activities: z.array(activitySchema).min(1).max(7),
+            activities: z.array(activitySchema).max(7),
           })
           .strict(),
       )
@@ -91,11 +105,6 @@ export type Itinerary = Omit<ModelItinerary, "days"> & {
     activities: SavedActivity[];
   })[];
 };
-export function dateAfter(start: string, days: number) {
-  return new Date(Date.parse(start) + days * 86400000)
-    .toISOString()
-    .slice(0, 10);
-}
 export function budgetMinor(intent: TripIntent) {
   const [whole, decimals = ""] = intent.budget.split(".");
   return (
@@ -139,7 +148,10 @@ export function validateProposal(
     throw new PlanningError(
       "The suggested dates do not match your request. Retry destination planning.",
     );
-  return value;
+  const timing = value.travelTiming ?? sameDayTravel;
+  if (!travelWindow(tripDays(intent), timing).fits)
+    throw new PlanningError(insufficientTravelWindow);
+  return { ...value, travelTiming: timing };
 }
 export function distanceKm(
   a: { latitude: number; longitude: number },
@@ -180,6 +192,8 @@ export function validateItinerary(
       "The itinerary did not match the confirmed city, currency or trip length. Please retry.",
     );
   const cap = { relaxed: 3, balanced: 5, packed: 7 }[intent.pace];
+  const window = travelWindow(tripDays(intent), base.travelTiming);
+  if (!window.fits) throw new PlanningError(insufficientTravelWindow);
   for (const [index, day] of plan.days.entries()) {
     if (
       day.date !== dateAfter(base.startDate, index) ||
@@ -187,6 +201,15 @@ export function validateItinerary(
     )
       throw new PlanningError(
         "The itinerary did not respect your dates or travel pace. Please retry.",
+      );
+    const inTransit = isTransitDay(travelDayRole(index, window));
+    if (inTransit && day.activities.length)
+      throw new PlanningError(
+        `Day ${index + 1} is reserved for transit and cannot contain destination activities.`,
+      );
+    if (!inTransit && !day.activities.length)
+      throw new PlanningError(
+        `Day ${index + 1} needs a destination activity. Only transit days can be empty.`,
       );
     let previous: z.infer<typeof activitySchema> | undefined;
     for (const activity of day.activities) {
@@ -229,7 +252,7 @@ export function validateItinerary(
     plan.foodMinor === 0 ||
     (intent.scope === "entire" &&
       (plan.flightsMinor === 0 ||
-        (tripDays(intent) > 1 && plan.accommodationMinor === 0)))
+        (window.destinationNights > 0 && plan.accommodationMinor === 0)))
   )
     throw new PlanningError(
       "The cost estimate omitted essential food, travel or accommodation. Please retry.",

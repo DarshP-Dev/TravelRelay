@@ -3,6 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { DestinationImage } from "./destination-image";
 import { destinationPhoto } from "@/lib/trip-intent";
 import { money, type Itinerary } from "@/lib/itinerary";
+import { isTransitDay, travelDayRole, travelWindow } from "@/lib/travel-days";
 
 type Plan = Omit<Itinerary, "generatedAt" | "model" | "priceSource">;
 export function itineraryDayHref(tripId: string, dayId: string) {
@@ -16,6 +17,7 @@ export function ItineraryDayOverview({
   tripId: string;
 }) {
   const photo = destinationPhoto(plan.base.city);
+  const travel = travelWindow(plan.days.length, plan.base.travelTiming);
   const card = (day: Plan["days"][number], index: number) => (
     <article className="overview-day-card" key={day.id}>
       <Link
@@ -45,12 +47,12 @@ export function ItineraryDayOverview({
             ))}
           </ul>
           <p className="inline-note">
-            {day.activities.length} activities ·{" "}
-            {money(
-              day.activities.reduce((sum, a) => sum + a.costMinor, 0),
-              plan.currency,
-            )}{" "}
-            {plan.currency} itemized estimates, included in trip allocations
+            {isTransitDay(travelDayRole(index, travel))
+              ? "Reserved for travel. No local activities are scheduled."
+              : `${day.activities.length} activities · ${money(
+                  day.activities.reduce((sum, a) => sum + a.costMinor, 0),
+                  plan.currency,
+                )} ${plan.currency} itemized estimates, included in trip allocations`}
           </p>
           <span className="section-link">
             Open this day <ArrowUpRight size={16} aria-hidden="true" />

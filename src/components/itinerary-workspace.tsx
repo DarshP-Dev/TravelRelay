@@ -24,6 +24,12 @@ import {
   type EditableActivity,
 } from "@/lib/itinerary-editing";
 import { money, type SavedActivity } from "@/lib/itinerary";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+} from "@/lib/travel-days";
 import type { createItineraryEditor } from "@/server/itinerary-edits";
 import type { schedulerChange } from "@/lib/schedule-adapter";
 import type { ScheduleReference } from "@/lib/itinerary-editing";
@@ -207,6 +213,10 @@ export function ItineraryWorkspace({
     : hash.replace("#day-", "");
   const day =
     plan.days.find((d) => d.id === (dayId || linkedDay)) ?? plan.days[0];
+  const travel = travelWindow(plan.days.length, plan.base.travelTiming);
+  const dayIndex = plan.days.indexOf(day);
+  const dayRole = travelDayRole(dayIndex, travel);
+  const inTransit = isTransitDay(dayRole);
   useEffect(() => {
     if (linkedActivity && linkedDay === day.id)
       document.getElementById(`activity-${linkedActivity}`)?.scrollIntoView();
@@ -416,7 +426,7 @@ export function ItineraryWorkspace({
             <button
               className="button button-primary"
               type="button"
-              disabled={locked || !!preview || !!form}
+              disabled={locked || !!preview || !!form || inTransit}
               onClick={() => edit()}
             >
               Add activity
@@ -569,7 +579,11 @@ export function ItineraryWorkspace({
                         onChange={(e) => update("dayId", e.target.value)}
                       >
                         {plan.days.map((d, i) => (
-                          <option value={d.id} key={d.id}>
+                          <option
+                            value={d.id}
+                            key={d.id}
+                            disabled={isTransitDay(travelDayRole(i, travel))}
+                          >
                             Day {i + 1} · {d.date}
                           </option>
                         ))}
@@ -851,8 +865,11 @@ export function ItineraryWorkspace({
           <article className="itinerary-day editable-day" id={`day-${day.id}`}>
             <div className="itinerary-day-heading">
               <p className="eyebrow">
-                DAY {plan.days.indexOf(day) + 1} · {day.date}
+                DAY {dayIndex + 1} · {day.date}
               </p>
+              {plan.base.travelTiming && (
+                <p className="day-role">{dayRoleLabels[dayRole]}</p>
+              )}
               {plan.manualEdit && (
                 <p className="inline-note">
                   Original day theme · current schedule below
@@ -860,7 +877,12 @@ export function ItineraryWorkspace({
               )}
               <h3>{day.title}</h3>
             </div>
-            {!day.activities.length && (
+            {inTransit && (
+              <p className="inline-note">
+                Reserved for travel. No local activities are scheduled.
+              </p>
+            )}
+            {!inTransit && !day.activities.length && (
               <div className="editor-empty">
                 <h4>A little room to make your own.</h4>
                 <p>

@@ -5,6 +5,7 @@ import { createApplication } from "../../src/server/application";
 import { generation, generationAttempt } from "../../src/server/db/schema";
 import { solRecording } from "./sol-recording";
 import type { TripModel } from "../../src/server/model";
+import { sameDayTravel } from "../../src/lib/travel-days";
 
 export async function prepareOfflineSolReview(
   directory: string,
@@ -92,7 +93,7 @@ export async function prepareOfflineSolReview(
     new Request(origin + `/api/trips/${trip.id}/generation`, {
       method: "POST",
       headers: { cookie, origin, "content-type": "application/json" },
-      body: JSON.stringify({ action: "retry" }),
+      body: JSON.stringify({ action: "retry", travelTiming: sameDayTravel }),
       signal: controller.signal,
     }),
     trip.id,

@@ -14,13 +14,15 @@ import { openDatabase } from "../src/server/db/connection";
 import { createApplication } from "../src/server/application";
 import type { TripIntent } from "../src/lib/trip-intent";
 import type { ModelItinerary, CityProposal } from "../src/lib/itinerary";
+import { sameDayTravel } from "../src/lib/travel-days";
 const recording = JSON.parse(
   readFileSync(
     new URL("./fixtures/paris-quality-recorded.json", import.meta.url),
     "utf8",
   ),
 ) as { intent: TripIntent; base: CityProposal; plan: ModelItinerary };
-const { intent, base } = recording;
+const { intent } = recording;
+const base = { ...recording.base, travelTiming: sameDayTravel };
 function authoredCandidate() {
   const plan = structuredClone(recording.plan);
   plan.days[0].activities[1].startMinute = 1080;
@@ -166,7 +168,11 @@ test("Responses API sends strict structured outputs, fixed Sol/medium, server-on
           ),
           duration: 4,
         });
-        assert.deepEqual(input.confirmedBase, base);
+        assert.equal(Object.hasOwn(input.confirmedBase, "explanation"), false);
+        assert.deepEqual(
+          { ...input.confirmedBase, explanation: base.explanation },
+          base,
+        );
         assert.equal(input.groupBudgetMinor, 250000);
         assert.equal(input.planningBrief.days.length, 4);
         assert.equal(input.planningBrief.days[1].minActivities, 3);
@@ -185,6 +191,8 @@ test("Responses API sends strict structured outputs, fixed Sol/medium, server-on
         ])
           assert.ok(activity.required.includes(field));
         assert.ok(body.instructions.includes("inclusive whole-trip"));
+      } else {
+        assert.ok(body.text.format.schema.required.includes("travelTiming"));
       }
       return Response.json(
         openaiWire(input.confirmedBase ? authoredCandidate() : base),

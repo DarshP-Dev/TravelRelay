@@ -21,6 +21,7 @@ import { assistantSuggestions } from "@/lib/assistant-suggestions";
 import { clock } from "@/lib/activity-metadata";
 import { curatedTrips } from "@/lib/curated-trips";
 import { money } from "@/lib/itinerary";
+import { isTransitDay, travelDayRole, travelWindow } from "@/lib/travel-days";
 import type { WalletState } from "@/server/wallet";
 
 function DashboardLink({
@@ -162,6 +163,15 @@ function DashboardItinerary({
   const itinerary = trip.itinerary;
   const nextDay = itinerary?.days.find((day) => day.date >= today);
   const day = nextDay ?? itinerary?.days[0];
+  const dayIndex = day && itinerary ? itinerary.days.indexOf(day) : -1;
+  const inTransit =
+    itinerary &&
+    isTransitDay(
+      travelDayRole(
+        dayIndex,
+        travelWindow(itinerary.days.length, itinerary.base.travelTiming),
+      ),
+    );
 
   return (
     <DashboardWidget
@@ -181,10 +191,13 @@ function DashboardItinerary({
           </div>
           <div>
             <p className="dashboard-date-caption">
-              Day {itinerary.days.indexOf(day) + 1} ·{" "}
+              Day {dayIndex + 1} ·{" "}
               <time dateTime={day.date}>{dashboardDate(day.date)}</time>
             </p>
             <h3>{day.title}</h3>
+            {inTransit && (
+              <p>Reserved for travel. No local activities are scheduled.</p>
+            )}
             <ul className="dashboard-activity-list">
               {day.activities.slice(0, 3).map((activity) => (
                 <li key={activity.id}>

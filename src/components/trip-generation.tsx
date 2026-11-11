@@ -15,6 +15,12 @@ import {
   generationPresentation,
   generationStages as stages,
 } from "@/lib/generation-presentation";
+import {
+  insufficientTravelWindow,
+  travelWindow,
+  travelWindowLabel,
+  type TravelTiming,
+} from "@/lib/travel-days";
 
 type Job = {
   status: string;
@@ -37,6 +43,8 @@ export function TripGeneration({
   const [error, setError] = useState("");
   const [needsSignin, setNeedsSignin] = useState(false);
   const [refresh, setRefresh] = useState(0);
+  const [outboundTransitDays, setOutboundTransitDays] = useState("");
+  const [returnTransitDays, setReturnTransitDays] = useState("");
   const url = `/api/trips/${id}/generation`;
   useEffect(() => {
     let alive = true,
@@ -102,14 +110,17 @@ export function TripGeneration({
       window.removeEventListener("focus", checkStatus);
     };
   }, []);
-  async function act(action: "start" | "confirm" | "retry") {
+  async function act(
+    action: "start" | "confirm" | "retry",
+    travelTiming?: TravelTiming,
+  ) {
     setBusy(true);
     setError("");
     try {
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({ action, travelTiming }),
         signal: AbortSignal.timeout(15_000),
       });
       const data = await response.json();
@@ -139,6 +150,24 @@ export function TripGeneration({
   const status = job?.status;
   const presentation = generationPresentation(job);
   const current = presentation.stageIndex;
+  const totalDays = tripDays(intent);
+  const proposal = job?.proposal;
+  const legacyTimingReview =
+    !!proposal &&
+    !proposal.travelTiming &&
+    (status === "awaiting_confirmation" ||
+      (job?.confirmed && presentation.canRetry));
+  const enteredTiming =
+    outboundTransitDays !== "" && returnTransitDays !== ""
+      ? {
+          outboundTransitDays: Number(outboundTransitDays),
+          returnTransitDays: Number(returnTransitDays),
+        }
+      : undefined;
+  const timing = proposal?.travelTiming ?? enteredTiming;
+  const travel = timing ? travelWindow(totalDays, timing) : undefined;
+  const showProposal =
+    proposal && (status === "awaiting_confirmation" || legacyTimingReview);
   return (
     <div className="container generation-page">
       <div className="generation-scene">
@@ -186,8 +215,8 @@ export function TripGeneration({
           </h2>
           <p>
             {intent.travelers}{" "}
-            {intent.travelers === 1 ? "traveler" : "travelers"} ·{" "}
-            {tripDays(intent)} days ·{" "}
+            {intent.travelers === 1 ? "traveler" : "travelers"} · {totalDays}{" "}
+            travel-window {totalDays === 1 ? "day" : "days"} ·{" "}
             {money(budgetMinor(intent), intent.currency)} {intent.currency} ·{" "}
             {intent.pace}
           </p>
@@ -264,29 +293,96 @@ export function TripGeneration({
             ))}
           </ol>
         )}
-        {status === "awaiting_confirmation" && job?.proposal && (
+        {showProposal && (
           <div className="generation-confirm">
             <h3>
-              {job.proposal.city}, {job.proposal.country}
+              {proposal.city}, {proposal.country}
             </h3>
-            <p>{job.proposal.explanation}</p>
+            <p>{proposal.explanation}</p>
             <p>
               <strong>
-                {job.proposal.startDate} →{" "}
-                {dateAfter(job.proposal.startDate, tripDays(intent) - 1)}
+                {proposal.startDate} →{" "}
+                {dateAfter(proposal.startDate, totalDays - 1)}
               </strong>{" "}
-              · {job.proposal.timeZone}
+              · {proposal.timeZone}
             </p>
+            {legacyTimingReview && (
+              <>
+                <p>
+                  Review the saved assumptions. Choose how many whole dates are
+                  reserved for transit before arrival and after departure.
+                  Choose zero when travel and arrival or departure share a date.
+                </p>
+                <div className="field-grid">
+                  {[
+                    {
+                      label: "Outbound transit days",
+                      value: outboundTransitDays,
+                      set: setOutboundTransitDays,
+                    },
+                    {
+                      label: "Return transit days",
+                      value: returnTransitDays,
+                      set: setReturnTransitDays,
+                    },
+                  ].map(({ label, value, set }) => (
+                    <label className="field" key={label}>
+                      {label}
+                      <select
+                        value={value}
+                        onChange={(event) => set(event.target.value)}
+                      >
+                        <option value="">Select days</option>
+                        {Array.from({ length: totalDays }, (_, count) => (
+                          <option key={count} value={count}>
+                            {count}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+            {travel?.fits && (
+              <>
+                <p>{travelWindowLabel(travel)}</p>
+                <p>
+                  Assumed local {travel.totalDays === 1 ? "visit" : "arrival"}{" "}
+                  {dateAfter(proposal.startDate, travel.arrivalIndex)}
+                  {travel.totalDays > 1 && (
+                    <>
+                      {" "}
+                      · Leave the destination{" "}
+                      {dateAfter(proposal.startDate, travel.departureIndex)}
+                    </>
+                  )}
+                </p>
+              </>
+            )}
+            {travel && !travel.fits && (
+              <p role="alert">{insufficientTravelWindow}</p>
+            )}
             <p>
-              All days will stay in this base city. Dates, activities and costs
-              will be AI estimates; availability is unverified.
+              Local activities stay in this base city. Review the tentative
+              timing against your travel arrangements. Flights and lodging are
+              unverified.
             </p>
             <button
               className="button button-primary"
-              disabled={busy || needsSignin}
-              onClick={() => void act("confirm")}
+              disabled={busy || needsSignin || !travel?.fits}
+              onClick={() =>
+                void act(
+                  status === "failed" ? "retry" : "confirm",
+                  legacyTimingReview ? enteredTiming : undefined,
+                )
+              }
             >
-              {busy ? "Starting…" : "Confirm city & generate my trip"}
+              {busy
+                ? "Starting…"
+                : status === "failed"
+                  ? "Confirm timing & retry itinerary"
+                  : "Confirm city & generate my trip"}
             </button>
           </div>
         )}
@@ -321,7 +417,7 @@ export function TripGeneration({
             {busy ? "Starting…" : "Find my base city"}
           </button>
         )}
-        {presentation.canRetry && (
+        {presentation.canRetry && !legacyTimingReview && (
           <button
             className="button button-primary"
             disabled={busy || needsSignin}

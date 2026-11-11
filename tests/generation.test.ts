@@ -13,6 +13,7 @@ import { openDatabase } from "../src/server/db/connection";
 import { createApplication } from "../src/server/application";
 import { createTripModel, type TripModel } from "../src/server/model";
 import { initialIntent } from "../src/lib/trip-intent";
+import { sameDayTravel } from "../src/lib/travel-days";
 import {
   validateItinerary,
   validateProposal,
@@ -25,7 +26,7 @@ import {
 const intent = {
   ...initialIntent(),
   destination: "Kyoto",
-  departure: "Toronto",
+  departure: "Osaka",
   start: "2027-04-01",
   end: "2027-04-02",
   duration: 2,
@@ -42,6 +43,7 @@ const base: CityProposal = {
   longitude: 135.76,
   timeZone: "Asia/Tokyo",
   startDate: intent.start,
+  travelTiming: sameDayTravel,
 };
 function fixture(): ModelItinerary {
   return {
@@ -245,12 +247,22 @@ test("Gemini SDK sends structured JSON and credentials only through the server t
             Object.entries(intent).filter(([key]) => key !== "month"),
           ),
         );
-        assert.deepEqual(input.confirmedBase, base);
+        assert.equal(Object.hasOwn(input.confirmedBase, "explanation"), false);
+        assert.deepEqual(
+          { ...input.confirmedBase, explanation: base.explanation },
+          base,
+        );
         assert.equal(input.groupBudgetMinor, 500000);
         assert.equal(input.planningBrief.days.length, 2);
         assert.equal(input.planningBrief.days[0].startMinute, 840);
         assert.equal(input.planningBrief.days[1].endMinute, 720);
         assert.ok(input.planningBrief.travelGuidance.includes("4.5"));
+      } else {
+        assert.ok(
+          body.generationConfig.responseJsonSchema.required.includes(
+            "travelTiming",
+          ),
+        );
       }
       return Response.json({
         usageMetadata: {

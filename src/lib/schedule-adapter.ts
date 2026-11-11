@@ -1,14 +1,24 @@
 import type { Itinerary } from "./itinerary";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+} from "./travel-days";
 // A shared display-only wall-clock axis. Resource rows carry the actual trip
 // dates; no browser-timezone conversion is written back to the itinerary.
 export const scheduleClock = (minute: number) =>
   new Date(2000, 0, 1, 0, minute);
 export function schedulerData(plan: Itinerary) {
+  const window = travelWindow(plan.days.length, plan.base.travelTiming);
   return {
-    resources: plan.days.map((d, i) => ({
-      id: d.id,
-      name: `Day ${i + 1} · ${d.date}`,
-    })),
+    resources: plan.days.map((d, i) => {
+      const role = travelDayRole(i, window);
+      return {
+        id: d.id,
+        name: `Day ${i + 1} · ${d.date}${isTransitDay(role) ? ` · ${dayRoleLabels[role]}` : ""}`,
+      };
+    }),
     events: plan.days.flatMap((d) =>
       d.activities.map((a) => ({
         id: a.id,
@@ -29,8 +39,19 @@ export function schedulerChange(
   start: Date,
   end: Date,
 ) {
-  if (!plan.days.some((d) => d.id === dayId))
-    throw Error("Drop the activity on a day of this trip.");
+  const dayIndex = plan.days.findIndex((d) => d.id === dayId);
+  if (dayIndex < 0) throw Error("Drop the activity on a day of this trip.");
+  if (
+    isTransitDay(
+      travelDayRole(
+        dayIndex,
+        travelWindow(plan.days.length, plan.base.travelTiming),
+      ),
+    )
+  )
+    throw Error(
+      "This day is reserved for transit. Choose a day at the destination.",
+    );
   const found = plan.days
     .flatMap((d) => d.activities)
     .find((a) => a.id === activityId);

@@ -10,6 +10,7 @@ import type { AgentAction, AgentResponse } from "../lib/agent-contracts";
 import type { createItineraryEditor } from "./itinerary-edits";
 import { RequestError } from "./trips";
 import { normalized } from "../lib/activity-semantics";
+import { travelDayRole, travelWindow } from "../lib/travel-days";
 
 type EditorState = Awaited<
   ReturnType<ReturnType<typeof createItineraryEditor>["read"]>
@@ -35,6 +36,7 @@ export function buildAgentContext(
   recovery?: object,
 ) {
   const plan = materializeActivities(state.itinerary);
+  const travel = travelWindow(plan.days.length, plan.base.travelTiming);
   const input = {
     schemaVersion: 1,
     request: text,
@@ -52,10 +54,11 @@ export function buildAgentContext(
         accessibility: state.intent.accessibility,
       },
       budget: planningBudget(plan, state.intent),
-      days: plan.days.map((d) => ({
+      days: plan.days.map((d, index) => ({
         id: d.id,
         date: d.date,
         title: d.title,
+        role: travelDayRole(index, travel),
         activities: d.activities.map((a) => ({
           id: a.id,
           title: a.title,

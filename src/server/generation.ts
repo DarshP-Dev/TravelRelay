@@ -5,6 +5,7 @@ import {
   validateGenerationIntent,
   validateItinerary,
   validateProposal,
+  type CityProposal,
   type Itinerary,
   PlanningError,
   itineraryOutputSchema,
@@ -20,12 +21,45 @@ import type { Database } from "./db/connection";
 import type { TripModel } from "./model";
 import { createTripStore, RequestError } from "./trips";
 import { validateItineraryQuality } from "../lib/itinerary-quality";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelTimingSchema,
+  type TravelTiming,
+} from "../lib/travel-days";
+import type { TripIntent } from "../lib/trip-intent";
 import { venueReferences } from "./venue-references";
 import { normalizeTravelBuffers } from "../lib/itinerary-normalization";
 import { ModelFailure, type ModelCallContext } from "./ai/contracts";
 import { initialValidationChecks, type ValidationStage } from "./ai/audit";
 import type { ItineraryNormalization } from "../lib/itinerary-normalization";
 import { STALE_JOB_MS } from "../lib/generation-timing";
+
+const reviewLegacyTiming =
+  "Review the tentative transit days for this saved destination before generating.";
+
+function confirmTravelTiming(
+  proposal: CityProposal,
+  intent: TripIntent,
+  timing?: TravelTiming,
+) {
+  if (proposal.travelTiming) {
+    if (timing)
+      throw new RequestError(
+        409,
+        "Use the saved travel assumptions or adjust a copy of your trip.",
+      );
+    return proposal;
+  }
+  if (!timing) throw new RequestError(422, reviewLegacyTiming);
+  try {
+    return validateProposal({ ...proposal, travelTiming: timing }, intent);
+  } catch (error) {
+    if (error instanceof PlanningError)
+      throw new RequestError(422, error.message);
+    throw error;
+  }
+}
 
 export function createGenerationStore(
   db: Database,
@@ -103,13 +137,20 @@ export function createGenerationStore(
   return {
     read,
     async action(userId: string, tripId: string, input: unknown) {
-      const { action } = z
-        .object({ action: z.enum(["start", "confirm", "retry"]) })
+      const { action, travelTiming } = z
+        .object({
+          action: z.enum(["start", "confirm", "retry"]),
+          travelTiming: travelTimingSchema.optional(),
+        })
         .strict()
+        .refine(
+          ({ action, travelTiming }) => action !== "start" || !travelTiming,
+        )
         .parse(input);
       const saved = await trips.read(userId, tripId);
+      let intent: TripIntent;
       try {
-        validateGenerationIntent(saved.data);
+        intent = validateGenerationIntent(saved.data);
       } catch (error) {
         throw new RequestError(
           422,
@@ -143,6 +184,7 @@ export function createGenerationStore(
             confirmed: true,
             attempts: 0,
             error: null,
+            proposal: confirmTravelTiming(job.proposal, intent, travelTiming),
             updatedAt: new Date(),
           })
           .where(
@@ -157,9 +199,23 @@ export function createGenerationStore(
             409,
             "Retry is unavailable. Review your saved trip or try a new planning draft.",
           );
+        if (travelTiming && !job.confirmed)
+          throw new RequestError(
+            409,
+            "Confirm a destination before supplying transit days.",
+          );
+        const proposal =
+          job.confirmed && job.proposal
+            ? confirmTravelTiming(job.proposal, intent, travelTiming)
+            : job.proposal;
         await db
           .update(generation)
-          .set({ status: "queued", error: null, updatedAt: new Date() })
+          .set({
+            status: "queued",
+            error: null,
+            proposal,
+            updatedAt: new Date(),
+          })
           .where(
             and(
               eq(generation.id, job.id),
@@ -173,6 +229,23 @@ export function createGenerationStore(
     async run(userId: string, tripId: string) {
       const job = await read(userId, tripId);
       if (!job || job.status !== "queued") return;
+      if (job.confirmed && !job.proposal?.travelTiming) {
+        await db
+          .update(generation)
+          .set({
+            status: "failed",
+            error: reviewLegacyTiming,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(generation.id, job.id),
+              eq(generation.status, "queued"),
+              eq(generation.updatedAt, job.updatedAt),
+            ),
+          );
+        return;
+      }
       const now = new Date();
       const [claimed] = await db
         .update(generation)
@@ -308,8 +381,11 @@ export function createGenerationStore(
           quality,
           normalization: normalized.normalization,
           budget,
-          days: plan.days.map((day) => ({
+          days: plan.days.map((day, index) => ({
             ...day,
+            title: isTransitDay(quality.days[index].role)
+              ? dayRoleLabels[quality.days[index].role]
+              : day.title,
             id: randomUUID(),
             activities: day.activities.map((activity) => ({
               ...activity,

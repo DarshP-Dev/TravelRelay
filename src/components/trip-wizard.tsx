@@ -484,7 +484,7 @@ export function TripWizard({
                           />
                         </label>
                         <label className="field">
-                          Trip length (days)
+                          Travel window (days, including transit)
                           <input
                             type="number"
                             min={1}
@@ -500,7 +500,7 @@ export function TripWizard({
                     ) : (
                       <div className="field-grid">
                         <label className="field">
-                          Start date
+                          Travel start date
                           <input
                             type="date"
                             name="start"
@@ -510,7 +510,7 @@ export function TripWizard({
                           />
                         </label>
                         <label className="field">
-                          End date
+                          Travel end date
                           <input
                             type="date"
                             name="end"
@@ -528,9 +528,9 @@ export function TripWizard({
                       </p>
                     )}
                     <p className="inline-note">
-                      AI planning supports 1–14 days. Exact arrival and
-                      departure times are not collected; travel-day windows will
-                      be disclosed assumptions.
+                      Include travel to and from the destination. AI planning
+                      supports 1–14 calendar days. You’ll review the assumed
+                      arrival and departure dates before generating.
                     </p>
                     <div className="field">
                       <span id="travelers-label">Travelers</span>

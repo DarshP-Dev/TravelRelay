@@ -489,7 +489,7 @@ Unknown internal errors are sanitized. Keys remain in ignored environment files.
 
 ## Itinerary quality gate
 
-The unchanged compact model DTO is strictly parsed, then `normalizeTravelBuffers`
+The compact model DTO is strictly parsed, then `normalizeTravelBuffers`
 raises understated interactivity buffers only within sufficient existing gaps.
 It changes no activity times or costs and never reduces conservative buffers.
 The normalized plan is followed by `validateItinerary` and then
@@ -505,6 +505,17 @@ plans store stable expense/activity references, budget metadata and correction
 history in JSONB. Version-1 plans retain their original amounts and are labeled.
 Substantial lunch/dinner opportunities, explicit meal times and city placeholders
 receive stronger checks. See [itinerary-reliability.md](itinerary-reliability.md).
+
+The destination proposal stores tentative outbound and return transit-day
+counts in the existing proposal JSON. The server derives dated day roles from
+those counts and the inclusive travel window. It uses the same roles for the
+itinerary prompt, generation validation, and edit previews. Transit dates have
+empty activity lists. Local days still require activities, with lighter arrival
+requirements after outbound transit and conservative departure windows.
+Travel-window days, destination days, full sightseeing days, and estimated
+destination nights are shown separately. A saved unfinished proposal without
+structured timing requires explicit timing review before generation resumes.
+Completed legacy itineraries retain their saved schedules and audits.
 
 Server-owned published-hours references are supplied only for supported venues.
 Model response properties cannot mark themselves verified. Accepted JSONB plans

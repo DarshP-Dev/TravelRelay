@@ -2,7 +2,14 @@ import { DestinationImage } from "./destination-image";
 import { destinationPhoto, type TripIntent } from "@/lib/trip-intent";
 import { budgetMinor, dateAfter, money, type Itinerary } from "@/lib/itinerary";
 import { planningBudgetSummary } from "@/lib/budget-presentation";
-import type { VenueCheck, DayRole } from "@/lib/itinerary-quality";
+import type { VenueCheck } from "@/lib/itinerary-quality";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+  travelWindowLabel,
+} from "@/lib/travel-days";
 import { ItineraryBudgetView, budgetLabels } from "./itinerary-budget-view";
 import { ItineraryDayOverview } from "./itinerary-day-overview";
 import type { ReactNode } from "react";
@@ -51,12 +58,6 @@ function VenueInformation({
     </div>
   );
 }
-const dayLabels: Record<DayRole, string> = {
-  arrival: "Arrival day",
-  full: "Full day",
-  departure: "Departure day",
-  "single-day": "Local day plan",
-};
 export function ItineraryView({
   itinerary: plan,
   intent,
@@ -73,6 +74,7 @@ export function ItineraryView({
   children?: ReactNode;
 }) {
   const photo = destinationPhoto(plan.base.city);
+  const window = travelWindow(plan.days.length, plan.base.travelTiming);
   return (
     <div className="completed-itinerary">
       <div className="saved-trip-hero">
@@ -133,6 +135,9 @@ export function ItineraryView({
           {intent.travelers} {intent.travelers === 1 ? "traveler" : "travelers"}{" "}
           · Local time: {plan.base.timeZone}
         </p>
+        {plan.base.travelTiming && (
+          <p className="inline-note">{travelWindowLabel(window)}</p>
+        )}
         <p className="inline-note">
           Selected group budget: {money(budgetMinor(intent), intent.currency)}{" "}
           {intent.currency} ·{" "}
@@ -307,14 +312,18 @@ export function ItineraryView({
                     <span className="eyebrow">
                       DAY {index + 1} · {day.date}
                     </span>
-                    {plan.quality && (
+                    {(plan.quality || plan.base.travelTiming) && (
                       <p className="day-role">
-                        {dayLabels[plan.quality.days[index]?.role]} ·{" "}
-                        {intent.pace} pace
+                        {dayRoleLabels[travelDayRole(index, window)]}
                       </p>
                     )}
                     <h3>{day.title}</h3>
                   </div>
+                  {isTransitDay(travelDayRole(index, window)) && (
+                    <p className="inline-note">
+                      Reserved for travel. No local activities are scheduled.
+                    </p>
+                  )}
                   <ol>
                     {day.activities.map((activity, activityIndex) => {
                       const expense = plan.budget?.expenses.find(

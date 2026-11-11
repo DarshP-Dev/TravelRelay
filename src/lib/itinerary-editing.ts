@@ -17,6 +17,7 @@ import {
   estimatedTravelBuffer,
   type VenueReference,
 } from "./itinerary-quality";
+import { isTransitDay } from "./travel-days";
 import { activityContext } from "./venue-classification";
 import type { TripIntent } from "./trip-intent";
 
@@ -332,6 +333,18 @@ export function assessManualSchedule(
   if (plan.days.flatMap((d) => d.activities).length > 200)
     add(errors, "resource-limit", "Keep the trip to at most 200 activities.");
   for (const [di, day] of plan.days.entries()) {
+    const policy = policies[di];
+    if (isTransitDay(policy.role)) {
+      if (day.activities.length)
+        add(
+          errors,
+          "transit-activity",
+          `Day ${di + 1} is reserved for transit and cannot contain destination activities.`,
+          undefined,
+          day.id,
+        );
+      continue;
+    }
     if (day.activities.length > 30)
       add(
         errors,
@@ -341,8 +354,8 @@ export function assessManualSchedule(
         day.id,
       );
     if (
-      day.activities.length < policies[di].minActivities ||
-      day.activities.length > policies[di].maxActivities
+      day.activities.length < policy.minActivities ||
+      day.activities.length > policy.maxActivities
     )
       add(
         warnings,
@@ -368,22 +381,14 @@ export function assessManualSchedule(
           `${a.title} extends outside its calendar day or arrival buffer.`,
           a,
         );
-      if (
-        di === 0 &&
-        ai === 0 &&
-        plan.days.length > 1 &&
-        a.bufferBeforeMinutes < 30
-      )
+      if (policy.role === "arrival" && ai === 0 && a.bufferBeforeMinutes < 30)
         add(
           errors,
           "arrival-buffer",
           "Allow at least 30 minutes of arrival/settling buffer.",
           a,
         );
-      if (
-        a.startMinute < policies[di].startMinute ||
-        end > policies[di].endMinute
-      )
+      if (a.startMinute < policy.startMinute || end > policy.endMinute)
         add(
           warnings,
           "travel-assumption",
