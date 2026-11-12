@@ -1,0 +1,366 @@
+:root {
+  --workspace-width: 1600px;
+  --workspace-gutter: clamp(16px, 5vw, 90px);
+  --workspace-paper: #fffefa;
+  --workspace-rail-ink: #304a40;
+  --workspace-accent: #296c59;
+}
+
+html:has(> body > .travel-app) {
+  scrollbar-gutter: stable;
+}
+
+body:has(> .travel-app) {
+  isolation: isolate;
+  background: #d9e5df;
+}
+
+body:has(> .travel-app)::before {
+  position: fixed;
+  z-index: -1;
+  inset: -16px;
+  pointer-events: none;
+  content: "";
+  background:
+    linear-gradient(155deg, rgb(244 249 241 / 30%), rgb(216 232 220 / 49%)),
+    url("/images/alpine-hero-1120.avif") center 43% / cover no-repeat;
+  filter: blur(8px);
+}
+
+.travel-app {
+  --dashboard-ink: #20332c;
+  --dashboard-muted: #506057;
+  --dashboard-line: #deded2;
+  --dashboard-accent: #a34b33;
+  --dashboard-coral: #f5d5c3;
+  --dashboard-sage: #e4ebdf;
+  padding: 16px var(--workspace-gutter) clamp(35px, 5vw, 75px);
+}
+
+.travel-app-canvas {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(18px, 2.5vw, 40px);
+  width: min(100%, var(--workspace-width));
+  min-height: clamp(580px, 72svh, 850px);
+  margin-inline: auto;
+  padding: clamp(18px, 2.7vw, 42px);
+  border: 1px solid rgb(255 255 255 / 72%);
+  border-radius: 32px;
+  background: var(--workspace-paper);
+  box-shadow: 0 20px 55px rgb(19 38 31 / 13%);
+}
+
+.travel-app-content {
+  min-width: 0;
+}
+
+.travel-app-content > .container {
+  width: 100%;
+}
+
+.travel-app-content > .page-content {
+  min-height: 0;
+  padding-block: 0;
+}
+
+.travel-app + .site-footer {
+  border-top-color: rgb(255 255 255 / 58%);
+  background: rgb(247 250 244 / 91%);
+}
+
+.travel-app-content .editorial-explore .destination-showcase {
+  --destination-gutter: clamp(20px, 3.2vw, 56px);
+  border-radius: 20px;
+}
+
+.travel-app-content .editorial-explore .destination-layout {
+  min-height: min(900px, max(580px, calc(var(--site-viewport-height) - 175px)));
+}
+
+.travel-app-rail {
+  position: sticky;
+  z-index: 2;
+  top: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 13px 4px 0;
+  border-inline-end: 1px solid #e2e9e1;
+}
+
+.travel-app-rail a {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 54px;
+  min-height: 55px;
+  border-radius: 15px;
+  color: var(--workspace-rail-ink);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+.travel-app-rail a:hover,
+.travel-app-rail a:focus-visible {
+  background: #f1f5ed;
+}
+
+.travel-app-rail a[aria-current] {
+  background: #e1eee3;
+  color: #205343;
+}
+
+.travel-app-rail a::before {
+  position: absolute;
+  inset-block: 15px;
+  inset-inline-start: -6px;
+  width: 3px;
+  border-radius: 5px;
+  background: var(--workspace-accent);
+  opacity: 0;
+  transform: scaleY(0.55);
+  content: "";
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.travel-app-rail a[aria-current]::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+
+.travel-app-rail a span {
+  position: absolute;
+  inset-inline-start: calc(100% + 10px);
+  padding: 5px 11px;
+  border-radius: 8px;
+  background: #1b342b;
+  color: #fffdf6;
+  font-size: 0.86rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease,
+    visibility 160ms;
+}
+
+.travel-app-rail a:is(:hover, :focus-visible) span {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+}
+
+.site-header.site-header--cinematic {
+  height: var(--cinematic-header-height);
+}
+
+.site-header--cinematic:is(.site-header--workspace, .site-header--interior) {
+  margin-bottom: 0;
+  color: #193329;
+  background: rgb(248 251 245 / 52%);
+  border-bottom-color: transparent;
+}
+
+.site-header--cinematic.site-header--interior {
+  background: rgb(250 250 247 / 88%);
+}
+
+.site-header--cinematic:not(.site-header--home)[data-scrolled="true"] {
+  background: rgb(248 251 245 / 88%);
+  backdrop-filter: blur(12px);
+  border-bottom-color: rgb(30 63 48 / 8%);
+}
+
+.site-header--cinematic.site-header--workspace .header-inner {
+  width: min(var(--workspace-width), calc(100% - 2 * var(--workspace-gutter)));
+}
+
+.site-header--cinematic:not(.site-header--home) :is(.brand, .menu-toggle) {
+  text-shadow: none;
+}
+
+.site-header--cinematic .brand-mark {
+  color: inherit;
+}
+
+.site-header--cinematic:not(.site-header--home) .menu-toggle:hover {
+  color: var(--workspace-accent);
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: clamp(9px, 1.6vw, 26px);
+}
+
+.header-account {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 27%, transparent);
+  border-radius: 50%;
+  transition: background-color 180ms ease;
+}
+
+.header-account:hover,
+.header-account[aria-current] {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.site-header--cinematic .header-controls .global-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  width: min(21rem, 100%);
+  padding: 10px 17px;
+  border-radius: 18px;
+  background: #162b23;
+  color: #fffdf6;
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease,
+    visibility 0s linear 180ms;
+}
+
+.site-header--cinematic .header-controls .global-nav[data-open="true"] {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.site-header--cinematic .header-controls .global-nav a {
+  padding-inline: 10px;
+  min-height: 52px;
+  font-size: 0.96rem;
+}
+
+.site-header--cinematic .header-controls .global-nav a:last-child {
+  border-bottom-color: transparent;
+}
+
+.site-header--cinematic .header-controls .global-nav a[aria-current] {
+  border-radius: 8px;
+  border-bottom-color: transparent;
+  background: rgb(246 221 168 / 11%);
+}
+
+.site-header--cinematic:not(.site-header--home)
+  :is(.brand, .menu-toggle, .header-account):focus-visible {
+  outline-color: var(--workspace-accent);
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --workspace-gutter: clamp(14px, 3.2vw, 44px);
+  }
+
+  .travel-app-canvas {
+    grid-template-columns: 59px minmax(0, 1fr);
+  }
+
+  .travel-app-rail a {
+    width: 48px;
+    min-height: 51px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --workspace-gutter: clamp(10px, 3.5vw, 24px);
+  }
+
+  body:has(> .travel-app)::before {
+    background-image:
+      linear-gradient(155deg, rgb(244 249 241 / 34%), rgb(216 232 220 / 54%)),
+      url("/images/alpine-hero-mobile.avif");
+  }
+
+  .travel-app {
+    padding-top: 7px;
+  }
+
+  .travel-app-canvas {
+    grid-template-columns: minmax(0, 1fr);
+    padding: clamp(14px, 4vw, 24px);
+    border-radius: 24px;
+    gap: 16px;
+  }
+
+  .travel-app-rail {
+    position: static;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 4px;
+    padding: 0 0 10px;
+    border-inline-end: 0;
+    border-bottom: 1px solid #e2e9e1;
+  }
+
+  .travel-app-rail a {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 55px;
+    gap: 5px;
+    padding: 5px 2px;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  .travel-app-rail a::before {
+    inset: auto 22% -6px;
+    width: auto;
+    height: 2px;
+    transform: scaleX(0.55);
+  }
+
+  .travel-app-rail a[aria-current]::before {
+    transform: scaleX(1);
+  }
+
+  .travel-app-rail a span {
+    position: static;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 0.78rem;
+    line-height: 1.15;
+    white-space: normal;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
+
+  .travel-app-content .editorial-explore .destination-layout {
+    min-height: 640px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header--cinematic .header-controls .global-nav,
+  .header-account,
+  .travel-app-rail a,
+  .travel-app-rail a::before,
+  .travel-app-rail a span {
+    transition: none;
+  }
+}

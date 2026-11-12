@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { requireUser } from "@/server/session";
 import { getApp } from "@/server/runtime";
 import { SavedTripCard } from "@/components/saved-trip-card";
-import { DashboardShell } from "@/components/dashboard-shell";
 import { Plus } from "lucide-react";
 import {
   ButtonLink,
@@ -10,6 +9,7 @@ import {
   PageHeading,
   SectionLink,
 } from "@/components/ui";
+import "@/components/dashboard.css";
 
 export const metadata: Metadata = { title: "My Trips" };
 
@@ -17,7 +17,7 @@ export default async function TripsPage() {
   const user = await requireUser("/trips");
   const trips = await (await getApp()).trips.list(user.id);
   return (
-    <DashboardShell active="trips">
+    <>
       <PageHeading
         eyebrow="YOUR PERSONAL DEPARTURE BOARD"
         title="Every adventure, in one place."
@@ -50,6 +50,6 @@ export default async function TripsPage() {
           />
         </div>
       )}
-    </DashboardShell>
+    </>
   );
 }

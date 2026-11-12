@@ -1,81 +1,3 @@
-.travel-dashboard {
-  --dashboard-ink: #20332c;
-  --dashboard-muted: #506057;
-  --dashboard-line: #deded2;
-  --dashboard-accent: #a34b33;
-  --dashboard-coral: #f5d5c3;
-  --dashboard-sage: #e4ebdf;
-  --dashboard-paper: #fcfaf5;
-  background: #eee9df;
-  color: var(--dashboard-ink);
-  padding: clamp(16px, 3.4vw, 52px) clamp(14px, 4vw, 60px);
-}
-
-.travel-dashboard-canvas {
-  width: min(100%, 1630px);
-  margin-inline: auto;
-  display: grid;
-  grid-template-columns: 64px minmax(0, 1fr);
-  align-items: start;
-  gap: clamp(18px, 2.6vw, 42px);
-  padding: clamp(16px, 2.6vw, 40px);
-  border: 1px solid rgb(69 77 58 / 11%);
-  border-radius: 30px;
-  background: var(--dashboard-paper);
-  box-shadow: 0 18px 56px rgb(55 49 29 / 8%);
-}
-
-.travel-dashboard-main {
-  min-width: 0;
-}
-
-.travel-dashboard-nav {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  align-items: center;
-  padding: 4px 13px 4px 0;
-  border-inline-end: 1px solid var(--dashboard-line);
-}
-
-.travel-dashboard-nav a {
-  position: relative;
-  display: grid;
-  place-items: center;
-  flex: none;
-  width: 54px;
-  min-height: 55px;
-  border-radius: 16px;
-  color: var(--dashboard-muted);
-  transition:
-    background 180ms ease,
-    color 180ms ease;
-}
-
-.travel-dashboard-nav a:hover {
-  background: #efeee4;
-  color: var(--dashboard-ink);
-}
-
-.travel-dashboard-nav a[aria-current] {
-  background: var(--dashboard-coral);
-  color: #7b3829;
-}
-
-.travel-dashboard-nav a[aria-current]::before {
-  position: absolute;
-  inset-block: 16px;
-  inset-inline-start: -6px;
-  width: 3px;
-  border-radius: 4px;
-  background: var(--dashboard-accent);
-  content: "";
-}
-
-.travel-dashboard-nav a span {
-  display: none;
-}
-
 .dashboard-heading {
   margin: 0 0 clamp(17px, 2.5vw, 30px);
 }
@@ -665,10 +587,6 @@
   .dashboard-destination-copy {
     animation: dashboard-copy-arrive 270ms ease-out both;
   }
-
-  .travel-dashboard-nav a[aria-current]::before {
-    animation: dashboard-indicator-arrive 220ms ease-out both;
-  }
 }
 
 @keyframes dashboard-photo-arrive {
@@ -690,17 +608,6 @@
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes dashboard-indicator-arrive {
-  from {
-    opacity: 0;
-    transform: scale(0.55);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -728,43 +635,6 @@
 }
 
 @media (max-width: 760px) {
-  .travel-dashboard-canvas {
-    grid-template-columns: minmax(0, 1fr);
-    border-radius: 21px;
-  }
-
-  .travel-dashboard-nav {
-    flex-direction: row;
-    justify-content: space-between;
-    gap: 3px;
-    padding: 0 0 9px;
-    border-inline-end: 0;
-    border-bottom: 1px solid var(--dashboard-line);
-  }
-
-  .travel-dashboard-nav a {
-    flex: 1 1 0;
-    min-width: 0;
-    width: auto;
-    gap: 4px;
-    padding: 5px 2px;
-    border-radius: 9px;
-    text-align: center;
-  }
-
-  .travel-dashboard-nav a[aria-current]::before {
-    inset: auto 22% -5px;
-    width: auto;
-    height: 2px;
-  }
-
-  .travel-dashboard-nav a span {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 650;
-    line-height: 1.1;
-  }
-
   .dashboard-destination {
     min-height: 425px;
     border-radius: 17px;
@@ -799,7 +669,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .travel-dashboard-nav a,
   .dashboard-widget,
   .dashboard-destination-action a,
   .dashboard-trip-switcher a,

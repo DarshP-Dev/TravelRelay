@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
+import { AppShell } from "@/components/app-shell";
 import "./globals.css";
 import "./editorial.css";
+import "./app-shell.css";
 
 const heading = localFont({
   src: "../../public/fonts/plus-jakarta-sans.woff2",
@@ -41,9 +43,7 @@ export default function RootLayout({
           Skip to content
         </a>
         <SiteHeader />
-        <main id="main-content" tabIndex={-1}>
-          {children}
-        </main>
+        <AppShell>{children}</AppShell>
         <SiteFooter />
       </body>
     </html>

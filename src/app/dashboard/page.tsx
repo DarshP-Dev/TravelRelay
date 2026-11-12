@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { DashboardShell } from "@/components/dashboard-shell";
 import { DashboardTripHero } from "@/components/dashboard-trip-hero";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import {
@@ -9,6 +8,7 @@ import {
 } from "@/lib/dashboard-trips";
 import { requireUser } from "@/server/session";
 import { getApp } from "@/server/runtime";
+import "@/components/dashboard.css";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -39,7 +39,7 @@ export default async function DashboardPage({
   const firstName = user.name.trim().split(/\s+/)[0];
 
   return (
-    <DashboardShell active="dashboard" tripId={selected?.id}>
+    <>
       <header className="dashboard-heading">
         <h1>{firstName ? `Welcome, ${firstName}` : "Your travel dashboard"}</h1>
       </header>
@@ -54,6 +54,6 @@ export default async function DashboardPage({
         wallet={wallet}
         today={today}
       />
-    </DashboardShell>
+    </>
   );
 }

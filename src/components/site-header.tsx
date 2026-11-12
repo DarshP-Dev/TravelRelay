@@ -3,21 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { Plus, UserRound, X } from "lucide-react";
+import { X } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
-
-const navigation = [
-  { href: "/dashboard", label: "Dashboard" },
-  { href: "/trips", label: "My Trips" },
-  { href: "/explore", label: "Explore" },
-];
+import {
+  accountRoute,
+  appNavigation,
+  isActiveAppRoute,
+  isAppRoute,
+} from "@/lib/app-navigation";
 
 function subscribeToScroll(onChange: () => void) {
   window.addEventListener("scroll", onChange, { passive: true });
   return () => window.removeEventListener("scroll", onChange);
 }
 
-const subscribeToNothing = () => () => {};
 const atPageTop = () => true;
 const isAtPageTop = () => window.scrollY < 24;
 
@@ -35,156 +34,160 @@ function Brand() {
   );
 }
 
-export function SiteHeader() {
-  const {
-    data: session,
-    isPending,
-    error: sessionError,
-  } = authClient.useSession();
-  const pathname = usePathname();
-  const home = pathname === "/";
-  const overHero = useSyncExternalStore(
-    home ? subscribeToScroll : subscribeToNothing,
-    home ? isAtPageTop : atPageTop,
-    atPageTop,
-  );
-  const [openPath, setOpenPath] = useState<string | null>(null);
-  const open = openPath === pathname;
+function HeaderControls({
+  pathname,
+  signedIn,
+}: {
+  pathname: string;
+  signedIn: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const controlsRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
   const navRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    const query = window.matchMedia("(min-width: 901px)");
-    const closeOnDesktop = () => {
-      if (!home && query.matches) setOpenPath(null);
-    };
+    navRef.current?.querySelector("a")?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        setOpenPath(null);
+        event.preventDefault();
+        setOpen(false);
         toggleRef.current?.focus();
       }
     };
     const closeOutside = (event: PointerEvent) => {
       if (
         event.target instanceof Node &&
-        !navRef.current?.contains(event.target) &&
-        !toggleRef.current?.contains(event.target)
+        !controlsRef.current?.contains(event.target)
       )
-        setOpenPath(null);
+        setOpen(false);
     };
-    query.addEventListener("change", closeOnDesktop);
     document.addEventListener("keydown", closeOnEscape);
     document.addEventListener("pointerdown", closeOutside);
     return () => {
-      query.removeEventListener("change", closeOnDesktop);
       document.removeEventListener("keydown", closeOnEscape);
       document.removeEventListener("pointerdown", closeOutside);
     };
-  }, [home, open]);
+  }, [open]);
+  const AccountIcon = accountRoute.icon;
+  const menuLinks = [
+    ...appNavigation.filter((route) => signedIn || !route.private),
+    ...(signedIn
+      ? [accountRoute]
+      : [
+          { href: "/#how-it-works", label: "How it works" },
+          { href: "/login", label: "Sign in" },
+        ]),
+  ];
 
-  function active(href: string) {
-    return (
-      pathname === href ||
-      (href === "/trips" &&
-        pathname.startsWith("/trips/") &&
-        pathname !== "/trips/new")
-    );
-  }
+  return (
+    <div
+      className="header-controls"
+      ref={controlsRef}
+      onBlur={(event) => {
+        if (
+          event.relatedTarget &&
+          !event.currentTarget.contains(event.relatedTarget)
+        )
+          setOpen(false);
+      }}
+    >
+      {signedIn && (
+        <Link
+          className="header-account"
+          href={accountRoute.href}
+          aria-label="Account profile"
+          aria-current={pathname === accountRoute.href ? "page" : undefined}
+          title="Account profile"
+          onClick={() => setOpen(false)}
+        >
+          <AccountIcon size={22} strokeWidth={1.7} aria-hidden="true" />
+        </Link>
+      )}
+      <button
+        ref={toggleRef}
+        type="button"
+        className="menu-toggle"
+        aria-expanded={open}
+        aria-controls="global-navigation"
+        aria-label="Menu"
+        onClick={() => setOpen(!open)}
+      >
+        <span>Menu</span>
+        {open ? (
+          <X size={22} aria-hidden="true" />
+        ) : (
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            aria-hidden="true"
+          >
+            <path d="M3 8h18M9 16h12" />
+          </svg>
+        )}
+      </button>
+      <nav
+        ref={navRef}
+        id="global-navigation"
+        className="global-nav"
+        data-open={open}
+        inert={!open}
+        aria-label="Global navigation"
+        onClick={(event) => {
+          if (event.target instanceof Element && event.target.closest("a")) {
+            setOpen(false);
+            toggleRef.current?.focus();
+          }
+        }}
+      >
+        <div className="nav-links">
+          {menuLinks.map(({ href, label }) => (
+            <Link
+              key={href}
+              href={href}
+              className="nav-link"
+              aria-current={
+                isActiveAppRoute(pathname, href) ? "page" : undefined
+              }
+            >
+              {label}
+            </Link>
+          ))}
+        </div>
+      </nav>
+    </div>
+  );
+}
+
+export function SiteHeader() {
+  const { data: session } = authClient.useSession();
+  const pathname = usePathname();
+  const home = pathname === "/";
+  const atTop = useSyncExternalStore(subscribeToScroll, isAtPageTop, atPageTop);
+  const variant = home
+    ? "site-header--home"
+    : isAppRoute(pathname)
+      ? "site-header--workspace"
+      : "site-header--interior";
 
   return (
     <header
-      className={`site-header${home ? " site-header--cinematic" : ""}${home && overHero ? " site-header--on-image" : ""}`}
+      className={`site-header site-header--cinematic ${variant}${home && atTop ? " site-header--on-image" : ""}`}
+      data-scrolled={!atTop}
     >
       <div className="header-inner">
         <Brand />
-        <button
-          ref={toggleRef}
-          type="button"
-          className="menu-toggle"
-          aria-expanded={open}
-          aria-controls="global-navigation"
-          aria-label={
-            home ? "Menu" : open ? "Close navigation" : "Open navigation"
-          }
-          onClick={() => setOpenPath(open ? null : pathname)}
-        >
-          {home && <span>Menu</span>}
-          {open ? (
-            <X size={22} aria-hidden="true" />
-          ) : (
-            <svg
-              width="22"
-              height="22"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              aria-hidden="true"
-            >
-              <path d="M3 8h18M9 16h12" />
-            </svg>
-          )}
-        </button>
-        <nav
-          ref={navRef}
-          id="global-navigation"
-          className={`global-nav ${open ? "is-open" : ""}`}
-          aria-label="Global navigation"
-          onClick={(event) => {
-            if ((event.target as HTMLElement).closest("a")) setOpenPath(null);
-          }}
-        >
-          <div className="nav-links">
-            {(session
-              ? navigation
-              : [
-                  { href: "/explore", label: "Explore" },
-                  { href: "/#how-it-works", label: "How it works" },
-                ]
-            ).map(({ href, label }) => (
-              <Link
-                key={href}
-                href={href}
-                className={active(href) ? "nav-link active" : "nav-link"}
-                aria-current={active(href) ? "page" : undefined}
-              >
-                {label}
-              </Link>
-            ))}
-          </div>
-          <div className="nav-actions">
-            {!session && (
-              <Link href="/login" className="nav-link">
-                {isPending
-                  ? "Account…"
-                  : sessionError
-                    ? "Account unavailable"
-                    : "Sign in"}
-              </Link>
-            )}
-            <Link
-              href="/trips/new"
-              className="button button-primary nav-create"
-              aria-current={pathname === "/trips/new" ? "page" : undefined}
-            >
-              <Plus size={16} aria-hidden="true" />
-              Create Trip
-            </Link>
-            {session && (
-              <Link
-                href="/profile"
-                className="profile-link"
-                aria-label="Profile"
-                aria-current={pathname === "/profile" ? "page" : undefined}
-              >
-                <UserRound size={20} aria-hidden="true" />
-                <span>Profile</span>
-              </Link>
-            )}
-          </div>
-        </nav>
+        <HeaderControls
+          key={pathname}
+          pathname={pathname}
+          signedIn={!!session}
+        />
       </div>
     </header>
   );
