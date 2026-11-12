@@ -17,18 +17,24 @@ import { clock } from "@/lib/activity-metadata";
 export default function VisualSchedule({
   plan,
   onChange,
+  onSelect,
   disabled,
 }: {
   plan: Itinerary;
   onChange: (change: ReturnType<typeof schedulerChange>) => void;
+  onSelect: (activityId: string, focus?: boolean) => void;
   disabled: boolean;
 }) {
   const host = useRef<HTMLDivElement>(null),
     instance = useRef<Scheduler | null>(null);
   const callback = useRef(onChange);
+  const select = useRef(onSelect);
   useEffect(() => {
     callback.current = onChange;
   }, [onChange]);
+  useEffect(() => {
+    select.current = onSelect;
+  }, [onSelect]);
   const [error, setError] = useState("");
   useEffect(() => {
     let disposed = false,
@@ -40,16 +46,16 @@ export default function VisualSchedule({
         scheduler = new Scheduler({
           appendTo: host.current,
           cls: "travel-scheduler",
-          height: 500,
-          rowHeight: 90,
-          barMargin: 12,
+          height: Math.min(500, 62 + rows.resources.length * 74),
+          rowHeight: 74,
+          barMargin: 9,
           startDate: scheduleClock(0),
           endDate: scheduleClock(1440),
           displayDateFormat: "HH:mm",
           visibleDate: { date: scheduleClock(540), block: "start" },
           viewPreset: {
             base: "hourAndDay",
-            tickWidth: 64,
+            tickWidth: 78,
             headers: [{ unit: "hour", dateFormat: "HH:mm" }],
             timeResolution: { unit: "minute", increment: 15 },
           },
@@ -86,11 +92,17 @@ export default function VisualSchedule({
             const activity = day?.activities.find(
               (a) => a.id === String(eventRecord.id),
             );
-            if (day && activity)
+            const title = escapeScheduleText(String(eventRecord.name));
+            if (day && activity) {
               renderData.ariaLabel = `${activity.title}, ${day.date}, ${clock(activity.startMinute)} to ${clock(activity.startMinute + activity.durationMinutes)}, ${activity.durationMinutes} minutes. Drag or use the Edit controls below.`;
-            return escapeScheduleText(String(eventRecord.name));
+              return `<div class="schedule-event-copy"><span class="schedule-event-name">${title}</span><small class="schedule-event-time">${clock(activity.startMinute)}–${clock(activity.startMinute + activity.durationMinutes)}</small></div>`;
+            }
+            return title;
           },
           listeners: {
+            eventClick({ eventRecord }) {
+              select.current(String(eventRecord.id), false);
+            },
             beforeEventDropFinalize({ context }) {
               context.async = true;
               try {
@@ -153,32 +165,33 @@ export default function VisualSchedule({
   }, [plan, disabled]);
   return (
     <section className="visual-schedule" aria-label="Visual trip schedule">
-      <p>
-        Drag an activity to another time/day, or resize its edge. Every gesture
-        opens a server-checked preview; nothing saves automatically. Times are
-        local to {plan.base.timeZone}.
-      </p>
-      <div className="editor-actions">
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={() => {
-            const s = instance.current;
-            if (s) s.tickSize = Math.min(180, s.tickSize * 1.3);
-          }}
-        >
-          Zoom in
-        </button>
-        <button
-          className="button button-secondary"
-          type="button"
-          onClick={() => {
-            const s = instance.current;
-            if (s) s.tickSize = Math.max(24, s.tickSize / 1.3);
-          }}
-        >
-          Zoom out
-        </button>
+      <div className="visual-schedule-toolbar">
+        <p>
+          Drag or resize to preview a change. Use the cards for keyboard and
+          touch editing.
+        </p>
+        <div className="editor-actions" aria-label="Schedule zoom">
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={() => {
+              const s = instance.current;
+              if (s) s.tickSize = Math.min(180, s.tickSize * 1.3);
+            }}
+          >
+            Zoom in
+          </button>
+          <button
+            className="button button-secondary"
+            type="button"
+            onClick={() => {
+              const s = instance.current;
+              if (s) s.tickSize = Math.max(24, s.tickSize / 1.3);
+            }}
+          >
+            Zoom out
+          </button>
+        </div>
       </div>
       {error && (
         <p role="alert" className="notice">
@@ -186,10 +199,7 @@ export default function VisualSchedule({
         </p>
       )}
       <div ref={host} className="scheduler-host" />
-      <p className="inline-note">
-        Bryntum Scheduler Community · MIT. Use Edit or Reorder controls on the
-        cards for keyboard and mobile scheduling.
-      </p>
+      <p className="inline-note">Bryntum Scheduler Community · MIT</p>
     </section>
   );
 }

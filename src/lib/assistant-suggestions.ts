@@ -15,5 +15,4 @@ export const assistantSuggestions = {
   },
 } as const;
 
-export type AssistantSuggestion =
-  (typeof assistantSuggestions)[keyof typeof assistantSuggestions];
+export type AssistantSuggestion = { label: string; prompt: string };

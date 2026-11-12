@@ -3,7 +3,12 @@ import { ArrowUpRight } from "lucide-react";
 import { DestinationImage } from "./destination-image";
 import { destinationPhoto } from "@/lib/trip-intent";
 import { money, type Itinerary } from "@/lib/itinerary";
-import { isTransitDay, travelDayRole, travelWindow } from "@/lib/travel-days";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+} from "@/lib/travel-days";
 
 type Plan = Omit<Itinerary, "generatedAt" | "model" | "priceSource">;
 export function itineraryDayHref(tripId: string, dayId: string) {
@@ -35,6 +40,11 @@ export function ItineraryDayOverview({
           <p className="eyebrow">
             DAY {index + 1} · {day.date}
           </p>
+          {plan.base.travelTiming && (
+            <p className="day-role">
+              {dayRoleLabels[travelDayRole(index, travel)]}
+            </p>
+          )}
           {plan.manualEdit && (
             <small className="inline-note">
               Original day theme · current activities below
@@ -68,8 +78,7 @@ export function ItineraryDayOverview({
     >
       <div className="section-heading">
         <div>
-          <p className="eyebrow">YOUR DAYS, AT A GLANCE</p>
-          <h2>A little to look forward to.</h2>
+          <h2>Your journey</h2>
         </div>
         <Link className="section-link" href={`/trips/${tripId}/itinerary`}>
           Full itinerary <ArrowUpRight size={16} aria-hidden="true" />

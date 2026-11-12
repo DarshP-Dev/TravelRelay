@@ -2,7 +2,9 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   CalendarDays,
+  ChevronRight,
   Compass,
+  LifeBuoy,
   ShieldCheck,
   Sparkles,
   Ticket,
@@ -18,10 +20,14 @@ import {
   type DashboardTrip,
 } from "@/lib/dashboard-trips";
 import { assistantSuggestions } from "@/lib/assistant-suggestions";
-import { clock } from "@/lib/activity-metadata";
 import { curatedTrips } from "@/lib/curated-trips";
 import { money } from "@/lib/itinerary";
-import { isTransitDay, travelDayRole, travelWindow } from "@/lib/travel-days";
+import {
+  dayRoleLabels,
+  isTransitDay,
+  travelDayRole,
+  travelWindow,
+} from "@/lib/travel-days";
 import type { WalletState } from "@/server/wallet";
 
 function DashboardLink({
@@ -161,17 +167,13 @@ function DashboardItinerary({
   today: string;
 }) {
   const itinerary = trip.itinerary;
-  const nextDay = itinerary?.days.find((day) => day.date >= today);
-  const day = nextDay ?? itinerary?.days[0];
-  const dayIndex = day && itinerary ? itinerary.days.indexOf(day) : -1;
-  const inTransit =
-    itinerary &&
-    isTransitDay(
-      travelDayRole(
-        dayIndex,
-        travelWindow(itinerary.days.length, itinerary.base.travelTiming),
-      ),
-    );
+  const firstDay = Math.max(
+    0,
+    itinerary?.days.findIndex((day) => day.date >= today) ?? 0,
+  );
+  const travel = itinerary
+    ? travelWindow(itinerary.days.length, itinerary.base.travelTiming)
+    : null;
 
   return (
     <DashboardWidget
@@ -179,38 +181,58 @@ function DashboardItinerary({
       icon={CalendarDays}
       className="dashboard-itinerary"
     >
-      {day && itinerary ? (
-        <div className="dashboard-itinerary-layout">
-          <div className="dashboard-itinerary-photo">
-            <DestinationImage
-              src={featured.photo.image}
-              alt={featured.photo.alt}
-              sizes="(max-width: 700px) 85vw, 30vw"
-            />
-            {featured.inspirationPhoto && <small>Travel inspiration</small>}
-          </div>
-          <div>
-            <p className="dashboard-date-caption">
-              Day {dayIndex + 1} ·{" "}
-              <time dateTime={day.date}>{dashboardDate(day.date)}</time>
-            </p>
-            <h3>{day.title}</h3>
-            {inTransit && (
-              <p>Reserved for travel. No local activities are scheduled.</p>
-            )}
-            <ul className="dashboard-activity-list">
-              {day.activities.slice(0, 3).map((activity) => (
-                <li key={activity.id}>
-                  <time>{clock(activity.startMinute)}</time>
-                  <span>{activity.title}</span>
+      {itinerary && travel ? (
+        <>
+          <p className="dashboard-widget-caption">
+            {itinerary.days.length}-day travel window · {itinerary.base.city}
+          </p>
+          <ol className="dashboard-day-list">
+            {itinerary.days.slice(firstDay, firstDay + 3).map((day, offset) => {
+              const index = firstDay + offset;
+              const role = travelDayRole(index, travel);
+              return (
+                <li key={day.id}>
+                  <Link href={`/trips/${trip.id}/itinerary#day-${day.id}`}>
+                    <span className="dashboard-day-photo" aria-hidden="true">
+                      {isTransitDay(role) || featured.inspirationPhoto ? (
+                        <CalendarDays size={22} />
+                      ) : (
+                        <DestinationImage
+                          src={featured.photo.image}
+                          alt=""
+                          sizes="105px"
+                        />
+                      )}
+                    </span>
+                    <span className="dashboard-day-copy">
+                      <small>
+                        Day {index + 1} ·{" "}
+                        <time dateTime={day.date}>
+                          {dashboardDate(day.date)}
+                        </time>
+                      </small>
+                      <strong>
+                        {isTransitDay(role) ? dayRoleLabels[role] : day.title}
+                      </strong>
+                      <span>
+                        {isTransitDay(role)
+                          ? "Reserved for travel"
+                          : day.activities
+                              .slice(0, 2)
+                              .map((activity) => activity.title)
+                              .join(" · ") || "No scheduled activities"}
+                      </span>
+                    </span>
+                    <ChevronRight size={16} aria-hidden="true" />
+                  </Link>
                 </li>
-              ))}
-            </ul>
-            <DashboardLink href={`/trips/${trip.id}/itinerary#day-${day.id}`}>
-              Full itinerary
-            </DashboardLink>
-          </div>
-        </div>
+              );
+            })}
+          </ol>
+          <DashboardLink href={`/trips/${trip.id}/itinerary`}>
+            Full itinerary
+          </DashboardLink>
+        </>
       ) : (
         <>
           <p>Day plans will appear here when your itinerary is saved.</p>
@@ -223,7 +245,7 @@ function DashboardItinerary({
   );
 }
 
-function DashboardWallet({
+export function DashboardWallet({
   tripId,
   wallet,
 }: {
@@ -302,7 +324,7 @@ function DashboardWallet({
   );
 }
 
-function DashboardAssistant({
+export function DashboardAssistant({
   trip,
   featured,
 }: {
@@ -311,26 +333,34 @@ function DashboardAssistant({
 }) {
   return (
     <DashboardWidget
-      title="Ask TravelRelay"
+      title="AI travel companion"
       icon={Sparkles}
       className="dashboard-assistant"
     >
-      <h3>A travel companion for the details.</h3>
       {trip.itinerary ? (
         <>
-          <p>
-            Open the trip assistant to ask a question or review a possible
-            change.
+          <p className="dashboard-widget-caption">
+            Ask TravelRelay about {featured.name}.
           </p>
           <div className="dashboard-assistant-links">
-            {Object.entries(assistantSuggestions).map(([key, suggestion]) => (
+            {(
+              [
+                ["itinerary", CalendarDays],
+                ["budget", Wallet],
+              ] as const
+            ).map(([key, Icon]) => (
               <DashboardLink
                 key={key}
                 href={`/trips/${trip.id}/itinerary?assistant=${key}`}
               >
-                {suggestion.label}
+                <Icon size={17} aria-hidden="true" />
+                {assistantSuggestions[key].label}
               </DashboardLink>
             ))}
+            <DashboardLink href={`/trips/${trip.id}/recovery`}>
+              <LifeBuoy size={17} aria-hidden="true" /> Handle a canceled
+              activity
+            </DashboardLink>
           </div>
         </>
       ) : (
@@ -360,7 +390,7 @@ const bookingStatuses: Record<string, string> = {
   payment_canceled: "Payment canceled",
 };
 
-function DashboardBookings({
+export function DashboardBookings({
   tripId,
   wallet,
 }: {
@@ -433,22 +463,24 @@ function DashboardInspiration({
     .sort((a, b) => relevance(b) - relevance(a));
   return (
     <section className="dashboard-widget dashboard-inspiration">
+      <h2>
+        <Compass size={19} aria-hidden="true" /> Explore a curated journey
+      </h2>
       <div className="dashboard-inspiration-photo">
         <DestinationImage
           src={pick.image}
           alt={pick.alt}
           sizes="(max-width: 700px) 90vw, 30vw"
         />
-      </div>
-      <div className="dashboard-inspiration-copy">
-        <p className="dashboard-inspiration-label">Travel inspiration</p>
-        <h2>{pick.title}</h2>
-        <p>
-          {pick.country} · {pick.days}-day curated journey
-        </p>
-        <DashboardLink href={`/explore/${pick.id}`}>
-          Explore the journey
-        </DashboardLink>
+        <div className="dashboard-inspiration-copy">
+          <h3>{pick.title}</h3>
+          <p>
+            {pick.country} · {pick.days}-day curated journey
+          </p>
+          <DashboardLink href={`/explore/${pick.id}`}>
+            Explore the journey
+          </DashboardLink>
+        </div>
       </div>
     </section>
   );
@@ -469,20 +501,20 @@ export function DashboardWidgets({
 }) {
   return (
     <div className="dashboard-widget-grid" data-has-trip={!!trip}>
+      {trip && (
+        <>
+          <DashboardItinerary trip={trip} featured={featured} today={today} />
+          <DashboardWallet tripId={trip.id} wallet={wallet} />
+          <DashboardAssistant trip={trip} featured={featured} />
+        </>
+      )}
       <NextStep
         trip={trip}
         featured={featured}
         drafts={drafts}
         wallet={wallet}
       />
-      {trip && (
-        <>
-          <DashboardItinerary trip={trip} featured={featured} today={today} />
-          <DashboardWallet tripId={trip.id} wallet={wallet} />
-          <DashboardAssistant trip={trip} featured={featured} />
-          <DashboardBookings tripId={trip.id} wallet={wallet} />
-        </>
-      )}
+      {trip && <DashboardBookings tripId={trip.id} wallet={wallet} />}
       <DashboardInspiration
         photo={featured.photo.image}
         interests={trip?.data.selected ?? drafts[0]?.data.selected ?? []}

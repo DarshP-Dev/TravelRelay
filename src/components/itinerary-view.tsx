@@ -63,6 +63,7 @@ export function ItineraryView({
   intent,
   timeline = false,
   example = false,
+  presentation,
   tripId,
   children,
 }: {
@@ -70,26 +71,29 @@ export function ItineraryView({
   intent: TripIntent;
   timeline?: boolean;
   example?: boolean;
+  presentation?: "overview" | "editor";
   tripId?: string;
   children?: ReactNode;
 }) {
   const photo = destinationPhoto(plan.base.city);
   const window = travelWindow(plan.days.length, plan.base.travelTiming);
-  return (
-    <div className="completed-itinerary">
-      <div className="saved-trip-hero">
-        <DestinationImage
-          src={photo?.image ?? "/images/cinque-terre.jpg"}
-          alt={photo?.alt ?? "Cinque Terre — default travel inspiration"}
-          priority
-          sizes="100vw"
-        />
-        <span>
-          {photo
-            ? `${plan.base.city} · Destination inspiration`
-            : "Cinque Terre · Default inspiration, not your destination"}
-        </span>
-      </div>
+  const summary = (
+    <>
+      {!presentation && (
+        <div className="saved-trip-hero">
+          <DestinationImage
+            src={photo?.image ?? "/images/cinque-terre.jpg"}
+            alt={photo?.alt ?? "Cinque Terre — default travel inspiration"}
+            priority
+            sizes="100vw"
+          />
+          <span>
+            {photo
+              ? `${plan.base.city} · Destination inspiration`
+              : "Cinque Terre · Default inspiration, not your destination"}
+          </span>
+        </div>
+      )}
       {plan.manualEdit && (
         <div className="notice">
           <strong>
@@ -193,42 +197,43 @@ export function ItineraryView({
           )}
         </details>
       ) : null}
-      <div className="workspace-metrics">
-        <div>
-          <span>
-            {plan.budget
-              ? "Plan allocation + reserve"
-              : "Estimated group total"}
-          </span>
-          <strong>{money(plan.totalMinor, plan.currency)}</strong>
-          <small>
-            {plan.currency} ·{" "}
-            {intent.scope === "entire"
-              ? "Entire vacation"
-              : "Spending only · flights & stay excluded"}
-          </small>
+      {presentation !== "overview" && (
+        <div className="workspace-metrics">
+          <div>
+            <span>
+              {plan.budget
+                ? "Plan allocation + reserve"
+                : "Estimated group total"}
+            </span>
+            <strong>{money(plan.totalMinor, plan.currency)}</strong>
+            <small>
+              {plan.currency} ·{" "}
+              {intent.scope === "entire"
+                ? "Entire vacation"
+                : "Spending only · flights & stay excluded"}
+            </small>
+          </div>
+          <div>
+            <span>Emergency reserve included</span>
+            <strong>{money(plan.reserveMinor, plan.currency)}</strong>
+            <small>10% of your selected budget</small>
+          </div>
+          <div>
+            <span>
+              {plan.budget
+                ? "Unallocated budget remaining"
+                : "Budget remaining"}
+            </span>
+            <strong>
+              {money(
+                plan.budget?.remainingMinor ??
+                  budgetMinor(intent) - plan.totalMinor,
+                plan.currency,
+              )}
+            </strong>
+            <small>Planning estimate · financial history in TripWallet</small>
+          </div>
         </div>
-        <div>
-          <span>Emergency reserve included</span>
-          <strong>{money(plan.reserveMinor, plan.currency)}</strong>
-          <small>10% of your selected budget</small>
-        </div>
-        <div>
-          <span>
-            {plan.budget ? "Unallocated budget remaining" : "Budget remaining"}
-          </span>
-          <strong>
-            {money(
-              plan.budget?.remainingMinor ??
-                budgetMinor(intent) - plan.totalMinor,
-              plan.currency,
-            )}
-          </strong>
-          <small>Planning estimate · financial history in TripWallet</small>
-        </div>
-      </div>
-      {tripId && !timeline && !example && (
-        <ItineraryDayOverview plan={plan} tripId={tripId} />
       )}
       <div className="itinerary-costs">
         <h3>What the estimate includes</h3>
@@ -282,7 +287,31 @@ export function ItineraryView({
           or availability have been confirmed.
         </p>
       </div>
-      {(timeline || example || !tripId) &&
+    </>
+  );
+  return (
+    <div className="completed-itinerary">
+      {presentation === "editor" ? (
+        <>
+          {children}
+          <details className="workspace-planning-details">
+            <summary>Planning assumptions &amp; estimate details</summary>
+            {summary}
+          </details>
+        </>
+      ) : presentation === "overview" ? (
+        <>
+          {tripId && <ItineraryDayOverview plan={plan} tripId={tripId} />}
+          <details className="workspace-planning-details">
+            <summary>Trip notes &amp; estimate details</summary>
+            {summary}
+          </details>
+        </>
+      ) : (
+        summary
+      )}
+      {presentation !== "editor" &&
+        (timeline || example || !tripId) &&
         (children ?? (
           <>
             {timeline && (

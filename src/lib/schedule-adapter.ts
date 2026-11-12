@@ -1,4 +1,6 @@
 import type { Itinerary } from "./itinerary";
+import { categoryFor } from "./itinerary-editing";
+import type { ActivityCategory } from "./activity-metadata";
 import {
   dayRoleLabels,
   isTransitDay,
@@ -9,6 +11,16 @@ import {
 // dates; no browser-timezone conversion is written back to the itinerary.
 export const scheduleClock = (minute: number) =>
   new Date(2000, 0, 1, 0, minute);
+const categoryColors: Record<ActivityCategory, string> = {
+  culture: "#466898",
+  food: "#8b6234",
+  transport: "#476a77",
+  outdoors: "#277452",
+  shopping: "#785381",
+  entertainment: "#6a5698",
+  relaxation: "#42756c",
+  other: "#52665e",
+};
 export function schedulerData(plan: Itinerary) {
   const window = travelWindow(plan.days.length, plan.base.travelTiming);
   return {
@@ -19,13 +31,13 @@ export function schedulerData(plan: Itinerary) {
         name: `Day ${i + 1} · ${d.date}${isTransitDay(role) ? ` · ${dayRoleLabels[role]}` : ""}`,
       };
     }),
-    events: plan.days.flatMap((d) =>
-      d.activities.map((a) => ({
+    events: plan.days.flatMap((d, dayIndex) =>
+      d.activities.map((a, index) => ({
         id: a.id,
         resourceId: d.id,
         name: a.title,
         durationUnit: "minute",
-        eventColor: "#197c72",
+        eventColor: categoryColors[categoryFor(a, plan, dayIndex, index)],
         startDate: scheduleClock(a.startMinute),
         endDate: scheduleClock(a.startMinute + a.durationMinutes),
       })),

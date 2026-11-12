@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight, Instagram, Music2, Star } from "lucide-react";
+import { ArrowUpRight, Camera, Instagram, Music2, Star } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import {
   referenceSource,
@@ -232,7 +232,9 @@ function ActivityInsights({
 
   return (
     <section className="activity-insights" aria-labelledby={`${id}-title`}>
-      <h5 id={`${id}-title`}>What travelers are saying</h5>
+      <h5 id={`${id}-title`}>
+        <Star size={17} aria-hidden="true" /> What travelers are saying
+      </h5>
       {venue ? (
         <>
           <button
@@ -311,7 +313,9 @@ function ActivityInspiration({
   if (!references.length && !venue) return null;
   return (
     <section className="activity-insights activity-inspiration">
-      <h5>See the experience</h5>
+      <h5>
+        <Camera size={17} aria-hidden="true" /> See the experience
+      </h5>
       {references.length ? (
         <ul className="insight-references">
           {references.map(({ url, label }, index) => {

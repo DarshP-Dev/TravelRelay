@@ -1,9 +1,17 @@
 :root {
-  --workspace-width: 1600px;
+  --workspace-width: 1660px;
   --workspace-gutter: clamp(16px, 5vw, 90px);
-  --workspace-paper: #fffefa;
+  --workspace-paper: #fff;
   --workspace-rail-ink: #304a40;
-  --workspace-accent: #296c59;
+  --workspace-accent: #075d3b;
+  --workspace-ink: #173629;
+  --workspace-muted: #53685c;
+  --workspace-line: #dce8df;
+  --workspace-sage: #edf6ef;
+  --workspace-selected: #d5eddd;
+  --workspace-surface: #f8fbf8;
+  --workspace-card-shadow: 0 2px 5px rgb(22 57 38 / 7%);
+  --workspace-display: Georgia, "Times New Roman", serif;
 }
 
 html:has(> body > .travel-app) {
@@ -33,25 +41,19 @@ body:has(> .travel-app)::before {
 }
 
 .travel-app {
-  --dashboard-ink: #20332c;
-  --dashboard-muted: #506057;
-  --dashboard-line: #deded2;
-  --dashboard-accent: #a34b33;
-  --dashboard-coral: #f5d5c3;
-  --dashboard-sage: #e4ebdf;
   flex: 1 0 auto;
   padding: 16px var(--workspace-gutter) clamp(35px, 5vw, 75px);
 }
 
 .travel-app-canvas {
   display: grid;
-  grid-template-columns: 66px minmax(0, 1fr);
+  grid-template-columns: 82px minmax(0, 1fr);
   align-items: start;
-  gap: clamp(18px, 2.5vw, 40px);
+  gap: clamp(16px, 1.75vw, 28px);
   width: min(100%, var(--workspace-width));
   min-height: clamp(580px, 72svh, 850px);
   margin-inline: auto;
-  padding: clamp(18px, 2.7vw, 42px);
+  padding: clamp(18px, 2.2vw, 36px);
   border: 1px solid rgb(255 255 255 / 72%);
   border-radius: 32px;
   background: var(--workspace-paper);
@@ -116,8 +118,8 @@ body:has(> .travel-app)::before {
 }
 
 .travel-app-rail a[aria-current] {
-  background: #e1eee3;
-  color: #205343;
+  background: var(--workspace-selected);
+  color: var(--workspace-accent);
 }
 
 .travel-app-rail a::before {
@@ -164,6 +166,26 @@ body:has(> .travel-app)::before {
   visibility: visible;
   opacity: 1;
   transform: none;
+}
+
+@media (min-width: 1025px) {
+  .travel-app-rail a {
+    align-content: center;
+    width: 66px;
+    min-height: 62px;
+    gap: 4px;
+  }
+
+  .travel-app-rail a span {
+    position: static;
+    padding: 0;
+    background: transparent;
+    color: inherit;
+    font-size: 0.75rem;
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .site-header.site-header--cinematic {

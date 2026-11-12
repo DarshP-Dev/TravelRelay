@@ -11,16 +11,18 @@ export function TripWorkspaceShell({
   userId,
   initial,
   suggestion,
+  initiallyOpen = true,
   children,
 }: {
   tripId: string;
   userId: string;
   initial: AssistantState | null;
   suggestion?: AssistantSuggestion;
+  initiallyOpen?: boolean;
   children: ReactNode;
 }) {
   const agent = useTravelAgent(initial, userId, tripId),
-    [open, setOpen] = useState(true),
+    [open, setOpen] = useState(initiallyOpen),
     [mobile, setMobile] = useState(
       suggestion && initial ? "assistant" : "itinerary",
     ),

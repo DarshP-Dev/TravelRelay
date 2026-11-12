@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Sparkles, Send, LoaderCircle, ArrowLeft } from "lucide-react";
 import { agentIsActive, agentStageLabel } from "@/lib/agent-contracts";
 import { money } from "@/lib/itinerary";
+import { clock } from "@/lib/activity-metadata";
 import type { AssistantSuggestion } from "@/lib/assistant-suggestions";
 import type { TravelAgentController } from "./use-travel-agent";
 export function TripAssistant({
@@ -200,6 +201,42 @@ export function TripAssistant({
                                       ? "Unsaved · approval required"
                                       : t.proposal.status}
                             </span>
+                            {t.proposal.preview.changes[0] && (
+                              <div className="agent-compact-comparison">
+                                {(
+                                  [
+                                    [
+                                      "Before",
+                                      t.proposal.preview.changes[0].before,
+                                    ],
+                                    [
+                                      "Proposed",
+                                      t.proposal.preview.changes[0].after,
+                                    ],
+                                  ] as const
+                                ).map(([label, entry]) => (
+                                  <div key={label}>
+                                    <small>{label}</small>
+                                    <strong>
+                                      {entry?.activity.title ??
+                                        (label === "Before"
+                                          ? "New activity"
+                                          : "Remove activity")}
+                                    </strong>
+                                    {entry && (
+                                      <span>
+                                        {entry.date} ·{" "}
+                                        {clock(entry.activity.startMinute)}–
+                                        {clock(
+                                          entry.activity.startMinute +
+                                            entry.activity.durationMinutes,
+                                        )}
+                                      </span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                             <p>
                               {t.proposal.preview.changes.length} affected
                               activities ·{" "}

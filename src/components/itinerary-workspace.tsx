@@ -9,8 +9,9 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { CalendarDays, ChevronDown, List, MapPin, Plus } from "lucide-react";
 import { ItineraryView } from "./itinerary-view";
-import { ActivityDiscovery } from "./activity-insights";
+import { ActivityDetails } from "./activity-details";
 import { bookingPaymentLabel } from "@/lib/paypal-status";
 import {
   activityCategories,
@@ -32,7 +33,6 @@ import {
 } from "@/lib/travel-days";
 import type { createItineraryEditor } from "@/server/itinerary-edits";
 import type { schedulerChange } from "@/lib/schedule-adapter";
-import type { ScheduleReference } from "@/lib/itinerary-editing";
 import {
   itineraryUpdatedEvent,
   notifyItineraryChanged,
@@ -72,30 +72,6 @@ type FormState = {
   cost: string;
   links: EditableActivity["links"];
 };
-function ActivityVenueSource({ reference }: { reference?: ScheduleReference }) {
-  return reference ? (
-    <div className="venue-evidence">
-      <strong>Published hours reference · {reference.name}</strong>
-      {reference.openMinute !== undefined && (
-        <small>
-          {clock(reference.openMinute)}–{clock(reference.closeMinute!)} · Last
-          admission {clock(reference.lastAdmissionMinute!)}
-        </small>
-      )}
-      <a href={reference.sourceUrl} target="_blank" rel="noopener noreferrer">
-        Official venue information
-      </a>
-      <small>
-        Source checked {reference.checkedOn}. Future hours, prices and
-        availability still need confirmation.
-      </small>
-    </div>
-  ) : (
-    <p className="inline-note">
-      Venue hours unverified · confirm opening hours and availability directly.
-    </p>
-  );
-}
 export function ItineraryWorkspace({
   tripId,
   snapshot,
@@ -119,7 +95,8 @@ export function ItineraryWorkspace({
     [signedOut, setSignedOut] = useState(false);
   const [mode, setMode] = useState<"cards" | "schedule" | "map">("cards"),
     [dayId, setDayId] = useState(""),
-    [selected, setSelected] = useState("");
+    [selected, setSelected] = useState<string>();
+  const mapRegion = useRef<HTMLDivElement>(null);
   const [form, setForm] = useState<FormState | null>(null),
     [preview, setPreview] = useState<Preview | null>(null),
     [acknowledge, setAcknowledge] = useState(false);
@@ -217,18 +194,25 @@ export function ItineraryWorkspace({
   const dayIndex = plan.days.indexOf(day);
   const dayRole = travelDayRole(dayIndex, travel);
   const inTransit = isTransitDay(dayRole);
+  const openActivityId = selected ?? linkedActivity;
   useEffect(() => {
     if (linkedActivity && linkedDay === day.id)
       document.getElementById(`activity-${linkedActivity}`)?.scrollIntoView();
   }, [day.id, linkedActivity, linkedDay]);
   const locked = busy || !ready || conflict || signedOut;
-  function selectActivity(id: string) {
-    setSelected(id);
-    requestAnimationFrame(() =>
-      document
-        .getElementById(`activity-${id}`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" }),
+  function selectActivity(id: string, focus = true) {
+    const targetDay = plan.days.find((entry) =>
+      entry.activities.some((activity) => activity.id === id),
     );
+    if (!targetDay) return;
+    setDayId(targetDay.id);
+    setSelected(id);
+    if (focus)
+      requestAnimationFrame(() => {
+        const title = document.getElementById(`activity-detail-title-${id}`);
+        title?.focus({ preventScroll: true });
+        title?.scrollIntoView({ block: "nearest" });
+      });
   }
   function edit(activity?: SavedActivity) {
     if (form || preview) {
@@ -412,15 +396,19 @@ export function ItineraryWorkspace({
           until you confirm.
         </p>
       )}
-      <ItineraryView itinerary={plan} intent={intent} timeline tripId={tripId}>
+      <ItineraryView
+        itinerary={plan}
+        intent={intent}
+        presentation="editor"
+        tripId={tripId}
+      >
         <section className="interactive-itinerary" aria-busy={busy}>
           <div className="editor-toolbar">
             <div>
-              <p className="eyebrow">YOUR DAYS, YOUR RHYTHM</p>
-              <h2>Make the plan your own.</h2>
+              <h2>Your schedule</h2>
               <p>
                 Local time: {plan.base.timeZone} · Saved revision{" "}
-                {state.version}. Manual changes never call AI.
+                {state.version}
               </p>
             </div>
             <button
@@ -429,7 +417,7 @@ export function ItineraryWorkspace({
               disabled={locked || !!preview || !!form || inTransit}
               onClick={() => edit()}
             >
-              Add activity
+              <Plus size={17} aria-hidden="true" /> Add activity
             </button>
           </div>
           {!ready && (
@@ -493,17 +481,19 @@ export function ItineraryWorkspace({
             )}
           </div>
           <nav className="editor-view-switch" aria-label="Itinerary view">
-            {(["cards", "schedule", "map"] as const).map((value) => (
+            {(
+              [
+                ["schedule", "Visual schedule", CalendarDays],
+                ["cards", "Chronological cards", List],
+                ["map", "Location map", MapPin],
+              ] as const
+            ).map(([value, label, Icon]) => (
               <button
                 key={value}
                 aria-pressed={mode === value}
                 onClick={() => setMode(value)}
               >
-                {value === "cards"
-                  ? "Chronological cards"
-                  : value === "schedule"
-                    ? "Visual schedule"
-                    : "Location map"}
+                <Icon size={16} aria-hidden="true" /> {label}
               </button>
             ))}
           </nav>
@@ -514,6 +504,7 @@ export function ItineraryWorkspace({
                 aria-pressed={day.id === d.id}
                 onClick={() => {
                   setDayId(d.id);
+                  setSelected("");
                   window.history.replaceState(null, "", `#day-${d.id}`);
                 }}
               >
@@ -856,11 +847,14 @@ export function ItineraryWorkspace({
             <VisualSchedule
               plan={plan}
               onChange={gesture}
+              onSelect={selectActivity}
               disabled={locked || !!preview || !!form}
             />
           )}
           {mode === "map" && (
-            <ActivityMap day={day} onSelect={selectActivity} />
+            <div ref={mapRegion}>
+              <ActivityMap day={day} onSelect={selectActivity} />
+            </div>
           )}
           <article className="itinerary-day editable-day" id={`day-${day.id}`}>
             <div className="itinerary-day-heading">
@@ -899,147 +893,199 @@ export function ItineraryWorkspace({
               </div>
             )}
             <ol>
-              {day.activities.map((a, index) => (
-                <li
-                  id={`activity-${a.id}`}
-                  key={a.id}
-                  className={`${(selected || linkedActivity) === a.id ? "selected-activity " : ""}${preview?.assessment.errors.some((e) => e.activityId === a.id) ? "activity-conflict" : ""}`}
-                >
-                  <div className="activity-time">
-                    {clock(a.startMinute)}
-                    <span>to {clock(a.startMinute + a.durationMinutes)}</span>
-                    <span>{a.durationMinutes} min</span>
-                  </div>
-                  <div>
-                    <p className="eyebrow">
-                      {a.category ??
-                        categoryFor(
-                          a,
-                          plan,
-                          plan.days.indexOf(day),
-                          index,
-                        )}{" "}
-                      · {a.origin === "manual" ? "Added by you" : "AI origin"}
-                      {a.lastEditSource === "ai-proposal" &&
-                        " · Approved AI suggestion"}
-                    </p>
-                    <h4>{a.title}</h4>
-                    <p className="activity-place">
-                      {a.location} · {plan.base.city}
-                    </p>
-                    {a.id && recoveryCases?.[a.id] && (
-                      <Link
-                        className="text-link recovery-status-link"
-                        href={`/trips/${tripId}/recovery#case-${recoveryCases[a.id]}`}
-                      >
-                        Simulated cancellation · resolve with TravelRelay
-                      </Link>
-                    )}
-                    {sandboxBookings
-                      ?.filter((b) => b.activityId === a.id)
-                      .map((b) => (
-                        <Link
-                          key={b.id}
-                          className="text-link"
-                          href={`/trips/${tripId}/bookings`}
-                        >
-                          Sandbox demo · {bookingPaymentLabel(b)}
-                        </Link>
-                      ))}
-                    <p className="inline-note">
-                      {a.bufferBeforeMinutes} min buffer ·{" "}
-                      {money(a.costMinor, plan.currency)} {plan.currency} group
-                      estimate ·{" "}
-                      {a.estimateSource === "manual-estimate"
-                        ? "Entered by you"
-                        : "AI estimate"}
-                      . Included in its category allocation, never a recorded
-                      payment.
-                    </p>
-                    <p className="inline-note">
-                      Coordinates:{" "}
-                      {a.latitude === null
-                        ? "not supplied"
-                        : a.coordinateSource === "user-entered"
-                          ? "user-entered, unverified"
-                          : "AI-estimated, unverified"}
-                      . Opening hours and availability require confirmation.
-                    </p>
-                    <ActivityVenueSource
-                      reference={(
-                        preview?.assessment ?? state.assessment
-                      ).references?.find((r) => r.activityId === a.id)}
-                    />
-                    <p>{a.description}</p>
-                    <ActivityDiscovery
-                      activity={a}
-                      base={plan.base}
-                      category={categoryFor(a, plan, dayIndex, index)}
-                      tripId={tripId}
-                      version={state.version}
-                      showReviews={mode !== "map" && !preview}
-                    />
-                    {state.assessment.errors
-                      .filter((e) => e.activityId === a.id)
-                      .map((e, i) => (
-                        <p className="form-error" key={i}>
-                          {e.message}
-                        </p>
-                      ))}
-                    <div className="editor-actions">
+              {day.activities.map((activity, index) => {
+                const category = categoryFor(activity, plan, dayIndex, index);
+                const expanded = openActivityId === activity.id;
+                const assessment = preview?.assessment ?? state.assessment;
+                const errors = assessment.errors.filter(
+                  (issue) => issue.activityId === activity.id,
+                );
+                const recovery = recoveryCases?.[activity.id];
+                const bookings = sandboxBookings?.filter(
+                  (booking) => booking.activityId === activity.id,
+                );
+                const editable = !locked && !preview && !form;
+                return (
+                  <li
+                    id={`activity-${activity.id}`}
+                    key={activity.id}
+                    className={`${expanded ? "selected-activity " : ""}${errors.length ? "activity-conflict" : ""}`}
+                  >
+                    <div className="activity-row">
+                      <div className="activity-time">
+                        {clock(activity.startMinute)}
+                        <span>
+                          {clock(
+                            activity.startMinute + activity.durationMinutes,
+                          )}
+                        </span>
+                      </div>
+                      <div className="activity-row-copy">
+                        <h4>{activity.title}</h4>
+                        <p className="activity-place">{activity.location}</p>
+                        <div className="activity-row-meta">
+                          <span
+                            className="workspace-pill"
+                            data-category={category}
+                          >
+                            {category}
+                          </span>
+                          <span>
+                            {money(activity.costMinor, plan.currency)}{" "}
+                            {plan.currency} est.
+                          </span>
+                          {activity.origin === "manual" && (
+                            <span>Added by you</span>
+                          )}
+                          {activity.lastEditSource === "ai-proposal" && (
+                            <span>Approved AI suggestion</span>
+                          )}
+                        </div>
+                      </div>
                       <button
-                        className="button button-secondary"
-                        disabled={locked || !!preview || !!form}
-                        onClick={() => edit(a)}
-                        aria-label={`Edit ${a.title}`}
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="button button-secondary"
-                        disabled={locked || !!preview || !!form || index === 0}
+                        type="button"
+                        className="button button-secondary activity-details-toggle"
+                        aria-expanded={expanded}
+                        aria-controls={
+                          expanded
+                            ? `activity-detail-${activity.id}`
+                            : undefined
+                        }
+                        aria-label={`${expanded ? "Hide" : "View"} details for ${activity.title}`}
                         onClick={() =>
-                          void propose({
-                            action: "reorder",
-                            activityId: a.id,
-                            direction: "earlier",
-                          })
+                          expanded
+                            ? setSelected("")
+                            : selectActivity(activity.id)
                         }
                       >
-                        Reorder earlier
-                      </button>
-                      <button
-                        className="button button-secondary"
-                        disabled={
-                          locked ||
-                          !!preview ||
-                          !!form ||
-                          index === day.activities.length - 1
-                        }
-                        onClick={() =>
-                          void propose({
-                            action: "reorder",
-                            activityId: a.id,
-                            direction: "later",
-                          })
-                        }
-                      >
-                        Reorder later
-                      </button>
-                      <button
-                        className="button button-secondary"
-                        disabled={locked || !!preview || !!form}
-                        onClick={() =>
-                          void propose({ action: "delete", activityId: a.id })
-                        }
-                        aria-label={`Delete ${a.title}`}
-                      >
-                        Delete
+                        {expanded ? "Hide details" : "View details"}{" "}
+                        <ChevronDown size={16} aria-hidden="true" />
                       </button>
                     </div>
-                  </div>
-                </li>
-              ))}
+                    {(recovery || !!bookings?.length || !!errors.length) && (
+                      <div className="activity-row-status">
+                        {recovery && (
+                          <Link
+                            className="text-link recovery-status-link"
+                            href={`/trips/${tripId}/recovery#case-${recovery}`}
+                          >
+                            Simulated cancellation · View recovery
+                          </Link>
+                        )}
+                        {bookings?.map((booking) => (
+                          <Link
+                            key={booking.id}
+                            className="text-link"
+                            href={`/trips/${tripId}/bookings`}
+                          >
+                            Sandbox demo · {bookingPaymentLabel(booking)}
+                          </Link>
+                        ))}
+                        {errors.map((issue, i) => (
+                          <p className="form-error" key={i}>
+                            {issue.message}
+                          </p>
+                        ))}
+                      </div>
+                    )}
+                    {expanded ? (
+                      <ActivityDetails
+                        key={activity.id}
+                        activity={activity}
+                        day={day}
+                        dayNumber={dayIndex + 1}
+                        plan={plan}
+                        category={category}
+                        interests={intent.selected}
+                        reference={assessment.references?.find(
+                          (item) => item.activityId === activity.id,
+                        )}
+                        tripId={tripId}
+                        version={state.version}
+                        showReviews={!preview}
+                        editable={editable}
+                        onEdit={() => edit(activity)}
+                        onSelect={selectActivity}
+                        onClose={() => {
+                          setSelected("");
+                          requestAnimationFrame(() => {
+                            const toggle = document
+                              .getElementById(`activity-${activity.id}`)
+                              ?.querySelector<HTMLButtonElement>(
+                                ".activity-details-toggle",
+                              );
+                            toggle?.focus({ preventScroll: true });
+                            toggle?.scrollIntoView({ block: "nearest" });
+                          });
+                        }}
+                        onMap={() => {
+                          setMode("map");
+                          requestAnimationFrame(() =>
+                            mapRegion.current?.scrollIntoView({
+                              block: "start",
+                            }),
+                          );
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          disabled={!editable || index === 0}
+                          onClick={() =>
+                            void propose({
+                              action: "reorder",
+                              activityId: activity.id,
+                              direction: "earlier",
+                            })
+                          }
+                        >
+                          Reorder earlier
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          disabled={
+                            !editable || index === day.activities.length - 1
+                          }
+                          onClick={() =>
+                            void propose({
+                              action: "reorder",
+                              activityId: activity.id,
+                              direction: "later",
+                            })
+                          }
+                        >
+                          Reorder later
+                        </button>
+                        <button
+                          type="button"
+                          className="button button-secondary"
+                          disabled={!editable}
+                          onClick={() =>
+                            void propose({
+                              action: "delete",
+                              activityId: activity.id,
+                            })
+                          }
+                          aria-label={`Delete ${activity.title}`}
+                        >
+                          Delete
+                        </button>
+                      </ActivityDetails>
+                    ) : (
+                      <button
+                        type="button"
+                        className="text-link activity-quick-edit"
+                        disabled={!editable}
+                        onClick={() => edit(activity)}
+                        aria-label={`Edit ${activity.title}`}
+                      >
+                        Edit activity
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
           </article>
           <details className="edit-history">

@@ -39,9 +39,13 @@ export default async function DashboardPage({
   const firstName = user.name.trim().split(/\s+/)[0];
 
   return (
-    <>
+    <div className="dashboard-page">
       <header className="dashboard-heading">
-        <h1>{firstName ? `Welcome, ${firstName}` : "Your travel dashboard"}</h1>
+        <p className="eyebrow">
+          {firstName ? `Welcome, ${firstName}` : "Your personal travel space"}
+        </p>
+        <h1>Your travels, beautifully planned.</h1>
+        <p>Plan, manage, and experience your trips with AI by your side.</p>
       </header>
       <DashboardTripHero
         featured={featured}
@@ -54,6 +58,6 @@ export default async function DashboardPage({
         wallet={wallet}
         today={today}
       />
-    </>
+    </div>
   );
 }

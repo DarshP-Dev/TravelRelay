@@ -6,7 +6,15 @@ import { getApp } from "@/server/runtime";
 import { RequestError } from "@/server/trips";
 import { destinationPhoto } from "@/lib/trip-intent";
 import { DestinationImage } from "@/components/destination-image";
-import { BookOpen, CalendarDays, Compass, Wallet } from "lucide-react";
+import {
+  ArrowUpRight,
+  BookOpen,
+  CalendarDays,
+  Compass,
+  LayoutGrid,
+  LifeBuoy,
+  Wallet,
+} from "lucide-react";
 import { ButtonLink, EmptyState, PageHeading } from "@/components/ui";
 import { ItineraryView } from "@/components/itinerary-view";
 import { ItineraryWorkspace } from "@/components/itinerary-workspace";
@@ -14,16 +22,24 @@ import { TripWorkspaceShell } from "@/components/trip-workspace-shell";
 import { TripWallet, WalletPreview } from "@/components/trip-wallet";
 import { TripRecovery } from "@/components/trip-recovery";
 import { assistantSuggestions } from "@/lib/assistant-suggestions";
+import { dashboardTripHero } from "@/lib/dashboard-trips";
+import {
+  DashboardAssistant,
+  DashboardBookings,
+  DashboardWallet,
+} from "@/components/dashboard-widgets";
+import "@/components/dashboard.css";
+import "@/components/premium-workspace.css";
 
 export const metadata: Metadata = { title: "Trip workspace" };
 
 const tabs = [
-  { path: "", label: "Overview" },
-  { path: "/itinerary", label: "Itinerary" },
-  { path: "/wallet", label: "TripWallet" },
-  { path: "/bookings", label: "Bookings" },
-  { path: "/recovery", label: "Recovery" },
-  { path: "/explore", label: "Explore" },
+  { path: "", label: "Overview", icon: LayoutGrid },
+  { path: "/itinerary", label: "Itinerary", icon: CalendarDays },
+  { path: "/bookings", label: "Bookings", icon: BookOpen },
+  { path: "/wallet", label: "TripWallet", icon: Wallet },
+  { path: "/recovery", label: "Recovery", icon: LifeBuoy },
+  { path: "/explore", label: "Explore", icon: Compass },
 ];
 
 const content = {
@@ -72,6 +88,7 @@ export default async function TripWorkspacePage({
   searchParams: Promise<{
     recovery?: string | string[];
     assistant?: string | string[];
+    activity?: string | string[];
   }>;
 }) {
   const { id, section } = await params;
@@ -99,6 +116,25 @@ export default async function TripWorkspacePage({
   const photo = destinationPhoto(
     saved?.data.mode === "known" ? saved.data.destination : "",
   );
+  const plan = saved?.itinerary;
+  const overviewTrip = saved && { ...saved, generationStatus: null };
+  const featured =
+    overviewTrip &&
+    dashboardTripHero(overviewTrip, new Date().toISOString().slice(0, 10));
+  const assistantActivity =
+    active === "itinerary" && typeof query.activity === "string"
+      ? plan?.days
+          .flatMap((day) => day.activities)
+          .find((item) => item.id === query.activity)
+      : undefined;
+  const suggestion = assistantActivity
+    ? {
+        label: "Draft an alternatives request",
+        prompt: `What could I do instead of “${assistantActivity.title}” in my saved itinerary?`,
+      }
+    : assistantKey
+      ? assistantSuggestions[assistantKey]
+      : undefined;
   const selected = content[active as keyof typeof content];
   const editingSnapshot =
     saved?.itinerary && active === "itinerary"
@@ -120,7 +156,7 @@ export default async function TripWorkspacePage({
       ? await (await getApp()).recovery.read(user.id, id)
       : null;
   const recoveryLinks =
-    saved?.itinerary && ["itinerary", "wallet", "bookings"].includes(active)
+    saved?.itinerary && ["", "itinerary", "wallet", "bookings"].includes(active)
       ? await (await getApp()).recovery.links(user.id, id)
       : null;
   const recoveryId = active === "bookings" ? query.recovery : undefined;
@@ -151,44 +187,99 @@ export default async function TripWorkspacePage({
     }
   }
   return (
-    <div className="container page-content trip-workspace-container">
-      <PageHeading
-        eyebrow={
-          saved?.itinerary
-            ? "YOUR PERSONAL ITINERARY"
-            : saved
-              ? "SAVED TRIP INTENT"
-              : "TRIP WORKSPACE · LAYOUT PREVIEW"
-        }
-        title={
-          saved?.itinerary
-            ? `${saved.itinerary.base.city}, ${saved.itinerary.base.country}`
-            : saved
-              ? saved.data.mode === "known"
-                ? saved.data.destination
-                : "Your escape, taking shape."
-              : "A home for your next adventure."
-        }
-        description="One calm space for the details, the decisions, and everything in between."
-      />
-      <div className="notice">
-        <strong>
-          {saved?.itinerary
-            ? "Your complete itinerary is saved."
-            : saved
-              ? "Your trip intent is saved."
-              : "No saved trip is open."}
-        </strong>
-        <p>
-          {saved?.itinerary
-            ? saved.itinerary.manualEdit
-              ? "This itinerary combines your edits and AI estimates. Costs and schedules are planning estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
-              : "Activities, costs and schedules are AI estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
-            : saved
-              ? "Your dates, budget, and preferences are stored in your account. Confirm one base city to generate your personalized itinerary."
-              : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
-        </p>
-      </div>
+    <div
+      className="container page-content trip-workspace-container"
+      data-section={active || "overview"}
+    >
+      {plan && featured && ["", "itinerary"].includes(active) ? (
+        <header
+          className={active ? "trip-editor-header" : "trip-overview-hero"}
+        >
+          {(!active || !featured.inspirationPhoto) && (
+            <div className="trip-header-photo" aria-hidden="true">
+              <DestinationImage
+                src={featured.photo.image}
+                alt=""
+                priority
+                sizes={active ? "(max-width: 760px) 75vw, 50vw" : "95vw"}
+              />
+            </div>
+          )}
+          <div className="trip-header-copy">
+            {active ? (
+              <>
+                <p className="eyebrow">
+                  {plan.base.city}, {plan.base.country} · {featured.dates}
+                </p>
+                <h1>Itinerary</h1>
+                <p>
+                  Plan each day in {plan.base.city}, with times shown in{" "}
+                  {plan.base.timeZone}.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="trip-overview-status">
+                  {featured.status} · Saved itinerary
+                </p>
+                <h1>
+                  {plan.base.city}, {plan.base.country}
+                </h1>
+                <p>
+                  {featured.dates} · {featured.details}
+                </p>
+                <Link
+                  className="button button-primary"
+                  href={`/trips/${id}/itinerary`}
+                >
+                  Open itinerary <ArrowUpRight size={16} aria-hidden="true" />
+                </Link>
+                {featured.inspirationPhoto && <small>Travel inspiration</small>}
+              </>
+            )}
+          </div>
+        </header>
+      ) : (
+        <PageHeading
+          eyebrow={
+            saved?.itinerary
+              ? "YOUR PERSONAL ITINERARY"
+              : saved
+                ? "SAVED TRIP INTENT"
+                : "TRIP WORKSPACE · LAYOUT PREVIEW"
+          }
+          title={
+            saved?.itinerary
+              ? `${saved.itinerary.base.city}, ${saved.itinerary.base.country}`
+              : saved
+                ? saved.data.mode === "known"
+                  ? saved.data.destination
+                  : "Your escape, taking shape."
+                : "A home for your next adventure."
+          }
+          description="One calm space for the details, the decisions, and everything in between."
+        />
+      )}
+      {!(plan && ["", "itinerary"].includes(active)) && (
+        <div className="notice">
+          <strong>
+            {saved?.itinerary
+              ? "Your complete itinerary is saved."
+              : saved
+                ? "Your trip intent is saved."
+                : "No saved trip is open."}
+          </strong>
+          <p>
+            {saved?.itinerary
+              ? saved.itinerary.manualEdit
+                ? "This itinerary combines your edits and AI estimates. Costs and schedules are planning estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
+                : "Activities, costs and schedules are AI estimates, not verified availability or prices. TripWallet keeps planning references separate from verified financial events."
+              : saved
+                ? "Your dates, budget, and preferences are stored in your account. Confirm one base city to generate your personalized itinerary."
+                : "This is a layout preview. No saved trip is open, and AI and financial services aren’t connected."}
+          </p>
+        </div>
+      )}
       <nav className="trip-tabs" aria-label="Trip sections">
         {tabs.map((tab) => (
           <Link
@@ -196,18 +287,18 @@ export default async function TripWorkspacePage({
             href={`/trips/${id}${tab.path}`}
             aria-current={active === tab.path.slice(1) ? "page" : undefined}
           >
+            <tab.icon size={18} strokeWidth={1.8} aria-hidden="true" />
             {tab.label}
           </Link>
         ))}
       </nav>
       <TripWorkspaceShell
-        key={assistantKey ? `${id}:${assistantKey}` : id}
+        key={`${id}:${assistantActivity?.id ?? assistantKey ?? ""}`}
         tripId={id}
         userId={user.id}
         initial={assistantSnapshot}
-        suggestion={
-          assistantKey ? assistantSuggestions[assistantKey] : undefined
-        }
+        suggestion={suggestion}
+        initiallyOpen={active !== ""}
       >
         <section className="panel workspace-main">
           {saved?.itinerary &&
@@ -229,7 +320,7 @@ export default async function TripWorkspacePage({
               <ItineraryView
                 itinerary={saved.itinerary}
                 intent={saved.data}
-                timeline={active === "itinerary"}
+                presentation="overview"
                 tripId={id}
               />
             ))}
@@ -302,8 +393,36 @@ export default async function TripWorkspacePage({
               </div>
             </>
           )}
-          {walletSnapshot && active === "" && (
+          {walletSnapshot && active === "" && !plan && (
             <WalletPreview state={walletSnapshot} />
+          )}
+          {active === "" && plan && overviewTrip && featured && (
+            <>
+              <div className="trip-overview-widgets dashboard-widget-grid">
+                <DashboardWallet tripId={id} wallet={walletSnapshot} />
+                <DashboardBookings tripId={id} wallet={walletSnapshot} />
+                <DashboardAssistant trip={overviewTrip} featured={featured} />
+              </div>
+              {recoveryLinks?.length ? (
+                <section className="dashboard-widget trip-overview-recovery">
+                  <h2>
+                    <LifeBuoy size={19} aria-hidden="true" /> Trip Recovery
+                  </h2>
+                  <p>
+                    {recoveryLinks.length} saved{" "}
+                    {recoveryLinks.length === 1 ? "case" : "cases"} for this
+                    trip.
+                  </p>
+                  <Link
+                    className="dashboard-link"
+                    href={`/trips/${id}/recovery`}
+                  >
+                    Review recovery history{" "}
+                    <ArrowUpRight size={16} aria-hidden="true" />
+                  </Link>
+                </section>
+              ) : null}
+            </>
           )}
           {walletSnapshot && ["wallet", "bookings"].includes(active) && (
             <TripWallet
