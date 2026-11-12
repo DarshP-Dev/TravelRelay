@@ -2583,24 +2583,6 @@ legend {
   color: var(--muted);
   margin-bottom: 18px;
 }
-.activity-social-links {
-  list-style: none;
-  padding: 0;
-  margin-block: 18px;
-}
-.activity-social-links li {
-  padding-block: 6px;
-}
-.activity-social-links a {
-  color: var(--primary-dark);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  overflow-wrap: anywhere;
-}
-.activity-social-links small {
-  display: block;
-  color: var(--muted);
-}
 .edit-history {
   margin-top: 30px;
   padding: 20px;

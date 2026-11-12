@@ -95,6 +95,10 @@ Bryntum Scheduler **Community 8.0.0 (MIT)** is integrated, without commercial
 trial packages or license keys. Leaflet 1.9.4/optional OpenStreetMap tiles require
 no map API key. Local scheduler assets and license notices ship with the app.
 See [Milestone 3A implementation, validation and limitations](docs/milestone-3a-validation.md).
+
+Saved activity cards support on-demand [Activity Insights](docs/activity-insights.md)
+and saved social links. Google Places review lookups default to off. The guide
+covers provider activation, attribution, usage limits, and the keyless fallback.
 Real supplier reservations and supplier cancellation notifications require a
 future verified integration.
 

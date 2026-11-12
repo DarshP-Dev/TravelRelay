@@ -12,6 +12,7 @@ import { createCommerce } from "./paypal-commerce";
 import type { PayPalClient } from "./paypal-client";
 import { createRecovery } from "./recovery";
 import { assertDatabaseReady } from "./db/readiness";
+import { createActivityInsights } from "./activity-insights";
 
 export function checkOrigin(request: Request, origin: string) {
   if (
@@ -75,11 +76,13 @@ export function createApplication(
     financialVerifier?: FinancialVerifier;
     paypal?: PayPalClient;
     recoverySimulation?: boolean;
+    places?: Parameters<typeof createActivityInsights>[2];
   },
 ) {
   const auth = createAuth(db, config);
   const trips = createTripStore(db);
   const itineraryEditor = createItineraryEditor(db);
+  const activityInsights = createActivityInsights(db, trips, config.places);
   const model = config.model ?? createTripModel({});
   const generations = createGenerationStore(db, model, config.generationLimits);
   const wallet = createWallet(db, {
@@ -113,6 +116,51 @@ export function createApplication(
     wallet,
     commerce,
     recovery,
+    async activityInsightsHandler(
+      request: Request,
+      id: string,
+      activityId: string,
+    ) {
+      try {
+        const session = await auth.api.getSession({ headers: request.headers });
+        if (!session)
+          throw new RequestError(401, "Sign in to view traveler reviews.");
+        if (request.method !== "POST")
+          throw new RequestError(405, "Method not allowed.");
+        checkOrigin(request, config.origin);
+        const reader = request.body?.getReader();
+        if (reader && !(await reader.read()).done) {
+          await reader.cancel();
+          throw new RequestError(
+            400,
+            "Use the saved activity for a review lookup.",
+          );
+        }
+        const revision = new URL(request.url).searchParams.get("version");
+        if (!revision || !/^\d{1,10}$/.test(revision))
+          throw new RequestError(
+            400,
+            "Use the saved itinerary revision for a review lookup.",
+          );
+        const data = await activityInsights(
+          session.user.id,
+          id,
+          activityId,
+          Number(revision),
+        );
+        return Response.json(data, {
+          status:
+            data.status === "quota"
+              ? 429
+              : data.status === "unavailable"
+                ? 503
+                : 200,
+          headers: { "Cache-Control": "no-store" },
+        });
+      } catch (error) {
+        return failure(error);
+      }
+    },
     async recoveryHandler(
       request: Request,
       id: string,

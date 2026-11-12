@@ -10,12 +10,12 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ItineraryView } from "./itinerary-view";
+import { ActivityDiscovery } from "./activity-insights";
 import { bookingPaymentLabel } from "@/lib/paypal-status";
 import {
   activityCategories,
   clock,
   parseEstimatedCost,
-  referenceSource,
 } from "@/lib/activity-metadata";
 import {
   categoryFor,
@@ -924,7 +924,6 @@ export function ItineraryWorkspace({
                         " · Approved AI suggestion"}
                     </p>
                     <h4>{a.title}</h4>
-                    <p>{a.description}</p>
                     <p className="activity-place">
                       {a.location} · {plan.base.city}
                     </p>
@@ -971,6 +970,15 @@ export function ItineraryWorkspace({
                         preview?.assessment ?? state.assessment
                       ).references?.find((r) => r.activityId === a.id)}
                     />
+                    <p>{a.description}</p>
+                    <ActivityDiscovery
+                      activity={a}
+                      base={plan.base}
+                      category={categoryFor(a, plan, dayIndex, index)}
+                      tripId={tripId}
+                      version={state.version}
+                      showReviews={mode !== "map" && !preview}
+                    />
                     {state.assessment.errors
                       .filter((e) => e.activityId === a.id)
                       .map((e, i) => (
@@ -978,25 +986,6 @@ export function ItineraryWorkspace({
                           {e.message}
                         </p>
                       ))}
-                    {!!a.links?.length && (
-                      <ul className="activity-social-links">
-                        {a.links.map((link, i) => (
-                          <li key={i}>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {referenceSource(link.url)} · {link.label} ↗
-                            </a>
-                            <small>
-                              User-supplied reference · content/creator
-                              unverified
-                            </small>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                     <div className="editor-actions">
                       <button
                         className="button button-secondary"

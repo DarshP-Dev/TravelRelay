@@ -5,6 +5,7 @@ import { createTripModel, providerConfigFromEnv } from "./model";
 import { generationLimitsFromEnv } from "./generation-quota";
 import { createPayPalClient, sandboxConfig } from "./paypal-client";
 import { runtimeConfiguration } from "./deployment-config";
+import { activityInsightsFromEnv } from "./activity-insights";
 
 // Reuse the connection across dev reloads, while rebuilding application code
 // with each module revision. PGlite must never open the same directory twice.
@@ -31,6 +32,7 @@ async function connect() {
     generationLimits: generationLimitsFromEnv(process.env),
     model: createTripModel(providerConfigFromEnv(process.env)),
     paypal: paypal ? createPayPalClient(paypal) : undefined,
+    places: activityInsightsFromEnv(process.env),
     recoverySimulation:
       !!paypal && process.env.ENABLE_RECOVERY_SIMULATION === "true",
   });

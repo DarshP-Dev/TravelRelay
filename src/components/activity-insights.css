@@ -1,0 +1,124 @@
+.activity-insights {
+  margin-block: 16px;
+  padding-top: 13px;
+  border-top: 1px solid var(--line);
+}
+
+.activity-insights h5 {
+  color: var(--ink);
+  font:
+    700 0.96rem/1.4 var(--font-heading),
+    sans-serif;
+  margin-bottom: 4px;
+}
+
+.activity-insights .insight-note {
+  margin-block: 5px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.insight-link,
+.insight-more summary {
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+  font-weight: 650;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.insight-link {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  min-height: 35px;
+  text-align: start;
+}
+
+.insight-actions,
+.insight-rating {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+}
+
+.insight-google {
+  padding: 10px 14px;
+  background: #f5f7f2;
+  border-inline-start: 2px solid #dbe4d7;
+  border-radius: 0 12px 12px 0;
+}
+
+.insight-google-brand {
+  display: block;
+  height: calc(17px / var(--site-scale));
+  width: auto;
+  margin: 12px 12px 7px;
+}
+
+.insight-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #765516;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.insight-reviews,
+.insight-references {
+  list-style: none;
+  margin: 7px 0;
+  padding: 0;
+}
+
+.itinerary-day .insight-reviews > li,
+.itinerary-day .insight-references > li {
+  display: block;
+  padding-block: 10px;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.insight-review-author {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 9px;
+  font-size: 0.91rem;
+  font-weight: 650;
+}
+
+.insight-review-author a {
+  color: var(--primary-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.insight-review-author small,
+.insight-references small {
+  display: block;
+  font-weight: 400;
+}
+
+.insight-avatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.insight-google blockquote {
+  margin: 0;
+}
+
+.insight-google blockquote p {
+  margin-block: 5px;
+  color: var(--ink);
+  white-space: pre-line;
+}
+
+.insight-more summary {
+  padding-block: 8px;
+}

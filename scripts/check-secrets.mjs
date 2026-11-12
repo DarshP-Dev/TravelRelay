@@ -50,7 +50,7 @@ for (const file of files) {
     violations++;
   if (
     assets.includes(file) &&
-    /PAYPAL_CLIENT_SECRET|PAYPAL_WEBHOOK_ID|offline-bearer-fixture/.test(
+    /PAYPAL_CLIENT_SECRET|PAYPAL_WEBHOOK_ID|GOOGLE_PLACES_API_KEY|offline-bearer-fixture/.test(
       content,
     )
   )
