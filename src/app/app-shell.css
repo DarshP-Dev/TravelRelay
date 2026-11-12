@@ -11,6 +11,11 @@ html:has(> body > .travel-app) {
 }
 
 body:has(> .travel-app) {
+  --workspace-landscape-blur: 0px;
+  display: flex;
+  flex-direction: column;
+  /* Match the visual viewport under the site's root zoom. */
+  min-height: calc(100dvh / var(--site-scale));
   isolation: isolate;
   background: #d9e5df;
 }
@@ -24,7 +29,7 @@ body:has(> .travel-app)::before {
   background:
     linear-gradient(155deg, rgb(244 249 241 / 30%), rgb(216 232 220 / 49%)),
     url("/images/alpine-hero-1120.avif") center 43% / cover no-repeat;
-  filter: blur(8px);
+  filter: blur(var(--workspace-landscape-blur));
 }
 
 .travel-app {
@@ -34,6 +39,7 @@ body:has(> .travel-app)::before {
   --dashboard-accent: #a34b33;
   --dashboard-coral: #f5d5c3;
   --dashboard-sage: #e4ebdf;
+  flex: 1 0 auto;
   padding: 16px var(--workspace-gutter) clamp(35px, 5vw, 75px);
 }
 
